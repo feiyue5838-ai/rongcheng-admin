@@ -35,7 +35,7 @@
                 <div class="rb-sep"></div>
                 <div class="rb-item">
                   <div class="rb-label">代理记账</div>
-                  <div class="rb-value">¥0.00</div>
+                  <div class="rb-value">¥{{ formatMoney(revenueBreakdown.bookkeepingRevenue) }}</div>
                 </div>
               </div>
             </div>
@@ -181,7 +181,7 @@ const stats = reactive({
   todayOrders:    { label: '今日订单',   value: 0, icon: 'TrendCharts',  accent: '#8b5cf6' },
 } as Record<string, StatConfig>)
 
-const revenueBreakdown = reactive({ sealRevenue: 0, newspaperRevenue: 0 })
+const revenueBreakdown = reactive({ sealRevenue: 0, newspaperRevenue: 0, bookkeepingRevenue: 0 })
 
 const auxKeys = ['totalUsers', 'todayUsers', 'completedOrders', 'pendingReviews']
 
@@ -249,6 +249,7 @@ async function fetchData() {
     stats.pendingReviews.value = data.pendingReviews ?? 0
     revenueBreakdown.sealRevenue = data._detail?.sealRevenue ?? 0
     revenueBreakdown.newspaperRevenue = data._detail?.newspaperRevenue ?? 0
+    revenueBreakdown.bookkeepingRevenue = data._detail?.bookkeepingRevenue ?? 0
   } catch (e) {
     console.error('获取统计数据失败', e)
   } finally {
