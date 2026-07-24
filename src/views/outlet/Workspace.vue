@@ -207,6 +207,38 @@
           <el-descriptions-item label="发货时间" :span="2">{{ formatDate(detailOrder.completedAt) || '-' }}</el-descriptions-item>
         </el-descriptions>
 
+        <!-- 客户上传材料 -->
+        <div v-if="detailOrder.materials?.length > 0" class="materials-info">
+          <div class="section-title"><el-icon><Picture /></el-icon> 客户上传材料</div>
+          <el-table :data="detailOrder.materials" size="small" border>
+            <el-table-column prop="type" label="类型" width="140">
+              <template #default="{ row }">
+                {{ typeLabel[row.type] || row.type }}
+              </template>
+            </el-table-column>
+            <el-table-column label="缩略图" width="80" align="center">
+              <template #default="{ row }">
+                <el-image
+                  v-if="isImageUrl(row.url)"
+                  :src="getMaterialThumb(row.url)"
+                  :preview-src-list="[getMaterialUrl(row.url)]"
+                  fit="cover"
+                  style="width:48px;height:48px;border-radius:4px;cursor:pointer"
+                  preview-teleported
+                />
+                <span v-else style="font-size:12px;color:#999">-</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" align="center" width="80">
+              <template #default="{ row }">
+                <el-button type="primary" size="small" link @click="previewMaterial(row.url)">
+                  <el-icon><View /></el-icon> 查看
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
         <!-- 快递信息 -->
         <div v-if="detailOrder.expressCompany || detailOrder.expressNo" class="express-info">
           <div class="section-title"><el-icon><Van /></el-icon> 快递信息</div>
@@ -298,6 +330,32 @@ const detailOrder = ref(null)
 const detailLoading = ref(false)
 const receiptList = ref([])
 const sealImageList = ref([])
+const materialsList = ref([])
+
+// 材料类型中文映射
+const typeLabel = {
+  license: '营业执照',
+  id_card_front: '身份证正面',
+  id_card_back: '身份证背面',
+  id_card: '身份证',
+  legal_person_id: '法人身份证',
+  proxy_id: '代理人身份证',
+  other: '其他材料',
+}
+
+// 预览材料图片（新窗口打开）
+const previewMaterial = (url) => {
+  window.open(window.location.origin + url, '_blank')
+}
+
+// 材料完整地址
+const getMaterialUrl = (url) => window.location.origin + url
+
+// 判断是否为图片
+const isImageUrl = (url) => /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url)
+
+// 缩略图地址（同域名访问）
+const getMaterialThumb = (url) => getMaterialUrl(url)
 const completeFormRef = ref(null)
 const completeForm = reactive({ expressCompany: '', expressNo: '', remark: '' })
 const receiptFiles = ref([])
@@ -448,6 +506,7 @@ async function onView(order) {
       acceptedAt: orderRes?.acceptedAt || order.acceptedAt,
       completedAt: orderRes?.completedAt || order.completedAt,
       orderItems: orderRes?.orderItems || order.orderItems || [],
+      materials: orderRes?.materials || order.materials || [],
     }
 
     // 凭证优先用 orderRes，其次用 receiptRes
@@ -675,7 +734,7 @@ onUnmounted(() => {
     &::before { content: ''; }
   }
 
-  .express-info, .receipt-info, .items-info {
+  .express-info, .receipt-info, .items-info, .materials-info {
     margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid #f0f0f0;
