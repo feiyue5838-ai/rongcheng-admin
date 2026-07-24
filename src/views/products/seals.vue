@@ -329,6 +329,7 @@ const ELECTRONIC_SUB_TYPES = [
   { label: '电子法人章', prefix: '电子法人章' },
   { label: '电子发票章', prefix: '电子发票章' },
   { label: '电子个人签名章', prefix: '电子个人签名章' },
+  { label: '电子其他印章', prefix: '电子其他印章' },
 ]
 
 // 从印章名提取子类型（用于电子印章卡片显示）
