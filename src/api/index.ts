@@ -188,6 +188,7 @@ export const deleteBookkeepingPackage = (id: string) => request.delete(`/bookkee
 
 // ==================== 售后管理 API ====================
 export const getAfterSalesOrders = (params?: object) => request.get('/after-sales/orders', { params })
-export const confirmAfterSalesRefund = (id: string) => request.post(`/after-sales/orders/${id}/confirm-refund`)
+export const confirmAfterSalesRefund = (id: string, amount?: number) =>
+  request.post(`/after-sales/orders/${id}/confirm-refund`, amount != null ? { amount } : {})
 export const rejectAfterSales = (id: string, reason: string) => request.post(`/after-sales/orders/${id}/reject`, { reason })
 export const getRefundRecords = (params?: object) => request.get('/after-sales/refund-records', { params })

@@ -61,8 +61,8 @@
         </el-table-column>
         <el-table-column prop="replyCount" label="回复数" width="80" align="center">
           <template #default="{ row }">
-            <el-badge :value="row.replies?.length || 0" :hidden="!row.replies?.length" type="primary">
-              <span>{{ row.replies?.length || 0 }}</span>
+            <el-badge :value="row.question_replies?.length || 0" :hidden="!row.question_replies?.length" type="primary">
+              <span>{{ row.question_replies?.length || 0 }}</span>
             </el-badge>
           </template>
         </el-table-column>
@@ -111,12 +111,12 @@
       </div>
 
       <!-- 已有回复列表 -->
-      <div v-if="currentQuestion?.replies?.length" style="margin-bottom: 16px">
+      <div v-if="currentQuestion?.question_replies?.length" style="margin-bottom: 16px">
         <div style="font-size: 14px; font-weight: 500; margin-bottom: 12px">已有回复：</div>
-        <div v-for="(reply, index) in currentQuestion.replies" :key="index" class="reply-item">
+        <div v-for="(reply, index) in currentQuestion.question_replies" :key="index" class="reply-item">
           <div class="reply-header">
-            <span class="reply-author">{{ reply.author?.nickname || '管理员' }}</span>
-            <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
+            <span class="reply-author">{{ reply.author_name || '管理员' }}</span>
+            <span class="reply-time">{{ formatDate(reply.created_at) }}</span>
             <el-button type="danger" link size="small" @click="handleDeleteReply(reply.id)">删除</el-button>
           </div>
           <div class="reply-content">{{ reply.content }}</div>
@@ -151,12 +151,12 @@
         <el-descriptions-item label="发布时间">{{ formatDate(currentQuestion?.createdAt) }}</el-descriptions-item>
       </el-descriptions>
 
-      <div v-if="currentQuestion?.replies?.length" style="margin-top: 20px">
+      <div v-if="currentQuestion?.question_replies?.length" style="margin-top: 20px">
         <div style="font-size: 14px; font-weight: 500; margin-bottom: 12px">回复记录：</div>
-        <div v-for="(reply, index) in currentQuestion.replies" :key="index" class="reply-item">
+        <div v-for="(reply, index) in currentQuestion.question_replies" :key="index" class="reply-item">
           <div class="reply-header">
-            <span class="reply-author">{{ reply.author?.nickname || '管理员' }}</span>
-            <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
+            <span class="reply-author">{{ reply.author_name || '管理员' }}</span>
+            <span class="reply-time">{{ formatDate(reply.created_at) }}</span>
           </div>
           <div class="reply-content">{{ reply.content }}</div>
         </div>
@@ -341,8 +341,8 @@ async function handleDeleteReply(replyId: string) {
     // 刷新当前问答详情
     fetchQuestions()
     // 更新对话框中的数据
-    if (currentQuestion.value.replies) {
-      currentQuestion.value.replies = currentQuestion.value.replies.filter((r: any) => r.id !== replyId)
+    if (currentQuestion.value.question_replies) {
+      currentQuestion.value.question_replies = currentQuestion.value.question_replies.filter((r: any) => r.id !== replyId)
     }
   } catch (e: any) {
     if (e !== 'cancel') {

@@ -25,8 +25,11 @@
         <el-table-column prop="basePrice" label="基础价格" width="100">
           <template #default="{ row }">¥{{ row.basePrice }}</template>
         </el-table-column>
-        <el-table-column prop="invoicePrice" label="开票附加" width="100">
+        <el-table-column prop="invoicePrice" label="5张内附加" width="100">
           <template #default="{ row }">¥{{ row.invoicePrice }}</template>
+        </el-table-column>
+        <el-table-column prop="invoicePriceNormal" label="正常开票附加" width="110">
+          <template #default="{ row }">¥{{ row.invoicePriceNormal }}</template>
         </el-table-column>
         <el-table-column prop="socialPrice" label="社保附加" width="100">
           <template #default="{ row }">¥{{ row.socialPrice }}</template>
@@ -70,8 +73,11 @@
         <el-form-item label="基础价格" required>
           <el-input-number v-model="form.basePrice" :min="0" :precision="2" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="开票附加费">
+        <el-form-item label="5张内附加费">
           <el-input-number v-model="form.invoicePrice" :min="0" :precision="2" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="正常开票附加费">
+          <el-input-number v-model="form.invoicePriceNormal" :min="0" :precision="2" style="width: 100%" />
         </el-form-item>
         <el-form-item label="社保附加费">
           <el-input-number v-model="form.socialPrice" :min="0" :precision="2" style="width: 100%" />
@@ -121,6 +127,7 @@ const form = ref({
   cycle: 'year',
   basePrice: 1999,
   invoicePrice: 200,
+  invoicePriceNormal: 500,
   socialPrice: 300,
   fundPrice: 300,
   description: '',
@@ -149,6 +156,7 @@ const handleAdd = () => {
     cycle: 'year',
     basePrice: 1999,
     invoicePrice: 200,
+    invoicePriceNormal: 500,
     socialPrice: 300,
     fundPrice: 300,
     description: '',

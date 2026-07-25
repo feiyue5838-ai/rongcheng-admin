@@ -43,8 +43,8 @@
           <!-- 所属分类（与小程序对齐） -->
           <el-table-column label="所属分类" width="140">
             <template #default="{ row }">
-              <template v-if="row.categoryId && row.category">
-                <el-tag size="small" type="info">{{ row.category.name }}</el-tag>
+              <template v-if="row.categoryId && row.newspaperCategories">
+                <el-tag size="small" type="info">{{ row.newspaperCategories.name }}</el-tag>
               </template>
               <template v-else>
                 <el-tag size="small" type="danger">未分类</el-tag>

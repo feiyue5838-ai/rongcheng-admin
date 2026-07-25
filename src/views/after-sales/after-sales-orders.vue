@@ -129,7 +129,8 @@ async function doConfirmRefund() {
   if (!refundTarget.value) return
   refundLoading.value = true
   try {
-    await confirmAfterSalesRefund(refundTarget.value.id)
+    const amount = Number(refundTarget.value.payPrice || refundTarget.value.totalPrice)
+    await confirmAfterSalesRefund(refundTarget.value.id, amount)
     ElMessage.success('退款已发起，订单进入「退款中」')
     refundVisible.value = false
     fetchOrders()

@@ -155,8 +155,8 @@
               <el-tag v-if="row.__isPackage" type="warning" size="small" class="card-tag">套餐</el-tag>
             </div>
             <div class="card-body">
-              <div class="card-category" :title="row.categoryName || ''">
-                <el-tag v-if="row.categoryName" size="small" type="info" effect="plain">{{ row.categoryName }}</el-tag>
+              <div class="card-category" :title="row.seal_categoriesName || ''">
+                <el-tag v-if="row.seal_categoriesName" size="small" type="info" effect="plain">{{ row.seal_categoriesName }}</el-tag>
                 <el-tag v-else-if="isElectronic && getSealSubType(row.name)" size="small" type="info" effect="plain">{{ getSealSubType(row.name) }}</el-tag>
               </div>
               <div class="card-name" :title="row.name">{{ row.name }}</div>
@@ -305,7 +305,7 @@ const defaultCategory = computed(() => {
 const personalCategories = computed<{ id: string; name: string }[]>(() => {
   const map = new Map<string, { id: string; name: string }>()
   for (const s of seals.value) {
-    if (s.category?.id && s.category?.name) map.set(s.category.id, { id: s.category.id, name: s.category.name })
+    if (s.seal_categories?.id && s.seal_categories?.name) map.set(s.seal_categories.id, { id: s.seal_categories.id, name: s.seal_categories.name })
   }
   if (map.size > 0) return [...map.values()]
   return [
@@ -386,7 +386,7 @@ const mergedItems = computed(() => {
   } else if (isPersonal.value) {
     // 个人印章：按子 Tab 过滤（个人签名章 / 执业资格章）
     const subName = activePersonalSubTab.value === '个人印章' ? '个人签名章' : '执业资格章'
-    list = list.filter((s) => s.categoryName === subName)
+    list = list.filter((s) => s.seal_categoriesName === subName)
   } else if (isElectronic.value) {
     // 电子印章：按子 Tab 过滤
     list = list.filter((s) => getSealSubType(s.name) === activeSingleSubTab.value)
@@ -417,14 +417,14 @@ function sceneItemCount(sceneId: string): number {
 
 // 个人场景：子分组计数（个人签名章 / 执业资格章）
 function personalSubCount(subName: string): number {
-  return seals.value.filter((s) => s.categoryName === subName).length
+  return seals.value.filter((s) => s.seal_categoriesName === subName).length
 }
 
 // 单路由（个人 + 电子）子 Tab 计数
 function singleSubCount(subName: string): number {
   if (isPersonal.value) {
     const catName = subName === '个人印章' ? '个人签名章' : '执业资格章'
-    return seals.value.filter((s) => s.categoryName === catName).length
+    return seals.value.filter((s) => s.seal_categoriesName === catName).length
   } else if (isElectronic.value) {
     return seals.value.filter((s) => getSealSubType(s.name) === subName).length
   }
@@ -467,7 +467,7 @@ async function fetchCategoryProducts(catId: string, catName: string): Promise<an
       if (!res?.seals) return []
       return res.seals.map((s: any) => ({
         ...s,
-        categoryName: s.category?.name || '—',
+        categoryName: s.seal_categories?.name || '—',
         _sceneName: catName,
       }))
     }
@@ -476,7 +476,7 @@ async function fetchCategoryProducts(catId: string, catName: string): Promise<an
     if (!res?.seals) return []
     return res.seals.map((s: any) => ({
       ...s,
-      categoryName: s.category?.name || '—',
+      categoryName: s.seal_categories?.name || '—',
       _sceneName: catName,
     }))
   } catch {
@@ -509,7 +509,7 @@ function showDialog(type: string, row?: any) {
     if (isPersonal.value) ctxSceneId = personalScene.value?.id || ''
     else if (isElectronic.value) ctxSceneId = electronicScene.value?.id || ''
     else ctxSceneId = activeSceneId.value || ''
-    Object.assign(form, { ...row, sceneId: ctxSceneId, sealCategoryId: row.category?.id || '' })
+    Object.assign(form, { ...row, sceneId: ctxSceneId, sealCategoryId: row.seal_categories?.id || '' })
   } else {
     // 新增：预选当前所属场景（企业=当前 Tab；个人/电子=对应场景）
     let defaultSceneId = ''
@@ -526,7 +526,7 @@ async function saveSeal() {
   saving.value = true
   try {
     if (isEdit.value) {
-      // 编辑：categoryId=场景（重建关联，允许改所属场景）；sealCategoryId=个人子分类（写回 seal.categoryId）
+      // 编辑：categoryId=场景（重建关联，允许改所属场景）；sealCategoryId=个人子分类（写回 seal.seal_categoriesId）
       await updateSeal(form.id, {
         name: form.name,
         price: form.price,
