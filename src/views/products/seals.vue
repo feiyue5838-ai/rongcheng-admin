@@ -247,8 +247,8 @@
     </el-dialog>
 
     <!-- 编辑套餐对话框 -->
-    <el-dialog v-model="pkgDialogVisible" title="编辑套餐" width="600px">
-      <el-form :model="pkgForm" label-width="100px">
+    <el-dialog v-model="pkgDialogVisible" title="编辑套餐" width="720px">
+      <el-form :model="pkgForm" label-width="120px">
         <el-form-item label="套餐名称" required>
           <el-input v-model="pkgForm.name" placeholder="如：全套公章套餐" />
         </el-form-item>
