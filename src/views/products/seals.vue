@@ -1006,6 +1006,11 @@ watch(activeSceneId, async (newId, oldId) => {
 .form-row-2col .col-right {
   min-width: 0;
 }
+.form-row-2col .col-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
 .form-row-2col .el-form-item {
   margin-bottom: 18px;
 }
