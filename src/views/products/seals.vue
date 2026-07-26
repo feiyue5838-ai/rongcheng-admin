@@ -1067,8 +1067,9 @@ watch(activeSceneId, async (newId, oldId) => {
 
 /* ===== 城市差异化定价 ===== */
 .region-price-tip {
-  color: #999;
-  font-size: 12px;
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.6;
   margin-bottom: 8px;
 }
 .region-price-row {
@@ -1081,6 +1082,12 @@ watch(activeSceneId, async (newId, oldId) => {
   display: flex;
   gap: 8px;
   margin-top: 4px;
+}
+.region-price-actions .el-button {
+  padding: 6px 14px;
+}
+.el-form-item__label {
+  white-space: nowrap;
 }
 
 /* ===== 对话框遮罩：打开时背景 Tab 不高亮 ===== */
