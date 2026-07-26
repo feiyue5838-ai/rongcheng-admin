@@ -198,17 +198,14 @@
           <el-input-number v-model="form.price" :min="0" :precision="2" />
           <span style="color:#999;font-size:12px;margin-left:8px">基准价（默认）</span>
         </el-form-item>
-        <el-form-item label="一线城市价">
-          <el-input-number v-model="form.price_tier_a" :min="0" :precision="2" placeholder="空则用基准价" />
-          <span style="color:#999;font-size:12px;margin-left:8px">北京/上海/广州/深圳</span>
-        </el-form-item>
-        <el-form-item label="二线城市价">
-          <el-input-number v-model="form.price_tier_b" :min="0" :precision="2" placeholder="空则用基准价" />
-          <span style="color:#999;font-size:12px;margin-left:8px">天津/重庆/成都/杭州等</span>
-        </el-form-item>
-        <el-form-item label="三线城市价">
-          <el-input-number v-model="form.price_tier_c" :min="0" :precision="2" placeholder="空则用基准价" />
-          <span style="color:#999;font-size:12px;margin-left:8px">其他城市</span>
+        <el-form-item label="城市差异化定价">
+          <div style="color:#999;font-size:12px;margin-bottom:8px">设置各城市价格（空则使用上方基准价）</div>
+          <div v-for="(row, idx) in regionPricesRows" :key="idx" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+            <el-input v-model="row.city" placeholder="城市名，如：北京市、成都市" style="width:180px" />
+            <el-input-number v-model="row.price" :min="0" :precision="2" style="width:140px" />
+            <el-button type="danger" link @click="removeRegionPrice(idx)">删除</el-button>
+          </div>
+          <el-button type="default" plain size="small" @click="addRegionPrice">+ 添加城市价格</el-button>
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="form.description" type="textarea" rows="3" />
@@ -379,7 +376,21 @@ const activeSingleSubTab = ref('电子公章')    // single 路由 + 电子场�
 const dialogVisible = ref(false)
 const saving = ref(false)
 const isEdit = ref(false)
-const form = reactive<any>({ name: '', sceneId: '', sealCategoryId: '', price: 0, price_tier_a: null, price_tier_b: null, price_tier_c: null, description: '', sort: 0, image: '' })
+const form = reactive<any>({ name: '', sceneId: '', sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
+const regionPricesRows = ref<Array<{ city: string; price: number }>>([])
+
+function getRegionPricesRows() {
+  const rp = form.region_prices || {}
+  regionPricesRows.value = Object.entries(rp).map(([city, price]) => ({ city, price: Number(price) }))
+}
+
+function addRegionPrice() {
+  regionPricesRows.value.push({ city: '', price: 0 })
+}
+
+function removeRegionPrice(idx: number) {
+  regionPricesRows.value.splice(idx, 1)
+}
 
 // 套餐弹窗状态
 const pkgDialogVisible = ref(false)
@@ -556,13 +567,15 @@ function showDialog(type: string, row?: any) {
     else if (isElectronic.value) ctxSceneId = electronicScene.value?.id || ''
     else ctxSceneId = activeSceneId.value || ''
     Object.assign(form, { ...row, sceneId: ctxSceneId, sealCategoryId: row.seal_categories?.id || '' })
+    getRegionPricesRows()
   } else {
     // 新增：预选当前所属场景（企业=当前 Tab；个人/电子=对应场景）
     let defaultSceneId = ''
     if (isPersonal.value) defaultSceneId = personalScene.value?.id || ''
     else if (isElectronic.value) defaultSceneId = electronicScene.value?.id || ''
     else defaultSceneId = activeSceneId.value || ''
-    Object.assign(form, { name: '', sceneId: defaultSceneId, sealCategoryId: '', price: 0, price_tier_a: null, price_tier_b: null, price_tier_c: null, description: '', sort: 0, image: '' })
+    Object.assign(form, { name: '', sceneId: defaultSceneId, sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
+    regionPricesRows.value = []
   }
   dialogVisible.value = true
 }
@@ -571,14 +584,18 @@ async function saveSeal() {
   if (!form.name) { ElMessage.warning('请填写印章名称'); return }
   saving.value = true
   try {
+    // 从行编辑数据还原 region_prices 对象
+    const region_prices: Record<string, number> = {}
+    for (const row of regionPricesRows.value) {
+      if (row.city.trim()) region_prices[row.city.trim()] = row.price
+    }
+
     if (isEdit.value) {
       // 编辑：categoryId=场景（重建关联，允许改所属场景）；sealCategoryId=个人子分类（写回 seal.seal_categoriesId）
       await updateSeal(form.id, {
         name: form.name,
         price: form.price,
-        price_tier_a: form.price_tier_a ?? undefined,
-        price_tier_b: form.price_tier_b ?? undefined,
-        price_tier_c: form.price_tier_c ?? undefined,
+        region_prices,
         description: form.description,
         sort: form.sort,
         image: form.image,
@@ -589,9 +606,7 @@ async function saveSeal() {
       await createSeal({
         name: form.name,
         price: form.price,
-        price_tier_a: form.price_tier_a ?? undefined,
-        price_tier_b: form.price_tier_b ?? undefined,
-        price_tier_c: form.price_tier_c ?? undefined,
+        region_prices,
         description: form.description,
         sort: form.sort,
         image: form.image,
