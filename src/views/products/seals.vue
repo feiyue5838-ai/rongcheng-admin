@@ -219,13 +219,13 @@
             <el-button v-if="regionPricesRows.length > 0" type="danger" plain size="small" @click="clearAllRegionPrices">清空全部</el-button>
           </div>
         </el-form-item>
-        <el-row :gutter="16">
-          <el-col :span="14">
+        <div class="form-row-2col">
+          <div class="col-left">
             <el-form-item label="描述">
               <el-input v-model="form.description" type="textarea" rows="3" />
             </el-form-item>
-          </el-col>
-          <el-col :span="10">
+          </div>
+          <div class="col-right">
             <el-form-item label="排序">
               <el-input-number v-model="form.sort" :min="0" style="width:100%" />
             </el-form-item>
@@ -243,8 +243,8 @@
                 <el-button v-else type="primary" plain size="small">上传图片</el-button>
               </el-upload>
             </el-form-item>
-          </el-col>
-        </el-row>
+          </div>
+        </div>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -993,6 +993,21 @@ watch(activeSceneId, async (newId, oldId) => {
   color: #909399;
   padding: 80px 0;
   font-size: 14px;
+}
+
+/* 描述 + 排序/图片 两列布局 */
+.form-row-2col {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 16px;
+  align-items: start;
+}
+.form-row-2col .col-left,
+.form-row-2col .col-right {
+  min-width: 0;
+}
+.form-row-2col .el-form-item {
+  margin-bottom: 18px;
 }
 
 .seal-image-uploader .image-preview-wrapper {
