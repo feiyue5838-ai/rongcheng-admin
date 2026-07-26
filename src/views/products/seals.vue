@@ -575,10 +575,9 @@ async function fetchCategoryPackages(catId: string, catName: string): Promise<an
       if (!res?.packages) return []
       return res.packages.map((p: any) => ({ ...p, categoryName: catName, _sceneName: catName }))
     }
-    // 其他路由使用分类 API
-    const res: any = await getSealCategories(catId)
-    if (!res?.packages) return []
-    return res.packages.map((p: any) => ({ ...p, categoryName: catName, _sceneName: catName }))
+    // 其他路由：套餐独立接口，全量返回
+    const res: any = await getSealPackages()
+    return Array.isArray(res) ? res.map((p: any) => ({ ...p, categoryName: catName, _sceneName: catName })) : []
   } catch {
     return []
   }
