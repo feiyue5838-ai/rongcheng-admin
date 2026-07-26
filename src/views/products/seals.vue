@@ -219,32 +219,26 @@
             <el-button v-if="regionPricesRows.length > 0" type="danger" plain size="small" @click="clearAllRegionPrices">清空全部</el-button>
           </div>
         </el-form-item>
-        <div class="form-row-2col">
-          <div class="col-left">
-            <el-form-item label="描述">
-              <el-input v-model="form.description" type="textarea" rows="3" />
-            </el-form-item>
-          </div>
-          <div class="col-right">
-            <el-form-item label="排序">
-              <el-input-number v-model="form.sort" :min="0" style="width:100%" />
-            </el-form-item>
-            <el-form-item label="图片" label-width="60px">
-              <el-upload
-                :show-file-list="false"
-                :before-upload="beforeUpload"
-                :http-request="uploadSeal"
-                class="seal-image-uploader"
-              >
-                <div v-if="form.image" class="image-preview-wrapper">
-                  <el-image :src="form.image" style="width: 80px; height: 80px; border-radius: 8px" />
-                  <div class="image-overlay">更换</div>
-                </div>
-                <el-button v-else type="primary" plain size="small">上传图片</el-button>
-              </el-upload>
-            </el-form-item>
-          </div>
-        </div>
+        <el-form-item label="描述">
+          <el-input v-model="form.description" type="textarea" rows="3" />
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="form.sort" :min="0" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="图片" label-width="60px">
+          <el-upload
+            :show-file-list="false"
+            :before-upload="beforeUpload"
+            :http-request="uploadSeal"
+            class="seal-image-uploader"
+          >
+            <div v-if="form.image" class="image-preview-wrapper">
+              <el-image :src="form.image" style="width: 80px; height: 80px; border-radius: 8px" />
+              <div class="image-overlay">更换</div>
+            </div>
+            <el-button v-else type="primary" plain size="small">上传图片</el-button>
+          </el-upload>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
