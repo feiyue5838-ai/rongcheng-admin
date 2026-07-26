@@ -307,11 +307,7 @@ const personalCategories = computed<{ id: string; name: string }[]>(() => {
   for (const s of seals.value) {
     if (s.seal_categories?.id && s.seal_categories?.name) map.set(s.seal_categories.id, { id: s.seal_categories.id, name: s.seal_categories.name })
   }
-  if (map.size > 0) return [...map.values()]
-  return [
-    { id: 'b14f2347-9ea5-49ef-a056-cc104b13e4c5', name: '个人签名章' },
-    { id: 'c0000001-0000-0000-0000-000000000002', name: '执业资格章' },
-  ]
+  return map.size > 0 ? [...map.values()] : []
 })
 
 // 对话框「分类」下拉候选：企业=8 大业务场景；电子=单一电子场景（禁用）；个人走子分类（不展示本下拉）
