@@ -180,7 +180,7 @@
 
     <!-- 添加/编辑印章对话框 -->
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑印章' : '添加印章'" width="600px">
-      <el-form :model="form" label-width="100px">
+      <el-form :model="form" label-width="120px">
         <el-form-item label="印章名称" required>
           <el-input v-model="form.name" placeholder="如：公章" />
         </el-form-item>
