@@ -255,6 +255,27 @@
         <el-form-item label="价格(元)" required>
           <el-input-number v-model="pkgForm.price" :min="0" :precision="2" />
         </el-form-item>
+        <el-form-item label="城市差异化定价">
+          <div class="region-price-tip">设置各城市价格（空则使用上方基准价）</div>
+          <div v-for="(row, idx) in pkgRegionPricesRows" :key="idx" class="region-price-row">
+            <el-cascader
+              v-model="row._cityValue"
+              :options="cityOptions"
+              :props="{ expandTrigger: 'hover', emitPath: false, checkStrictly: true }"
+              placeholder="选择城市"
+              clearable
+              filterable
+              style="width:200px"
+              @change="(val: string) => { row.city = val || '' }"
+            />
+            <el-input-number v-model="row.price" :min="0" :precision="2" style="width:140px" />
+            <el-button type="danger" link @click="removePkgRegionPrice(idx)">删除</el-button>
+          </div>
+          <div class="region-price-actions">
+            <el-button type="default" plain size="small" @click="addPkgRegionPrice">+ 添加城市价格</el-button>
+            <el-button v-if="pkgRegionPricesRows.length > 0" type="danger" plain size="small" @click="clearAllPkgRegionPrices">清空全部</el-button>
+          </div>
+        </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="pkgForm.description" type="textarea" :rows="3" />
         </el-form-item>
@@ -282,27 +303,6 @@
             >
               <el-button type="primary" plain>+ 添加图片</el-button>
             </el-upload>
-          </div>
-        </el-form-item>
-        <el-form-item label="城市差异化定价">
-          <div class="region-price-tip">设置各城市价格（空则使用上方基准价）</div>
-          <div v-for="(row, idx) in pkgRegionPricesRows" :key="idx" class="region-price-row">
-            <el-cascader
-              v-model="row._cityValue"
-              :options="cityOptions"
-              :props="{ expandTrigger: 'hover', emitPath: false, checkStrictly: true }"
-              placeholder="选择城市"
-              clearable
-              filterable
-              style="width:200px"
-              @change="(val: string) => { row.city = val || '' }"
-            />
-            <el-input-number v-model="row.price" :min="0" :precision="2" style="width:140px" />
-            <el-button type="danger" link @click="removePkgRegionPrice(idx)">删除</el-button>
-          </div>
-          <div class="region-price-actions">
-            <el-button type="default" plain size="small" @click="addPkgRegionPrice">+ 添加城市价格</el-button>
-            <el-button v-if="pkgRegionPricesRows.length > 0" type="danger" plain size="small" @click="clearAllPkgRegionPrices">清空全部</el-button>
           </div>
         </el-form-item>
       </el-form>
