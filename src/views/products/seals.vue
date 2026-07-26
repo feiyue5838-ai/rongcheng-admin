@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="page-header">
       <h2>印章管理</h2>
@@ -284,6 +284,27 @@
             </el-upload>
           </div>
         </el-form-item>
+        <el-form-item label="城市差异化定价">
+          <div class="region-price-tip">设置各城市价格（空则使用上方基准价）</div>
+          <div v-for="(row, idx) in pkgRegionPricesRows" :key="idx" class="region-price-row">
+            <el-cascader
+              v-model="row._cityValue"
+              :options="cityOptions"
+              :props="{ expandTrigger: 'hover', emitPath: false, checkStrictly: true }"
+              placeholder="选择城市"
+              clearable
+              filterable
+              style="width:200px"
+              @change="(val: string) => { row.city = val || '' }"
+            />
+            <el-input-number v-model="row.price" :min="0" :precision="2" style="width:140px" />
+            <el-button type="danger" link @click="removePkgRegionPrice(idx)">删除</el-button>
+          </div>
+          <div class="region-price-actions">
+            <el-button type="default" plain size="small" @click="addPkgRegionPrice">+ 添加城市价格</el-button>
+            <el-button v-if="pkgRegionPricesRows.length > 0" type="danger" plain size="small" @click="clearAllPkgRegionPrices">清空全部</el-button>
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="pkgDialogVisible = false">取消</el-button>
@@ -298,7 +319,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Box, Postcard } from '@element-plus/icons-vue'
-import { getSealCategories, getSealSceneProducts, createSeal, updateSeal, deleteSeal, uploadImage, updatePackage, deletePackage, getAdminScenes, getSeals } from '@/api'
+import { getSealCategories, getSealSceneProducts, createSeal, updateSeal, deleteSeal, uploadImage, updatePackage, deletePackage, getAdminScenes, getSeals, getSealPackages } from '@/api'
 const route = useRoute()
 
 // 路由逻辑分类 key（不依赖数据，初始化即可确定）
@@ -421,7 +442,7 @@ async function clearAllRegionPrices() {
 // 套餐弹窗状态
 const pkgDialogVisible = ref(false)
 const pkgSaving = ref(false)
-const pkgForm = reactive<any>({ id: '', name: '', price: 0, description: '', sort: 0, images: [] })
+const pkgForm = reactive<any>({ id: '', name: '', price: 0, description: '', sort: 0, images: [], region_prices: {} })
 
 // 当前 Tab 下的印章 + 套餐
 const mergedItems = computed(() => {
@@ -662,7 +683,39 @@ function showPkgDialog(row: any) {
   pkgForm.description = row.description || ''
   pkgForm.sort = row.sort ?? 0
   pkgForm.images = Array.isArray(row.images) ? [...row.images] : []
+  pkgForm.region_prices = row.region_prices || {}
+  getPkgRegionPricesRows()
   pkgDialogVisible.value = true
+}
+
+// 套餐城市差异化定价
+const pkgRegionPricesRows = ref<Array<{ city: string; price: number; _cityValue: string }>>([])
+function getPkgRegionPricesRows() {
+  const rp = pkgForm.region_prices || {}
+  pkgRegionPricesRows.value = Object.entries(rp).map(([city, price]) => ({ city, price: Number(price), _cityValue: city }))
+}
+function addPkgRegionPrice() {
+  pkgRegionPricesRows.value.push({ city: '', price: 0, _cityValue: '' })
+}
+function removePkgRegionPrice(idx: number) {
+  pkgRegionPricesRows.value.splice(idx, 1)
+}
+async function clearAllPkgRegionPrices() {
+  try {
+    await ElMessageBox.confirm('确认清空所有城市价格？', '提示', { type: 'warning' })
+  } catch {
+    return
+  }
+  pkgRegionPricesRows.value = []
+}
+function buildPkgRegionPrices() {
+  const rp: Record<string, number> = {}
+  for (const row of pkgRegionPricesRows.value) {
+    if (row.city && row.price !== undefined && row.price !== null) {
+      rp[row.city] = Number(row.price)
+    }
+  }
+  return rp
 }
 
 async function savePkg() {
@@ -676,6 +729,7 @@ async function savePkg() {
       description: pkgForm.description,
       sort: pkgForm.sort,
       images: pkgForm.images,
+      region_prices: buildPkgRegionPrices(),
     })
     ElMessage.success('保存成功')
     pkgDialogVisible.value = false
@@ -1091,3 +1145,4 @@ watch(activeSceneId, async (newId, oldId) => {
   z-index: 2000 !important;
 }
 </style>
+
