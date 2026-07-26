@@ -1086,9 +1086,6 @@ watch(activeSceneId, async (newId, oldId) => {
 .region-price-actions .el-button {
   padding: 6px 14px;
 }
-.el-form-item__label {
-  white-space: nowrap;
-}
 
 /* ===== 对话框遮罩：打开时背景 Tab 不高亮 ===== */
 .el-dialog {
