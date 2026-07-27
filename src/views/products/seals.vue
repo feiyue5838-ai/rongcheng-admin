@@ -2,7 +2,17 @@
   <div>
     <div class="page-header">
       <h2>印章管理</h2>
-      <el-button type="primary" @click="showDialog('add')">添加印章</el-button>
+      <el-dropdown trigger="click" @command="handleAddCommand">
+        <el-button type="primary">
+          添加<i class="el-icon--right el-icon-arrow-down" />
+        </el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="seal">添加印章</el-dropdown-item>
+            <el-dropdown-item command="package">添加套餐</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
 
     <div class="page-card">
@@ -119,62 +129,91 @@
 
       <!-- ====== 卡片网格 ====== -->
       <div v-loading="loading" class="scene-grid-wrap">
-        <div v-if="!mergedItems.length && !loading" class="empty-tip">
-          该场景暂无印章
+        <!-- 空状态 -->
+        <div v-if="!filteredSeals.length && !filteredPackages.length && !loading" class="empty-tip">
+          该场景暂无印章和套餐
         </div>
-        <div v-else class="scene-grid">
-          <div
-            v-for="row in mergedItems"
-            :key="row.id"
-            class="seal-card"
-            :class="{ 'is-pkg': row.__isPackage }"
-          >
-            <div class="card-image">
-              <!-- 套餐多图轮播 -->
-              <el-carousel
-                v-if="row.__isPackage && row.images?.length"
-                height="160px"
-                indicator-position="outside"
-                arrow="always"
-                :autoplay="false"
-              >
-                <el-carousel-item v-for="(img, idx) in row.images" :key="idx">
-                  <el-image :src="img" fit="cover" style="width: 100%; height: 100%" />
-                </el-carousel-item>
-              </el-carousel>
-              <!-- 单图或印章 -->
-              <el-image
-                v-else-if="!row.__isPackage && row.image"
-                :src="row.image"
-                fit="cover"
-                style="width: 100%; height: 100%"
-              />
-              <div v-else class="image-placeholder">
-                <el-icon :size="32" color="#c0c4cc"><Box v-if="row.__isPackage" /><Postcard v-else /></el-icon>
+
+        <!-- 印章分区 -->
+        <template v-if="filteredSeals.length">
+          <div class="section-header">
+            <span class="section-title">单枚印章</span>
+            <span class="section-count">{{ filteredSeals.length }} 枚</span>
+          </div>
+          <div class="scene-grid">
+            <div
+              v-for="row in filteredSeals"
+              :key="row.id"
+              class="seal-card"
+            >
+              <div class="card-image">
+                <el-image
+                  v-if="row.image"
+                  :src="row.image"
+                  fit="cover"
+                  style="width: 100%; height: 100%"
+                />
+                <div v-else class="image-placeholder">
+                  <el-icon :size="32" color="#c0c4cc"><Postcard /></el-icon>
+                </div>
               </div>
-              <el-tag v-if="row.__isPackage" type="warning" size="small" class="card-tag">套餐</el-tag>
-            </div>
-            <div class="card-body">
-              <div class="card-category" :title="row.seal_categories?.name || row.categoryName || ''">
-                <el-tag v-if="row.seal_categories?.name" size="small" type="info" effect="plain">{{ row.seal_categories.name }}</el-tag>
-                <el-tag v-else-if="row.categoryName" size="small" type="info" effect="plain">{{ row.categoryName }}</el-tag>
-                <el-tag v-else-if="isElectronic && getSealSubType(row.name)" size="small" type="info" effect="plain">{{ getSealSubType(row.name) }}</el-tag>
+              <div class="card-body">
+                <div class="card-category" :title="row.seal_categories?.name || row.categoryName || ''">
+                  <el-tag v-if="row.seal_categories?.name" size="small" type="info" effect="plain">{{ row.seal_categories.name }}</el-tag>
+                  <el-tag v-else-if="row.categoryName" size="small" type="info" effect="plain">{{ row.categoryName }}</el-tag>
+                  <el-tag v-else-if="isElectronic && getSealSubType(row.name)" size="small" type="info" effect="plain">{{ getSealSubType(row.name) }}</el-tag>
+                </div>
+                <div class="card-name" :title="row.name">{{ row.name }}</div>
+                <div class="card-price">¥{{ row.price }}</div>
               </div>
-              <div class="card-name" :title="row.name">{{ row.name }}</div>
-              <div class="card-price" :class="{ 'pkg-price': row.__isPackage }">¥{{ row.price }}</div>
-            </div>
-            <div class="card-actions">
-              <template v-if="row.__isPackage">
-                <el-button type="primary" link size="small" @click="showPkgDialog(row)">编辑</el-button>
-                <el-button type="danger" link size="small" @click="handlePkgDelete(row)">删除</el-button>
-              </template>
-              <template v-else>
+              <div class="card-actions">
                 <el-button type="primary" link size="small" @click="showDialog('edit', row)">编辑</el-button>
                 <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
-              </template>
+              </div>
             </div>
           </div>
-        </div>
+        </template>
+
+        <!-- 套餐分区 -->
+        <template v-if="filteredPackages.length">
+          <div class="section-header" :class="{ 'section-header--mt': filteredSeals.length }">
+            <span class="section-title">套餐</span>
+            <span class="section-count">{{ filteredPackages.length }} 个</span>
+          </div>
+          <div class="scene-grid">
+            <div
+              v-for="row in filteredPackages"
+              :key="row.id"
+              class="seal-card is-pkg"
+            >
+              <div class="card-image">
+                <el-carousel
+                  v-if="row.images?.length"
+                  height="160px"
+                  indicator-position="outside"
+                  arrow="always"
+                  :autoplay="false"
+                >
+                  <el-carousel-item v-for="(img, idx) in row.images" :key="idx">
+                    <el-image :src="img" fit="cover" style="width: 100%; height: 100%" />
+                  </el-carousel-item>
+                </el-carousel>
+                <div v-else class="image-placeholder">
+                  <el-icon :size="32" color="#c0c4cc"><Box /></el-icon>
+                </div>
+                <el-tag type="warning" size="small" class="card-tag">套餐</el-tag>
+              </div>
+              <div class="card-body">
+                <div class="card-name" :title="row.name">{{ row.name }}</div>
+                <div class="card-price pkg-price">¥{{ row.price }}</div>
+              </div>
+              <div class="card-actions">
+                <el-button type="primary" link size="small" @click="showPkgDialog(row)">编辑</el-button>
+                <el-button type="danger" link size="small" @click="handlePkgDelete(row)">删除</el-button>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -195,21 +234,41 @@
           </el-select>
         </el-form-item>
         <el-form-item label="价格(元)" required>
-          <el-input-number v-model="form.price" :min="0" :precision="2" />
-          <span style="color:#999;font-size:12px;margin-left:8px">基准价（默认）</span>
+          <el-input-number
+            v-model="form.price"
+            :min="0"
+            :precision="2"
+            :style="pricingMode === 'nationwide' ? { boxShadow: '0 0 0 2px rgba(64,158,255,0.35)', borderRadius: '4px' } : {}"
+          />
+          <el-tag
+            v-if="pricingMode === 'nationwide'"
+            type="primary"
+            effect="light"
+            size="small"
+            style="margin-left:8px"
+          >全国统一定价：此价格对所有城市生效</el-tag>
+          <span v-else style="color:#999;font-size:12px;margin-left:8px">基准价（默认）</span>
         </el-form-item>
-        <el-form-item label="城市差异化定价">
+        <el-form-item label="定价方式">
+          <el-switch
+            v-model="pricingMode"
+            :active-value="'regional'"
+            :inactive-value="'nationwide'"
+          />
+          <span style="margin-left:8px;color:#606266">{{ pricingMode === 'regional' ? '区域价（按城市设置不同价格）' : '全国价（统一基准价）' }}</span>
+        </el-form-item>
+        <el-form-item label="城市差异化定价" v-if="pricingMode === 'regional'">
           <div class="region-price-tip">设置各城市价格（空则使用上方基准价）</div>
           <div v-for="(row, idx) in regionPricesRows" :key="idx" class="region-price-row">
             <el-cascader
               v-model="row._cityValue"
               :options="cityOptions"
-              :props="{ expandTrigger: 'hover', emitPath: false, checkStrictly: true }"
-              placeholder="选择城市"
+              :props="{ expandTrigger: 'hover', emitPath: true, checkStrictly: true }"
+              placeholder="选择省/市/区"
               clearable
               filterable
               style="width:200px"
-              @change="(val: string) => { row.city = val || '' }"
+              @change="(val: string[]) => { row.city = (val && val.length >= 2) ? val[1] : ''; row._cityValue = val }"
             />
             <el-input-number v-model="row.price" :min="0" :precision="2" style="width:140px" />
             <el-button type="danger" link @click="removeRegionPrice(idx)">删除</el-button>
@@ -247,26 +306,73 @@
     </el-dialog>
 
     <!-- 编辑套餐对话框 -->
-    <el-dialog v-model="pkgDialogVisible" title="编辑套餐" width="720px">
+    <el-dialog v-model="pkgDialogVisible" :title="pkgIsEdit ? '编辑套餐' : '添加套餐'" width="720px">
       <el-form :model="pkgForm" label-width="120px">
+        <el-form-item label="所属场景" v-if="routeType === 'enterprise'">
+          <el-select v-model="pkgForm.sceneId" placeholder="选择套餐所属场景（必填）" style="width:100%" clearable @change="loadPkgSealOptions">
+            <el-option
+              v-for="cat in businessCategories"
+              :key="cat.id"
+              :label="cat.name"
+              :value="cat.id"
+            />
+          </el-select>
+          <span style="font-size:12px;color:#909399;margin-top:4px;display:block">
+            不选择则套餐不会在任何场景 Tab 下显示
+          </span>
+        </el-form-item>
+        <el-form-item label="包含印章" required>
+          <el-select v-model="pkgForm.sealIds" multiple filterable placeholder="选择套餐包含的印章（必选）" style="width:100%">
+            <el-option
+              v-for="s in pkgSealOptions"
+              :key="s.id"
+              :label="s.name + '（¥' + s.price + '）'"
+              :value="s.id"
+            />
+          </el-select>
+          <span style="font-size:12px;color:#909399;margin-top:4px;display:block">
+            小程序端套餐内展示的印章列表，不选将导致套餐无法下单
+          </span>
+        </el-form-item>
         <el-form-item label="套餐名称" required>
           <el-input v-model="pkgForm.name" placeholder="如：全套公章套餐" />
         </el-form-item>
         <el-form-item label="价格(元)" required>
-          <el-input-number v-model="pkgForm.price" :min="0" :precision="2" />
+          <el-input-number
+            v-model="pkgForm.price"
+            :min="0"
+            :precision="2"
+            :style="pkgPricingMode === 'nationwide' ? { boxShadow: '0 0 0 2px rgba(64,158,255,0.35)', borderRadius: '4px' } : {}"
+          />
+          <el-tag
+            v-if="pkgPricingMode === 'nationwide'"
+            type="primary"
+            effect="light"
+            size="small"
+            style="margin-left:8px"
+          >全国统一定价：此价格对所有城市生效</el-tag>
+          <span v-else style="color:#999;font-size:12px;margin-left:8px">基准价（默认）</span>
         </el-form-item>
-        <el-form-item label="城市差异化定价">
+        <el-form-item label="定价方式">
+          <el-switch
+            v-model="pkgPricingMode"
+            :active-value="'regional'"
+            :inactive-value="'nationwide'"
+          />
+          <span style="margin-left:8px;color:#606266">{{ pkgPricingMode === 'regional' ? '区域价（按城市设置不同价格）' : '全国价（统一基准价）' }}</span>
+        </el-form-item>
+        <el-form-item label="城市差异化定价" v-if="pkgPricingMode === 'regional'">
           <div class="region-price-tip">设置各城市价格（空则使用上方基准价）</div>
           <div v-for="(row, idx) in pkgRegionPricesRows" :key="idx" class="region-price-row">
             <el-cascader
               v-model="row._cityValue"
               :options="cityOptions"
-              :props="{ expandTrigger: 'hover', emitPath: false, checkStrictly: true }"
-              placeholder="选择城市"
+              :props="{ expandTrigger: 'hover', emitPath: true, checkStrictly: true }"
+              placeholder="选择省/市/区"
               clearable
               filterable
               style="width:200px"
-              @change="(val: string) => { row.city = val || '' }"
+              @change="(val: string[]) => { row.city = (val && val.length >= 2) ? val[1] : ''; row._cityValue = val }"
             />
             <el-input-number v-model="row.price" :min="0" :precision="2" style="width:140px" />
             <el-button type="danger" link @click="removePkgRegionPrice(idx)">删除</el-button>
@@ -291,6 +397,7 @@
             <el-upload
               :show-file-list="false"
               :auto-upload="false"
+              accept=".jpg,.jpeg,.png,.gif,.webp,.pdf"
               class="seal-image-uploader"
               :on-change="(file: any) => {
                 const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
@@ -318,8 +425,9 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { provinceToCities, cityToDistricts } from '@/data/region-data'
 import { Box, Postcard } from '@element-plus/icons-vue'
-import { getSealCategories, getSealSceneProducts, createSeal, updateSeal, deleteSeal, uploadImage, updatePackage, deletePackage, getAdminScenes, getSeals, getSealPackages } from '@/api'
+import { getSealCategories, getSealSceneProducts, createSeal, updateSeal, deleteSeal, uploadImage, updatePackage, deletePackage, getAdminScenes, getSeals, getSealPackages, createPackage } from '@/api'
 const route = useRoute()
 
 // 路由逻辑分类 key（不依赖数据，初始化即可确定）
@@ -411,15 +519,32 @@ const saving = ref(false)
 const isEdit = ref(false)
 const form = reactive<any>({ name: '', sceneId: '', sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
 // 全国地级以上城市级联数据（用于城市差异化定价选择器）
-const PROVINCE_CITY_OPTIONS = [{"value":"北京市","label":"北京市","children":[{"value":"北京市","label":"北京市"}]},{"value":"天津市","label":"天津市","children":[{"value":"天津市","label":"天津市"}]},{"value":"上海市","label":"上海市","children":[{"value":"上海市","label":"上海市"}]},{"value":"重庆市","label":"重庆市","children":[{"value":"重庆市","label":"重庆市"}]},{"value":"河北省","label":"河北省","children":[{"value":"石家庄市","label":"石家庄市"},{"value":"唐山市","label":"唐山市"},{"value":"秦皇岛市","label":"秦皇岛市"},{"value":"邯郸市","label":"邯郸市"},{"value":"邢台市","label":"邢台市"},{"value":"保定市","label":"保定市"},{"value":"张家口市","label":"张家口市"},{"value":"承德市","label":"承德市"},{"value":"沧州市","label":"沧州市"},{"value":"廊坊市","label":"廊坊市"},{"value":"衡水市","label":"衡水市"}]},{"value":"山西省","label":"山西省","children":[{"value":"太原市","label":"太原市"},{"value":"大同市","label":"大同市"},{"value":"阳泉市","label":"阳泉市"},{"value":"长治市","label":"长治市"},{"value":"晋城市","label":"晋城市"},{"value":"朔州市","label":"朔州市"},{"value":"晋中市","label":"晋中市"},{"value":"运城市","label":"运城市"},{"value":"忻州市","label":"忻州市"},{"value":"临汾市","label":"临汾市"},{"value":"吕梁市","label":"吕梁市"}]},{"value":"内蒙古自治区","label":"内蒙古自治区","children":[{"value":"呼和浩特市","label":"呼和浩特市"},{"value":"包头市","label":"包头市"},{"value":"乌海市","label":"乌海市"},{"value":"赤峰市","label":"赤峰市"},{"value":"通辽市","label":"通辽市"},{"value":"鄂尔多斯市","label":"鄂尔多斯市"},{"value":"呼伦贝尔市","label":"呼伦贝尔市"},{"value":"巴彦淖尔市","label":"巴彦淖尔市"},{"value":"乌兰察布市","label":"乌兰察布市"},{"value":"兴安盟","label":"兴安盟"},{"value":"锡林郭勒盟","label":"锡林郭勒盟"},{"value":"阿拉善盟","label":"阿拉善盟"}]},{"value":"辽宁省","label":"辽宁省","children":[{"value":"沈阳市","label":"沈阳市"},{"value":"大连市","label":"大连市"},{"value":"鞍山市","label":"鞍山市"},{"value":"抚顺市","label":"抚顺市"},{"value":"本溪市","label":"本溪市"},{"value":"丹东市","label":"丹东市"},{"value":"锦州市","label":"锦州市"},{"value":"营口市","label":"营口市"},{"value":"阜新市","label":"阜新市"},{"value":"辽阳市","label":"辽阳市"},{"value":"盘锦市","label":"盘锦市"},{"value":"铁岭市","label":"铁岭市"},{"value":"朝阳市","label":"朝阳市"},{"value":"葫芦岛市","label":"葫芦岛市"}]},{"value":"吉林省","label":"吉林省","children":[{"value":"长春市","label":"长春市"},{"value":"吉林市","label":"吉林市"},{"value":"四平市","label":"四平市"},{"value":"辽源市","label":"辽源市"},{"value":"通化市","label":"通化市"},{"value":"白山市","label":"白山市"},{"value":"松原市","label":"松原市"},{"value":"白城市","label":"白城市"},{"value":"延边朝鲜族自治州","label":"延边朝鲜族自治州"}]},{"value":"黑龙江省","label":"黑龙江省","children":[{"value":"哈尔滨市","label":"哈尔滨市"},{"value":"齐齐哈尔市","label":"齐齐哈尔市"},{"value":"鸡西市","label":"鸡西市"},{"value":"鹤岗市","label":"鹤岗市"},{"value":"双鸭山市","label":"双鸭山市"},{"value":"大庆市","label":"大庆市"},{"value":"伊春市","label":"伊春市"},{"value":"佳木斯市","label":"佳木斯市"},{"value":"七台河市","label":"七台河市"},{"value":"牡丹江市","label":"牡丹江市"},{"value":"黑河市","label":"黑河市"},{"value":"绥化市","label":"绥化市"},{"value":"大兴安岭地区","label":"大兴安岭地区"}]},{"value":"江苏省","label":"江苏省","children":[{"value":"南京市","label":"南京市"},{"value":"无锡市","label":"无锡市"},{"value":"徐州市","label":"徐州市"},{"value":"常州市","label":"常州市"},{"value":"苏州市","label":"苏州市"},{"value":"南通市","label":"南通市"},{"value":"连云港市","label":"连云港市"},{"value":"淮安市","label":"淮安市"},{"value":"盐城市","label":"盐城市"},{"value":"扬州市","label":"扬州市"},{"value":"镇江市","label":"镇江市"},{"value":"泰州市","label":"泰州市"},{"value":"宿迁市","label":"宿迁市"}]},{"value":"浙江省","label":"浙江省","children":[{"value":"杭州市","label":"杭州市"},{"value":"宁波市","label":"宁波市"},{"value":"温州市","label":"温州市"},{"value":"嘉兴市","label":"嘉兴市"},{"value":"湖州市","label":"湖州市"},{"value":"绍兴市","label":"绍兴市"},{"value":"金华市","label":"金华市"},{"value":"衢州市","label":"衢州市"},{"value":"舟山市","label":"舟山市"},{"value":"台州市","label":"台州市"},{"value":"丽水市","label":"丽水市"}]},{"value":"安徽省","label":"安徽省","children":[{"value":"合肥市","label":"合肥市"},{"value":"芜湖市","label":"芜湖市"},{"value":"蚌埠市","label":"蚌埠市"},{"value":"淮南市","label":"淮南市"},{"value":"马鞍山市","label":"马鞍山市"},{"value":"淮北市","label":"淮北市"},{"value":"铜陵市","label":"铜陵市"},{"value":"安庆市","label":"安庆市"},{"value":"黄山市","label":"黄山市"},{"value":"滁州市","label":"滁州市"},{"value":"阜阳市","label":"阜阳市"},{"value":"宿州市","label":"宿州市"},{"value":"六安市","label":"六安市"},{"value":"亳州市","label":"亳州市"},{"value":"池州市","label":"池州市"},{"value":"宣城市","label":"宣城市"}]},{"value":"福建省","label":"福建省","children":[{"value":"福州市","label":"福州市"},{"value":"厦门市","label":"厦门市"},{"value":"莆田市","label":"莆田市"},{"value":"三明市","label":"三明市"},{"value":"泉州市","label":"泉州市"},{"value":"漳州市","label":"漳州市"},{"value":"南平市","label":"南平市"},{"value":"龙岩市","label":"龙岩市"},{"value":"宁德市","label":"宁德市"}]},{"value":"江西省","label":"江西省","children":[{"value":"南昌市","label":"南昌市"},{"value":"景德镇市","label":"景德镇市"},{"value":"萍乡市","label":"萍乡市"},{"value":"九江市","label":"九江市"},{"value":"新余市","label":"新余市"},{"value":"鹰潭市","label":"鹰潭市"},{"value":"赣州市","label":"赣州市"},{"value":"吉安市","label":"吉安市"},{"value":"宜春市","label":"宜春市"},{"value":"抚州市","label":"抚州市"},{"value":"上饶市","label":"上饶市"}]},{"value":"山东省","label":"山东省","children":[{"value":"济南市","label":"济南市"},{"value":"青岛市","label":"青岛市"},{"value":"淄博市","label":"淄博市"},{"value":"枣庄市","label":"枣庄市"},{"value":"东营市","label":"东营市"},{"value":"烟台市","label":"烟台市"},{"value":"潍坊市","label":"潍坊市"},{"value":"济宁市","label":"济宁市"},{"value":"泰安市","label":"泰安市"},{"value":"威海市","label":"威海市"},{"value":"日照市","label":"日照市"},{"value":"临沂市","label":"临沂市"},{"value":"德州市","label":"德州市"},{"value":"聊城市","label":"聊城市"},{"value":"滨州市","label":"滨州市"},{"value":"菏泽市","label":"菏泽市"},{"value":"莱芜市","label":"莱芜市"}]},{"value":"河南省","label":"河南省","children":[{"value":"郑州市","label":"郑州市"},{"value":"开封市","label":"开封市"},{"value":"洛阳市","label":"洛阳市"},{"value":"平顶山市","label":"平顶山市"},{"value":"安阳市","label":"安阳市"},{"value":"鹤壁市","label":"鹤壁市"},{"value":"新乡市","label":"新乡市"},{"value":"焦作市","label":"焦作市"},{"value":"濮阳市","label":"濮阳市"},{"value":"许昌市","label":"许昌市"},{"value":"漯河市","label":"漯河市"},{"value":"三门峡市","label":"三门峡市"},{"value":"南阳市","label":"南阳市"},{"value":"商丘市","label":"商丘市"},{"value":"信阳市","label":"信阳市"},{"value":"周口市","label":"周口市"},{"value":"驻马店市","label":"驻马店市"},{"value":"济源市","label":"济源市"}]},{"value":"湖北省","label":"湖北省","children":[{"value":"武汉市","label":"武汉市"},{"value":"黄石市","label":"黄石市"},{"value":"十堰市","label":"十堰市"},{"value":"宜昌市","label":"宜昌市"},{"value":"襄阳市","label":"襄阳市"},{"value":"鄂州市","label":"鄂州市"},{"value":"荆门市","label":"荆门市"},{"value":"孝感市","label":"孝感市"},{"value":"荆州市","label":"荆州市"},{"value":"黄冈市","label":"黄冈市"},{"value":"咸宁市","label":"咸宁市"},{"value":"随州市","label":"随州市"},{"value":"恩施土家族苗族自治州","label":"恩施土家族苗族自治州"},{"value":"仙桃市","label":"仙桃市"},{"value":"潜江市","label":"潜江市"},{"value":"天门市","label":"天门市"},{"value":"神农架林区","label":"神农架林区"}]},{"value":"湖南省","label":"湖南省","children":[{"value":"长沙市","label":"长沙市"},{"value":"株洲市","label":"株洲市"},{"value":"湘潭市","label":"湘潭市"},{"value":"衡阳市","label":"衡阳市"},{"value":"邵阳市","label":"邵阳市"},{"value":"岳阳市","label":"岳阳市"},{"value":"常德市","label":"常德市"},{"value":"张家界市","label":"张家界市"},{"value":"益阳市","label":"益阳市"},{"value":"郴州市","label":"郴州市"},{"value":"永州市","label":"永州市"},{"value":"怀化市","label":"怀化市"},{"value":"娄底市","label":"娄底市"},{"value":"湘西土家族苗族自治州","label":"湘西土家族苗族自治州"}]},{"value":"广东省","label":"广东省","children":[{"value":"广州市","label":"广州市"},{"value":"韶关市","label":"韶关市"},{"value":"深圳市","label":"深圳市"},{"value":"珠海市","label":"珠海市"},{"value":"汕头市","label":"汕头市"},{"value":"佛山市","label":"佛山市"},{"value":"江门市","label":"江门市"},{"value":"湛江市","label":"湛江市"},{"value":"茂名市","label":"茂名市"},{"value":"肇庆市","label":"肇庆市"},{"value":"惠州市","label":"惠州市"},{"value":"梅州市","label":"梅州市"},{"value":"汕尾市","label":"汕尾市"},{"value":"河源市","label":"河源市"},{"value":"阳江市","label":"阳江市"},{"value":"清远市","label":"清远市"},{"value":"东莞市","label":"东莞市"},{"value":"中山市","label":"中山市"},{"value":"潮州市","label":"潮州市"},{"value":"揭阳市","label":"揭阳市"},{"value":"云浮市","label":"云浮市"}]},{"value":"广西壮族自治区","label":"广西壮族自治区","children":[{"value":"南宁市","label":"南宁市"},{"value":"柳州市","label":"柳州市"},{"value":"桂林市","label":"桂林市"},{"value":"梧州市","label":"梧州市"},{"value":"北海市","label":"北海市"},{"value":"防城港市","label":"防城港市"},{"value":"钦州市","label":"钦州市"},{"value":"贵港市","label":"贵港市"},{"value":"玉林市","label":"玉林市"},{"value":"百色市","label":"百色市"},{"value":"贺州市","label":"贺州市"},{"value":"河池市","label":"河池市"},{"value":"来宾市","label":"来宾市"},{"value":"崇左市","label":"崇左市"}]},{"value":"海南省","label":"海南省","children":[{"value":"海口市","label":"海口市"},{"value":"三亚市","label":"三亚市"},{"value":"三沙市","label":"三沙市"},{"value":"儋州市","label":"儋州市"},{"value":"五指山市","label":"五指山市"},{"value":"琼海市","label":"琼海市"},{"value":"文昌市","label":"文昌市"},{"value":"万宁市","label":"万宁市"},{"value":"东方市","label":"东方市"},{"value":"定安县","label":"定安县"},{"value":"屯昌县","label":"屯昌县"},{"value":"澄迈县","label":"澄迈县"},{"value":"临高县","label":"临高县"},{"value":"白沙黎族自治县","label":"白沙黎族自治县"},{"value":"昌江黎族自治县","label":"昌江黎族自治县"},{"value":"乐东黎族自治县","label":"乐东黎族自治县"},{"value":"陵水黎族自治县","label":"陵水黎族自治县"},{"value":"保亭黎族苗族自治县","label":"保亭黎族苗族自治县"},{"value":"琼中黎族苗族自治县","label":"琼中黎族苗族自治县"}]},{"value":"四川省","label":"四川省","children":[{"value":"成都市","label":"成都市"},{"value":"自贡市","label":"自贡市"},{"value":"攀枝花市","label":"攀枝花市"},{"value":"泸州市","label":"泸州市"},{"value":"德阳市","label":"德阳市"},{"value":"绵阳市","label":"绵阳市"},{"value":"广元市","label":"广元市"},{"value":"遂宁市","label":"遂宁市"},{"value":"内江市","label":"内江市"},{"value":"乐山市","label":"乐山市"},{"value":"南充市","label":"南充市"},{"value":"眉山市","label":"眉山市"},{"value":"宜宾市","label":"宜宾市"},{"value":"广安市","label":"广安市"},{"value":"达州市","label":"达州市"},{"value":"雅安市","label":"雅安市"},{"value":"巴中市","label":"巴中市"},{"value":"资阳市","label":"资阳市"},{"value":"阿坝藏族羌族自治州","label":"阿坝藏族羌族自治州"},{"value":"甘孜藏族自治州","label":"甘孜藏族自治州"},{"value":"凉山彝族自治州","label":"凉山彝族自治州"}]},{"value":"贵州省","label":"贵州省","children":[{"value":"贵阳市","label":"贵阳市"},{"value":"六盘水市","label":"六盘水市"},{"value":"遵义市","label":"遵义市"},{"value":"安顺市","label":"安顺市"},{"value":"毕节市","label":"毕节市"},{"value":"铜仁市","label":"铜仁市"},{"value":"黔西南布依族苗族自治州","label":"黔西南布依族苗族自治州"},{"value":"黔东南苗族侗族自治州","label":"黔东南苗族侗族自治州"},{"value":"黔南布依族苗族自治州","label":"黔南布依族苗族自治州"}]},{"value":"云南省","label":"云南省","children":[{"value":"昆明市","label":"昆明市"},{"value":"曲靖市","label":"曲靖市"},{"value":"玉溪市","label":"玉溪市"},{"value":"保山市","label":"保山市"},{"value":"昭通市","label":"昭通市"},{"value":"丽江市","label":"丽江市"},{"value":"普洱市","label":"普洱市"},{"value":"临沧市","label":"临沧市"},{"value":"楚雄彝族自治州","label":"楚雄彝族自治州"},{"value":"红河哈尼族彝族自治州","label":"红河哈尼族彝族自治州"},{"value":"文山壮族苗族自治州","label":"文山壮族苗族自治州"},{"value":"西双版纳傣族自治州","label":"西双版纳傣族自治州"},{"value":"大理白族自治州","label":"大理白族自治州"},{"value":"德宏傣族景颇族自治州","label":"德宏傣族景颇族自治州"},{"value":"怒江傈僳族自治州","label":"怒江傈僳族自治州"},{"value":"迪庆藏族自治州","label":"迪庆藏族自治州"}]},{"value":"西藏自治区","label":"西藏自治区","children":[{"value":"拉萨市","label":"拉萨市"},{"value":"日喀则市","label":"日喀则市"},{"value":"昌都市","label":"昌都市"},{"value":"林芝市","label":"林芝市"},{"value":"山南市","label":"山南市"},{"value":"那曲市","label":"那曲市"},{"value":"阿里地区","label":"阿里地区"}]},{"value":"陕西省","label":"陕西省","children":[{"value":"西安市","label":"西安市"},{"value":"铜川市","label":"铜川市"},{"value":"宝鸡市","label":"宝鸡市"},{"value":"咸阳市","label":"咸阳市"},{"value":"渭南市","label":"渭南市"},{"value":"延安市","label":"延安市"},{"value":"汉中市","label":"汉中市"},{"value":"榆林市","label":"榆林市"},{"value":"安康市","label":"安康市"},{"value":"商洛市","label":"商洛市"}]},{"value":"甘肃省","label":"甘肃省","children":[{"value":"兰州市","label":"兰州市"},{"value":"嘉峪关市","label":"嘉峪关市"},{"value":"金昌市","label":"金昌市"},{"value":"白银市","label":"白银市"},{"value":"天水市","label":"天水市"},{"value":"武威市","label":"武威市"},{"value":"张掖市","label":"张掖市"},{"value":"平凉市","label":"平凉市"},{"value":"酒泉市","label":"酒泉市"},{"value":"庆阳市","label":"庆阳市"},{"value":"定西市","label":"定西市"},{"value":"陇南市","label":"陇南市"},{"value":"临夏回族自治州","label":"临夏回族自治州"},{"value":"甘南藏族自治州","label":"甘南藏族自治州"}]},{"value":"青海省","label":"青海省","children":[{"value":"西宁市","label":"西宁市"},{"value":"海东市","label":"海东市"},{"value":"海北藏族自治州","label":"海北藏族自治州"},{"value":"黄南藏族自治州","label":"黄南藏族自治州"},{"value":"海南藏族自治州","label":"海南藏族自治州"},{"value":"果洛藏族自治州","label":"果洛藏族自治州"},{"value":"玉树藏族自治州","label":"玉树藏族自治州"},{"value":"海西蒙古族藏族自治州","label":"海西蒙古族藏族自治州"}]},{"value":"宁夏回族自治区","label":"宁夏回族自治区","children":[{"value":"银川市","label":"银川市"},{"value":"石嘴山市","label":"石嘴山市"},{"value":"吴忠市","label":"吴忠市"},{"value":"固原市","label":"固原市"},{"value":"中卫市","label":"中卫市"}]},{"value":"新疆维吾尔自治区","label":"新疆维吾尔自治区","children":[{"value":"乌鲁木齐市","label":"乌鲁木齐市"},{"value":"克拉玛依市","label":"克拉玛依市"},{"value":"吐鲁番市","label":"吐鲁番市"},{"value":"哈密市","label":"哈密市"},{"value":"昌吉回族自治州","label":"昌吉回族自治州"},{"value":"博尔塔拉蒙古自治州","label":"博尔塔拉蒙古自治州"},{"value":"巴音郭楞蒙古自治州","label":"巴音郭楞蒙古自治州"},{"value":"阿克苏地区","label":"阿克苏地区"},{"value":"克孜勒苏柯尔克孜自治州","label":"克孜勒苏柯尔克孜自治州"},{"value":"喀什地区","label":"喀什地区"},{"value":"和田地区","label":"和田地区"},{"value":"伊犁哈萨克自治州","label":"伊犁哈萨克自治州"},{"value":"塔城地区","label":"塔城地区"},{"value":"阿勒泰地区","label":"阿勒泰地区"}]},{"value":"台湾省","label":"台湾省","children":[{"value":"台北市","label":"台北市"},{"value":"新北市","label":"新北市"},{"value":"桃园市","label":"桃园市"},{"value":"台中市","label":"台中市"},{"value":"台南市","label":"台南市"},{"value":"高雄市","label":"高雄市"}]},{"value":"香港特别行政区","label":"香港特别行政区","children":[{"value":"香港","label":"香港"}]},{"value":"澳门特别行政区","label":"澳门特别行政区","children":[{"value":"澳门","label":"澳门"}]}]
+// 全国三级行政区划（省 → 市 → 区），数据来自 @/data/region-data（2024 最新）
+const PROVINCE_CITY_OPTIONS = Object.keys(provinceToCities).map((prov) => ({
+  value: prov,
+  label: prov,
+  children: (provinceToCities[prov] || []).map((city) => ({
+    value: city,
+    label: city,
+    children: (cityToDistricts[city] || []).map((dist) => ({ value: dist, label: dist })),
+  })),
+}))
+
+// 市 → 省 反向映射，用于编辑时回显级联路径
+const CITY_TO_PROVINCE = {}
+for (const [prov, cities] of Object.entries(provinceToCities)) {
+  for (const c of cities) CITY_TO_PROVINCE[c] = prov
+}
 
 const cityOptions = PROVINCE_CITY_OPTIONS
 
-const regionPricesRows = ref<Array<{ city: string; price: number; _cityValue: string }>>([])
+const regionPricesRows = ref<Array<{ city: string; price: number; _cityValue: string | string[] }>>([])
+const pricingMode = ref<'nationwide' | 'regional'>('nationwide')
 
 function getRegionPricesRows() {
   const rp = form.region_prices || {}
-  regionPricesRows.value = Object.entries(rp).map(([city, price]) => ({ city, price: Number(price), _cityValue: city }))
+  // @ts-ignore
+  regionPricesRows.value = Object.entries(rp).map(([city, price]) => ({ city, price: Number(price), _cityValue: CITY_TO_PROVINCE[city] ? [CITY_TO_PROVINCE[city], city] : (city || '') }))
 }
 
 function addRegionPrice() {
@@ -442,42 +567,58 @@ async function clearAllRegionPrices() {
 // 套餐弹窗状态
 const pkgDialogVisible = ref(false)
 const pkgSaving = ref(false)
-const pkgForm = reactive<any>({ id: '', name: '', price: 0, description: '', sort: 0, images: [], region_prices: {} })
+const pkgIsEdit = ref(false)
+const pkgForm = reactive<any>({ id: '', sceneId: '', name: '', price: 0, description: '', sort: 0, images: [], region_prices: {}, sealIds: [] })
 
-// 当前 Tab 下的印章 + 套餐
-const mergedItems = computed(() => {
+// 套餐弹窗：可选印章列表（按所选场景加载，非企业路由回退全量）
+const pkgSealOptions = ref<any[]>([])
+async function loadPkgSealOptions(sceneId?: string) {
+  try {
+    if (routeType.value === 'enterprise' && sceneId) {
+      const res: any = await getSealSceneProducts(sceneId)
+      pkgSealOptions.value = Array.isArray(res?.seals) ? res.seals : []
+    } else {
+      const all: any = await getSeals()
+      pkgSealOptions.value = Array.isArray(all) ? all : (all?.items || [])
+    }
+  } catch {
+    pkgSealOptions.value = []
+  }
+}
+
+// 当前 Tab 下的印章（按 sort 排序）
+const filteredSeals = computed(() => {
   let list = seals.value
   if (routeType.value === 'enterprise' && activeSceneId.value) {
     const scene = businessCategories.value.find((c) => c.id === activeSceneId.value)
-    const sceneName = scene?.name
-    list = list.filter((s) => s._sceneName === sceneName)
+    list = list.filter((s) => s._sceneName === scene?.name)
   } else if (isPersonal.value) {
-    // 个人印章 tab = 纯签名章；个人职业印章 tab = 其余所有个人印章
-    if (activePersonalSubTab.value === '个人印章') {
-      list = list.filter((s) => s.name === '个人签名章')
-    } else {
-      list = list.filter((s) => s.name !== '个人签名章')
-    }
+    list = activePersonalSubTab.value === '个人印章'
+      ? list.filter((s) => s.name === '个人签名章')
+      : list.filter((s) => s.name !== '个人签名章')
   } else if (isElectronic.value) {
-    // 电子印章：按子 Tab 过滤
     list = list.filter((s) => getSealSubType(s.name) === activeSingleSubTab.value)
   }
+  return [...list].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+})
 
-  const pkgList = packages.value
+// 当前 Tab 下的套餐（按 sort 排序）
+const filteredPackages = computed(() => {
+  const list = packages.value
     .filter((p) => {
       if (routeType.value === 'enterprise' && activeSceneId.value) {
         const sceneName = businessCategories.value.find((c) => c.id === activeSceneId.value)?.name
         return p._sceneName === sceneName
       }
-      return true // all / single 路由全量展示
+      return true
     })
     .map((p) => ({ ...p, __isPackage: true }))
-
-  // 印章在前（按 sort 升序），套餐在后（按 sort 升序），保证视觉顺序工整
-  const sealsSorted = [...list].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-  const packagesSorted = [...pkgList].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-  return [...sealsSorted, ...packagesSorted]
+  return [...list].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
 })
+
+// 兼容旧逻辑（已废弃，由 filteredSeals + filteredPackages 替代）
+const mergedItems = computed(() => [...filteredSeals.value, ...filteredPackages.value])
+
 
 function sceneItemCount(sceneId: string): number {
   const sceneName = businessCategories.value.find((c) => c.id === sceneId)?.name
@@ -594,7 +735,7 @@ async function fetchCategoryPackages(catId: string, catName: string): Promise<an
     if (routeType.value === 'enterprise') {
       const res: any = await getSealSceneProducts(catId)
       if (!res?.packages) return []
-      return res.packages.map((p: any) => ({ ...p, categoryName: catName, _sceneName: catName }))
+      return res.packages.map((p: any) => ({ ...p, categoryName: catName, _sceneName: catName, _sceneId: p.scene_id }))
     }
     // 其他路由：套餐独立接口，全量返回
     const res: any = await getSealPackages()
@@ -602,6 +743,11 @@ async function fetchCategoryPackages(catId: string, catName: string): Promise<an
   } catch {
     return []
   }
+}
+
+function handleAddCommand(cmd: 'seal' | 'package') {
+  if (cmd === 'seal') showDialog('add')
+  else openPkgDialog()
 }
 
 function showDialog(type: string, row?: any) {
@@ -614,6 +760,7 @@ function showDialog(type: string, row?: any) {
     else ctxSceneId = activeSceneId.value || ''
     Object.assign(form, { ...row, sceneId: ctxSceneId, sealCategoryId: row.seal_categories?.id || '' })
     getRegionPricesRows()
+    pricingMode.value = Object.keys(form.region_prices || {}).length > 0 ? 'regional' : 'nationwide'
   } else {
     // 新增：预选当前所属场景（企业=当前 Tab；个人/电子=对应场景）
     let defaultSceneId = ''
@@ -622,6 +769,7 @@ function showDialog(type: string, row?: any) {
     else defaultSceneId = activeSceneId.value || ''
     Object.assign(form, { name: '', sceneId: defaultSceneId, sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
     regionPricesRows.value = []
+    pricingMode.value = 'nationwide'
   }
   dialogVisible.value = true
 }
@@ -630,10 +778,12 @@ async function saveSeal() {
   if (!form.name) { ElMessage.warning('请填写印章名称'); return }
   saving.value = true
   try {
-    // 从行编辑数据还原 region_prices 对象
+    // 从行编辑数据还原 region_prices 对象（全国价模式强制清空，仅用基准价）
     const region_prices: Record<string, number> = {}
-    for (const row of regionPricesRows.value) {
-      if (row.city.trim()) region_prices[row.city.trim()] = row.price
+    if (pricingMode.value === 'regional') {
+      for (const row of regionPricesRows.value) {
+        if (row.city.trim()) region_prices[row.city.trim()] = row.price
+      }
     }
 
     if (isEdit.value) {
@@ -677,22 +827,46 @@ async function handleDelete(row: any) {
 
 // 套餐相关
 function showPkgDialog(row: any) {
+  pkgIsEdit.value = true
   pkgForm.id = row.id
+  pkgForm.sceneId = row._sceneId || ''
   pkgForm.name = row.name
   pkgForm.price = Number(row.price) || 0
   pkgForm.description = row.description || ''
   pkgForm.sort = row.sort ?? 0
+  pkgForm.sealIds = Array.isArray(row.seal_ids) ? [...row.seal_ids] : []
+  loadPkgSealOptions(pkgForm.sceneId)
   pkgForm.images = Array.isArray(row.images) ? [...row.images] : []
   pkgForm.region_prices = row.region_prices || {}
   getPkgRegionPricesRows()
+  pkgPricingMode.value = Object.keys(pkgForm.region_prices || {}).length > 0 ? 'regional' : 'nationwide'
+  pkgDialogVisible.value = true
+}
+
+function openPkgDialog() {
+  pkgIsEdit.value = false
+  pkgForm.id = ''
+  pkgForm.sceneId = routeType.value === 'enterprise' ? (activeSceneId.value || '') : ''
+  pkgForm.name = ''
+  pkgForm.price = 0
+  pkgForm.description = ''
+  pkgForm.sort = 0
+  pkgForm.sealIds = []
+  loadPkgSealOptions(pkgForm.sceneId)
+  pkgForm.images = []
+  pkgForm.region_prices = {}
+  pkgRegionPricesRows.value = []
+  pkgPricingMode.value = 'nationwide'
   pkgDialogVisible.value = true
 }
 
 // 套餐城市差异化定价
-const pkgRegionPricesRows = ref<Array<{ city: string; price: number; _cityValue: string }>>([])
+const pkgRegionPricesRows = ref<Array<{ city: string; price: number; _cityValue: string | string[] }>>([])
+const pkgPricingMode = ref<'nationwide' | 'regional'>('nationwide')
 function getPkgRegionPricesRows() {
   const rp = pkgForm.region_prices || {}
-  pkgRegionPricesRows.value = Object.entries(rp).map(([city, price]) => ({ city, price: Number(price), _cityValue: city }))
+  // @ts-ignore
+  pkgRegionPricesRows.value = Object.entries(rp).map(([city, price]) => ({ city, price: Number(price), _cityValue: CITY_TO_PROVINCE[city] ? [CITY_TO_PROVINCE[city], city] : (city || '') }))
 }
 function addPkgRegionPrice() {
   pkgRegionPricesRows.value.push({ city: '', price: 0, _cityValue: '' })
@@ -720,20 +894,35 @@ function buildPkgRegionPrices() {
 
 async function savePkg() {
   if (!pkgForm.name) { ElMessage.warning('请填写套餐名称'); return }
-  console.log('[DEBUG] savePkg images:', JSON.stringify(pkgForm.images))
+  if (!Array.isArray(pkgForm.sealIds) || pkgForm.sealIds.length === 0) { ElMessage.warning('请选择套餐包含的印章'); return }
   pkgSaving.value = true
   try {
-    await updatePackage(pkgForm.id, {
+    const sceneIds = routeType.value === 'enterprise' && pkgForm.sceneId ? [pkgForm.sceneId] : []
+    const __DEBUG_SAVE_PKG_FIX__ = 'DEBUG_ACTIVE_SCENE_ID_REFRESH'; const targetSceneId = pkgForm.sceneId || defaultCategory.value // 记录保存到了哪个场景，用于后续刷新
+    const payload = {
       name: pkgForm.name,
       price: pkgForm.price,
       description: pkgForm.description,
       sort: pkgForm.sort,
       images: pkgForm.images,
-      region_prices: buildPkgRegionPrices(),
-    })
-    ElMessage.success('保存成功')
+      region_prices: pkgPricingMode.value === 'regional' ? buildPkgRegionPrices() : {},
+      scene_ids: sceneIds,
+      seal_ids: pkgForm.sealIds,
+    }
+    if (pkgIsEdit.value) {
+      await updatePackage(pkgForm.id, payload)
+    } else {
+      await createPackage(payload)
+    }
+    ElMessage.success(pkgIsEdit.value ? '保存成功' : '创建成功')
     pkgDialogVisible.value = false
-    await fetchSealsByCategory(defaultCategory.value)
+    if (routeType.value === 'enterprise') {
+      // 切换到套餐所属的 Tab 并刷新，否则套餐会"消失"
+      activeSceneId.value = targetSceneId
+      await fetchSealsByCategory(targetSceneId)
+    } else {
+      await fetchSealsByCategory(defaultCategory.value)
+    }
   } finally {
     pkgSaving.value = false
   }
@@ -741,17 +930,13 @@ async function savePkg() {
 
 async function uploadPkg(file: File) {
   try {
-    console.log('[DEBUG] uploadPkg called, file:', file?.name)
     const res: any = await (uploadImage as any)(file)
-    console.log('[DEBUG] uploadPkg response:', JSON.stringify(res))
     const url = res?.url || ''
     if (!url) { ElMessage.error('上传失败：未获取到文件地址'); return }
     if (!pkgForm.images) pkgForm.images = []
     pkgForm.images.push(url)
-    console.log('[DEBUG] uploadPkg images now:', JSON.stringify(pkgForm.images))
     ElMessage.success('上传成功')
   } catch (err: any) {
-    console.error('[DEBUG] uploadPkg error:', err?.response?.data || err.message)
     ElMessage.error('上传失败')
   }
 }
@@ -1143,6 +1328,33 @@ watch(activeSceneId, async (newId, oldId) => {
 /* ===== 对话框遮罩：打开时背景 Tab 不高亮 ===== */
 .el-dialog {
   z-index: 2000 !important;
+}
+
+/* ===== 分区标题 ===== */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+  border-left: 3px solid #409eff;
+}
+.section-header--mt {
+  margin-top: 24px;
+}
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+.section-count {
+  font-size: 12px;
+  color: #909399;
+  background: #e6e8eb;
+  padding: 1px 8px;
+  border-radius: 10px;
 }
 </style>
 
