@@ -228,8 +228,8 @@
             <el-option v-for="c in personalCategories" :key="c.id" :label="c.name" :value="c.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="分类" required v-else>
-          <el-select v-model="form.sceneId" placeholder="选择分类" :disabled="isElectronic">
+        <el-form-item label="分类" v-if="routeType === 'enterprise'" required>
+          <el-select v-model="form.sceneId" placeholder="选择分类（必填）" :disabled="isElectronic">
             <el-option v-for="c in sceneOptions" :key="c.id" :label="c.name" :value="c.id" />
           </el-select>
         </el-form-item>
@@ -308,7 +308,7 @@
     <!-- 编辑套餐对话框 -->
     <el-dialog v-model="pkgDialogVisible" :title="pkgIsEdit ? '编辑套餐' : '添加套餐'" width="720px">
       <el-form :model="pkgForm" label-width="120px">
-        <el-form-item label="所属场景" v-if="routeType === 'enterprise'">
+        <el-form-item label="所属场景" v-if="routeType === 'enterprise'" required>
           <el-select v-model="pkgForm.sceneId" placeholder="选择套餐所属场景（必填）" style="width:100%" clearable @change="loadPkgSealOptions">
             <el-option
               v-for="cat in businessCategories"
@@ -776,6 +776,7 @@ function showDialog(type: string, row?: any) {
 
 async function saveSeal() {
   if (!form.name) { ElMessage.warning('请填写印章名称'); return }
+  if (routeType.value === 'enterprise' && !form.sceneId) { ElMessage.warning('请选择印章所属分类'); return }
   saving.value = true
   try {
     // 从行编辑数据还原 region_prices 对象（全国价模式强制清空，仅用基准价）
@@ -894,6 +895,7 @@ function buildPkgRegionPrices() {
 
 async function savePkg() {
   if (!pkgForm.name) { ElMessage.warning('请填写套餐名称'); return }
+  if (routeType.value === 'enterprise' && !pkgForm.sceneId) { ElMessage.warning('请选择套餐所属场景'); return }
   if (!Array.isArray(pkgForm.sealIds) || pkgForm.sealIds.length === 0) { ElMessage.warning('请选择套餐包含的印章'); return }
   pkgSaving.value = true
   try {
