@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <div class="page-header">
       <h2>印章管理</h2>
@@ -49,13 +49,13 @@
         v-model="activePersonalSubTab"
         class="scene-tabs"
       >
-        <el-tab-pane name="个人印章">
+        <el-tab-pane name="personal">
           <template #label>
             <span class="tab-label">
               个人印章
               <el-badge
-                v-if="personalSubCount('个人印章') > 0"
-                :value="personalSubCount('个人印章')"
+                v-if="personalSealCount > 0"
+                :value="personalSealCount"
                 :max="99"
                 class="tab-badge"
                 type="primary"
@@ -63,13 +63,13 @@
             </span>
           </template>
         </el-tab-pane>
-        <el-tab-pane name="个人职业印章">
+        <el-tab-pane name="professional">
           <template #label>
             <span class="tab-label">
               个人职业印章
               <el-badge
-                v-if="personalSubCount('个人职业印章') > 0"
-                :value="personalSubCount('个人职业印章')"
+                v-if="professionalSealCount > 0"
+                :value="professionalSealCount"
                 :max="99"
                 class="tab-badge"
                 type="primary"
@@ -286,14 +286,15 @@
         </el-form-item>
         <el-form-item label="图片" label-width="60px">
           <el-upload
+            ref="sealUploadRef"
             :show-file-list="false"
             :before-upload="beforeUpload"
             :http-request="uploadSeal"
             class="seal-image-uploader"
           >
             <div v-if="form.image" class="image-preview-wrapper">
-              <el-image :src="form.image" style="width: 80px; height: 80px; border-radius: 8px" />
-              <div class="image-overlay">更换</div>
+              <img :src="form.image" style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; display: block;" />
+              <div class="image-overlay" @click.stop="triggerSealUpload">更换</div>
             </div>
             <el-button v-else type="primary" plain size="small">上传图片</el-button>
           </el-upload>
@@ -391,8 +392,8 @@
         <el-form-item label="图片">
           <div class="pkg-images-list">
             <div v-for="(img, idx) in pkgForm.images" :key="idx" class="image-preview-wrapper">
-              <el-image :src="img" style="width: 100px; height: 100px; border-radius: 8px" />
-              <div class="image-overlay" @click="removePkgImage(idx)">删除</div>
+              <img :src="img" style="width: 100px; height: 100px; border-radius: 8px; object-fit: cover; display: block;" />
+              <div class="image-overlay" @click.stop="removePkgImage(idx)">删除</div>
             </div>
             <el-upload
               :show-file-list="false"
@@ -453,14 +454,11 @@ const defaultCategory = computed(() => {
   return '__ALL_BUSINESS__'
 })
 
-// 个人印章子分类（旧 SealCategory）：优先从个人场景已有印章的类目动态汇总，空场景时回退已知两类
-const personalCategories = computed<{ id: string; name: string }[]>(() => {
-  const map = new Map<string, { id: string; name: string }>()
-  for (const s of seals.value) {
-    if (s.seal_categories?.id && s.seal_categories?.name) map.set(s.seal_categories.id, { id: s.seal_categories.id, name: s.seal_categories.name })
-  }
-  return map.size > 0 ? [...map.values()] : []
-})
+// 个人印章子分类（硬编码，不再动态计算）
+const personalCategories = [
+  { id: '__personal__', name: '个人印章' },
+  { id: '__professional__', name: '个人职业印章' },
+]
 
 // 对话框「分类」下拉候选：企业=8 大业务场景；电子=单一电子场景（禁用）；个人走子分类（不展示本下拉）
 const sceneOptions = computed(() => {
@@ -469,7 +467,7 @@ const sceneOptions = computed(() => {
   return businessCategories.value
 })
 
-// 电子印章子类型（Tab 分类）
+// 电子印章子类型（Tab 分类，硬编码）
 const ELECTRONIC_SUB_TYPES = [
   { label: '电子公章', prefix: '电子公章' },
   { label: '电子财务章', prefix: '电子财务章' },
@@ -511,10 +509,11 @@ const loading = ref(false)
 
 const activeSceneId = ref('')        // enterprise 路由：当前选中的场景
 const activeSingleTab = ref('')       // single 路由：Tab name（等于 defaultCategory）
-const activePersonalSubTab = ref('个人印章')  // single 路由 + 个人场景：子 Tab（个人印章 / 个人职业印章）
+const activePersonalSubTab = ref('personal')  // single 路由 + 个人场景：子 Tab（个人印章 / 个人职业印章）
 const activeSingleSubTab = ref('电子公章')    // single 路由 + 电子场景：子 Tab（电子公章 / …）
 
 const dialogVisible = ref(false)
+const sealUploadRef = ref<any>(null)
 const saving = ref(false)
 const isEdit = ref(false)
 const form = reactive<any>({ name: '', sceneId: '', sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
@@ -628,24 +627,20 @@ function sceneItemCount(sceneId: string): number {
 }
 
 // 个人场景：子分组计数
-function personalSubCount(subName: string): number {
-  if (subName === '个人印章') return seals.value.filter((s) => s.name === '个人签名章').length
-  return seals.value.filter((s) => s.name !== '个人签名章').length
-}
+// 个人印章 Tab 数量（动态计算，不再硬编码子分类名）
+const personalSealCount = computed(() => seals.value.filter((s) => s.name === '个人签名章').length)
+const professionalSealCount = computed(() => seals.value.filter((s) => s.name !== '个人签名章').length)
 
 // 单路由（个人 + 电子）子 Tab 计数
-function singleSubCount(subName: string): number {
-  if (isPersonal.value) {
-    return personalSubCount(subName)
-  } else if (isElectronic.value) {
-    return seals.value.filter((s) => getSealSubType(s.name) === subName).length
-  }
-  return 0
+// 电子印章 Tab 数量（基于动态 electronicSubTypesMap）
+function singleSubCount(label: string): number {
+  const st = ELECTRONIC_SUB_TYPES.find(st => st.label === label)
+  if (!st) return 0
+  return seals.value.filter(s => s.name.startsWith(st.prefix)).length
 }
 
-async function fetchCategories() {
-  // seal_scenes（8 条）→ enterprise 场景主源
-  // seal_categories 中 name='个人印章'/'电子印章' 的项 → 补充 personalScene/electronicScene
+// seal_categories 中 name='个人印章'/'电子印章' 的项 → 补充 personalScene/electronicScene
+async function fetchAllCategories() {
   const [catRes, sceneRes] = await Promise.all([
     getSealCategories().catch(() => []),
     getAdminScenes().catch(() => []),
@@ -985,6 +980,13 @@ async function uploadSeal(options: any) {
   }
 }
 
+function triggerSealUpload() {
+  // 清除已选文件状态，重新触发系统文件选择对话框
+  sealUploadRef.value?.clearFiles()
+  const input = sealUploadRef.value?.$refs.input as HTMLInputElement | undefined
+  if (input) input.click()
+}
+
 // 业务场景（8 大场景）：sceneType==='scene'
 const businessCategories = computed(() => categories.value.filter((c) => c.sceneType === 'scene'))
 
@@ -993,7 +995,7 @@ const sealCategories = ref<any[]>([])
 
 // 初始化
 onMounted(async () => {
-  await fetchCategories()
+  await fetchAllCategories()
   await fetchSealsByCategory(defaultCategory.value)
   // single 路由：Tab name 同步为 defaultCategory
   if (routeType.value === 'single') {

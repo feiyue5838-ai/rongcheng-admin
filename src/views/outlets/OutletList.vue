@@ -135,7 +135,7 @@
             <el-button type="primary" plain><el-icon><Plus /></el-icon> 上传营业执照</el-button>
           </el-upload>
           <div v-else class="license-preview">
-            <el-image :src="form.businessLicense" :preview-src-list="[form.businessLicense]" fit="cover" style="width:100px;height:100px;border-radius:8px" />
+            <img :src="form.businessLicense" fit="cover" style="width:100px;height:100px;border-radius:8px;object-fit:cover;display:block;" />
             <el-button type="danger" link size="small" @click="form.businessLicense = ''">移除</el-button>
           </div>
         </el-form-item>
