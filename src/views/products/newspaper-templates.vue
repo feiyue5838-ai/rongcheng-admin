@@ -99,6 +99,9 @@
               <el-dropdown-item command="cat">
                 <span>🏷️</span> 添加分类
               </el-dropdown-item>
+              <el-dropdown-item command="subs">
+                <span>📁</span> 管理子分类
+              </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -378,6 +381,68 @@
       <el-button type="primary" @click="confirmBatchCat">确认修改</el-button>
     </template>
   </el-dialog>
+
+  <!-- ===== 子分类管理弹窗 ===== -->
+  <el-dialog
+    v-model="subsDialogVisible"
+    title="📁 子分类管理"
+    width="760px"
+    :close-on-click-modal="false"
+  >
+    <el-form label-width="80px">
+      <el-form-item label="所属分类" :required="true">
+        <el-select v-model="subsCatId" placeholder="选择分类" style="width:100%" filterable @change="onSubsCatChange">
+          <el-option v-for="c in categoryList" :key="c.id" :label="c.name" :value="c.id" />
+        </el-select>
+      </el-form-item>
+    </el-form>
+
+    <el-table :data="editSubs" border size="small" max-height="400">
+      <el-table-column label="排序" width="80">
+        <template #default="{ $index }">
+          <el-input-number
+            v-model="editSubs[$index].sort"
+            :min="0" :max="999"
+            size="small" controls-position="right"
+            style="width:64px"
+          />
+        </template>
+      </el-table-column>
+      <el-table-column label="Key" width="170">
+        <template #default="{ row }">
+          <el-input v-model="row.key" size="small" placeholder="英文标识" />
+        </template>
+      </el-table-column>
+      <el-table-column label="名称" min-width="150">
+        <template #default="{ row }">
+          <el-input v-model="row.name" size="small" placeholder="显示名称" />
+        </template>
+      </el-table-column>
+      <el-table-column label="颜色" width="90">
+        <template #default="{ row }">
+          <el-color-picker v-model="row.color" size="small" />
+        </template>
+      </el-table-column>
+      <el-table-column label="热门" width="60">
+        <template #default="{ row }">
+          <el-checkbox v-model="row.hot" />
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="70" align="center">
+        <template #default="{ $index }">
+          <el-button type="danger" size="small" icon="el-icon-delete" @click="removeSub($index)" />
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <div style="margin-top:12px;display:flex;align-items:center;gap:12px;">
+      <el-button type="primary" plain size="small" @click="addSub">+ 添加子分类</el-button>
+      <span style="font-size:12px;color:#999;">共 {{ editSubs.length }} 个子分类</span>
+      <div style="flex:1"></div>
+      <el-button @click="subsDialogVisible = false">取消</el-button>
+      <el-button type="primary" :loading="subsSaving" @click="saveSubs">保存修改</el-button>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
@@ -635,6 +700,69 @@ async function saveUnified() {
   }
 }
 
+// ===== 子分类管理弹窗 =====
+const subsDialogVisible = ref(false)
+const subsCatId = ref('')
+const editSubs = ref<any[]>([])
+const subsSaving = ref(false)
+
+function openSubsDialog() {
+  // 默认选中当前筛选分类，否则第一个分类
+  subsCatId.value = filterCatId.value || categoryList.value[0]?.id || ''
+  syncEditSubs()
+  subsDialogVisible.value = true
+}
+
+function syncEditSubs() {
+  const cat = categoryList.value.find(c => c.id === subsCatId.value)
+  editSubs.value = (cat?.subTypes || []).map((s: any) => ({ ...s }))
+}
+
+function onSubsCatChange() {
+  syncEditSubs()
+}
+
+function addSub() {
+  editSubs.value.push({
+    key: 'new_' + Date.now(),
+    name: '新子分类',
+    color: '#5B6FE8',
+    hot: false,
+    sort: editSubs.value.length,
+  })
+}
+
+function removeSub(index: number) {
+  editSubs.value.splice(index, 1)
+}
+
+async function saveSubs() {
+  const cat = categoryList.value.find(c => c.id === subsCatId.value)
+  if (!cat) {
+    ElMessage.warning('请先选择分类')
+    return
+  }
+  const keys = editSubs.value.map(s => s.key)
+  if (new Set(keys).size !== keys.length) {
+    ElMessage.warning('Key 不能重复')
+    return
+  }
+  subsSaving.value = true
+  try {
+    await updateNewspaperCategory(subsCatId.value, {
+      name: cat.name,
+      sub_types: editSubs.value,
+    })
+    ElMessage.success('保存成功')
+    await reloadAll()
+    syncEditSubs()
+  } catch (e: any) {
+    ElMessage.error('保存失败: ' + (e.message || e))
+  } finally {
+    subsSaving.value = false
+  }
+}
+
 // ===== 批量改分类 =====
 const batchCatDialogVisible = ref(false)
 const batchNewCatId = ref('')
@@ -691,6 +819,8 @@ function handleAddCommand(cmd: string) {
     unifiedType.value = 'cat'
     unifiedForm.value = { catId: '', name: '', desc: '', color: '#5B6FE8', sort: 0 }
     unifiedDialogVisible.value = true
+  } else if (cmd === 'subs') {
+    openSubsDialog()
   }
 }
 

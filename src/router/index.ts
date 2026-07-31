@@ -53,7 +53,6 @@ const router = createRouter({
         // 报纸管理 - 统一入口
         { path: 'products/newspapers', name: 'Newspapers', component: () => import('@/views/products/newspapers.vue'), meta: { title: '报纸仓库' } },
         { path: 'products/newspaper-templates', name: 'NewspaperTemplates', component: () => import('@/views/products/newspaper-templates.vue'), meta: { title: '公告模板管理' } },
-        { path: 'products/sub-types', name: 'SubTypes', component: () => import('@/views/products/sub-types.vue'), meta: { title: '子分类管理' } },
         // 代理记账管理
         { path: 'products/bookkeeping-packages', name: 'BookkeepingPackages', component: () => import('@/views/products/bookkeeping-packages.vue'), meta: { title: '代理记账套餐配置' } },
         // 兼容旧分类路由，重定向到统一入口

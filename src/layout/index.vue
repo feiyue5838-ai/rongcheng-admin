@@ -51,7 +51,6 @@
             <template #title><span>登报管理</span></template>
             <el-menu-item index="/products/newspapers">报纸仓库</el-menu-item>
             <el-menu-item index="/products/newspaper-templates">公告模板</el-menu-item>
-            <el-menu-item index="/products/sub-types">子分类管理</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="bookkeepingMgmt">
             <template #title><span>代理记账管理</span></template>
