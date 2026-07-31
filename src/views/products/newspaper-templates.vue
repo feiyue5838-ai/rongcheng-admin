@@ -70,7 +70,8 @@
           v-model="filterSubKey"
           placeholder="全部子分组"
           clearable
-          style="width: 180px"
+          filterable
+          style="width: 200px"
           @change="handleSubChange"
         >
           <el-option label="全部子分组" value="" />
