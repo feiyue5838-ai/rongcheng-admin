@@ -244,7 +244,11 @@ async function onConfirmAccept() {
   try {
     await fetch(`/api/orders/${currentOrder.value.orderId}/accept`, {
       method: 'PUT',
-      headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ outletId: selectedOutlet.value }),
     })
     ElMessage.success('接单成功')
     acceptDialogVisible.value = false
@@ -278,6 +282,7 @@ async function onConfirmComplete() {
         expressNo: completeForm.expressNo,
         remark: completeForm.remark,
         receipts: [],
+        outletId: selectedOutlet.value,
       }),
     })
     ElMessage.success('交货成功')

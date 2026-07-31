@@ -327,8 +327,15 @@ async function onSubmit() {
   submitting.value = true
   try {
     const payload = {
-      ...form,
-      specialPermits: permitFiles.value
+      name: form.name,
+      contact: form.contact,
+      phone: form.phone,
+      province: form.province,
+      city: form.city,
+      address: form.address,
+      status: form.status,
+      business_license: form.businessLicense,
+      special_permits: permitFiles.value
         .filter(f => f.response?.url || f.url)
         .map(f => f.response?.url || f.url),
     }

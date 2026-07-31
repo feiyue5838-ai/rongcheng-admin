@@ -120,14 +120,18 @@
         </el-table-column>
 
         <!-- 订单号 -->
-        <el-table-column label="订单号" prop="order.orderNo" width="200" sortable>
+        <el-table-column label="订单号" prop="seal_orders.order_no" width="200" sortable>
           <template #default="{ row }">
-            <span class="order-no">{{ row.order?.orderNo || '-' }}</span>
+            <span class="order-no">{{ row.seal_orders?.order_no || '-' }}</span>
           </template>
         </el-table-column>
 
         <!-- 公司名 -->
-        <el-table-column label="公司名称" prop="order.companyName" min-width="160" show-overflow-tooltip />
+        <el-table-column label="公司名称" prop="seal_orders.company_name" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.seal_orders?.company_name || '-' }}
+          </template>
+        </el-table-column>
 
         <!-- 类型 -->
         <el-table-column label="类型" width="100" align="center">
@@ -152,9 +156,9 @@
         <!-- 快递信息 -->
         <el-table-column label="快递信息" min-width="160">
           <template #default="{ row }">
-            <span v-if="row.order?.expressCompany" class="express-info">
-              {{ row.order.expressCompany }}
-              <span v-if="row.order?.expressNo" class="express-no">{{ row.order.expressNo }}</span>
+            <span v-if="row.seal_orders?.express_company" class="express-info">
+              {{ row.seal_orders.express_company }}
+              <span v-if="row.seal_orders?.express_no" class="express-no">{{ row.seal_orders.express_no }}</span>
             </span>
             <span v-else class="muted">-</span>
           </template>

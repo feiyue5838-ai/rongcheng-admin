@@ -22,6 +22,7 @@
       <el-select v-model="module" placeholder="模块" style="width:140px" clearable @change="loadData">
         <el-option label="刻章" value="seal" />
         <el-option label="登报" value="newspaper" />
+        <el-option label="代理记账" value="bookkeeping" />
       </el-select>
       <el-button type="primary" @click="loadData">搜索</el-button>
     </div>
@@ -36,12 +37,18 @@
         <div v-for="item in tableData" :key="item.id" class="order-card">
           <div class="card-header">
             <span class="order-no">{{ item.orderNo }}</span>
-            <el-tag :type="item.module === 'seal' ? '' : 'success'" size="small">{{ item.module === 'seal' ? '刻章' : '登报' }}</el-tag>
+            <el-tag :type="getModuleTagType(item.module)" size="small">{{ getModuleLabel(item.module) }}</el-tag>
           </div>
           <div class="card-body">
             <div class="info-row"><span class="label">公司名称：</span>{{ item.companyName || '-' }}</div>
-            <div class="info-row"><span class="label">印章类型：</span>{{ item.type }}</div>
+            <div class="info-row"><span class="label">业务类型：</span>{{ item.type }}</div>
             <div class="info-row"><span class="label">联系电话：</span>{{ item.contactPhone || '-' }}</div>
+            <div class="info-row"><span class="label">服务区域：</span>{{ item.serviceRegion || formatAddress(item.addressJson) || '-' }}</div>
+            <div v-if="item.customerAddress" class="info-row">
+              <span class="label">客户地址：</span>
+              <span style="color:#333">{{ item.customerAddress.fullAddress }}</span>
+              <span style="color:#666;margin-left:8px">({{ item.customerAddress.contact }} {{ item.customerAddress.phone }})</span>
+            </div>
             <div class="info-row"><span class="label">订单金额：</span><span style="color:#5B6FE8;font-weight:600">¥{{ item.payPrice || item.totalPrice }}</span></div>
             <div class="info-row"><span class="label">下单时间：</span>{{ formatDate(item.createdAt) }}</div>
           </div>
@@ -146,6 +153,27 @@ function getAssignmentText(status) {
   const map = { 0: '未分配', 1: '已分配', 2: '制作中', 3: '已完成' }
   return map[status] || '未知'
 }
+function getModuleLabel(module) {
+  const map = { seal: '刻章', newspaper: '登报', bookkeeping: '代理记账' }
+  return map[module] || module
+}
+function getModuleTagType(module) {
+  const map = { seal: '', newspaper: 'success', bookkeeping: 'warning' }
+  return map[module] || 'info'
+}
+function formatAddress(addressJson) {
+  if (!addressJson) return '-'
+  try {
+    const addr = typeof addressJson === 'string' ? JSON.parse(addressJson) : addressJson
+    if (addr.province && addr.city) return `${addr.province} ${addr.city}`
+    if (addr.province) return addr.province
+    if (addr.city) return addr.city
+    if (addr.detail) return addr.detail.substring(0, 20)
+    return '-'
+  } catch {
+    return '-'
+  }
+}
 
 async function loadData() {
   loading.value = true
@@ -172,7 +200,12 @@ async function openAssignDialog(order) {
   assignForm.remark = ''
   try {
     const res = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
-    outlets.value = res.list
+    const all = res.list || []
+    // 推荐网点排前面
+    const recommendedIds = new Set((order.recommendedOutlets || []).map(o => o.id))
+    const recommended = all.filter(o => recommendedIds.has(o.id))
+    const others = all.filter(o => !recommendedIds.has(o.id))
+    outlets.value = [...recommended, ...others]
   } catch {
     ElMessage.error('加载网点列表失败')
   }
