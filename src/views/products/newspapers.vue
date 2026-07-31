@@ -109,6 +109,18 @@
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :min="0" style="width: 100%" />
         </el-form-item>
+        <el-form-item label="报纸别名">
+          <el-input v-model="form.alias" placeholder="如：北晚" />
+        </el-form-item>
+        <el-form-item label="出版社">
+          <el-input v-model="form.publisher" placeholder="如：北京日报出版社" />
+        </el-form-item>
+        <el-form-item label="覆盖范围">
+          <el-input v-model="form.coverage" placeholder="如：全国发行" />
+        </el-form-item>
+        <el-form-item label="封面图">
+          <el-input v-model="form.image" placeholder="图片URL" />
+        </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="form.description" type="textarea" rows="2" />
         </el-form-item>
@@ -123,7 +135,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { getNewspapers, getNewspaperCategories, createNewspaper, updateNewspaper, deleteNewspaper } from '@/api'
+import { getAllNewspapers, getNewspaperCategories, createNewspaper, updateNewspaper, deleteNewspaper } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 // ============ 行政区划数据（与小程序 region-data.js 对齐）============
@@ -257,8 +269,13 @@ const form = reactive<any>({
   level: 1,
   pricePerWord: 0.5,
   minWords: 50,
+  alias: '',
+  publisher: '',
+  coverage: '',
+  image: '',
   description: '',
   sort: 0,
+  status: 1,
 })
 
 // 当前省份下的城市列表
@@ -279,8 +296,8 @@ async function fetchNewspapers() {
   loading.value = true
   try {
     // 一次性拉全量，前端过滤 + 统计
-    const res: any = await getNewspapers({})
-    allNewspapers.value = res || []
+    const res: any = await getAllNewspapers()
+    allNewspapers.value = res.list || []
   } finally {
     loading.value = false
   }
@@ -325,8 +342,13 @@ function showDialog(type: string, row?: any) {
       level: row.level || 1,
       pricePerWord: parseFloat(row.pricePerWord) || 0.5,
       minWords: row.minWords || 50,
+      alias: row.alias || '',
+      publisher: row.publisher || '',
+      coverage: row.coverage || '',
+      image: row.image || '',
       description: row.description || '',
       sort: row.sort || 0,
+      status: row.status ?? 1,
     })
   } else {
     Object.assign(form, {
@@ -338,8 +360,13 @@ function showDialog(type: string, row?: any) {
       level: 1,
       pricePerWord: 0.5,
       minWords: 50,
+      alias: '',
+      publisher: '',
+      coverage: '',
+      image: '',
       description: '',
       sort: 0,
+      status: 1,
     })
   }
   dialogVisible.value = true
@@ -363,8 +390,13 @@ async function saveNewspaper() {
       level: form.level,
       pricePerWord: form.pricePerWord,
       minWords: form.minWords,
+      alias: form.alias || null,
+      publisher: form.publisher || null,
+      coverage: form.coverage || null,
+      image: form.image || null,
       description: form.description,
       sort: form.sort,
+      status: form.status ?? 1,
     }
     if (isEdit.value) {
       await updateNewspaper(form.id, data)
@@ -395,7 +427,7 @@ async function toggleStatus(row: any) {
 
 onMounted(async () => {
   const res: any = await getNewspaperCategories()
-  categories.value = res || []
+  categories.value = res.value || res.data?.list || res.list || res || []
   fetchNewspapers()
 })
 </script>
