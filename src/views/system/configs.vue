@@ -129,7 +129,7 @@ async function saveConfig(group: string, config: any) {
     }
     ElMessage.success('保存成功')
   } catch (e) {
-    ElMessage.error('保存失败')
+    ElMessage.error('保存失败: ' + (e as any)?.message || String(e))
   }
 }
 

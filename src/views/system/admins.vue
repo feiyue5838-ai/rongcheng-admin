@@ -7,7 +7,7 @@
         <el-table-column prop="username" label="用户名" />
         <el-table-column prop="nickname" label="昵称" />
         <el-table-column prop="role" label="角色" width="100">
-          <template #default="{ row }"><el-tag size="small">{{ row.role==='superadmin'?'超级管理员':'普通管理员' }}</el-tag></template>
+          <template #default="{ row }"><el-tag size="small" :type="row.role==='superadmin'?'danger':'primary'">{{ row.role==='superadmin'?'超级管理员':'普通管理员' }}</el-tag></template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }"><el-tag :type="row.status===1?'success':'danger'" size="small">{{ row.status===1?'正常':'禁用' }}</el-tag></template>
@@ -33,7 +33,7 @@
         <el-form-item label="角色">
           <el-radio-group v-model="form.role"><el-radio label="admin">普通管理员</el-radio><el-radio label="super">超级管理员</el-radio></el-radio-group>
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item label="状态" v-if="isEdit">
           <el-switch v-model="form.status" :active-value="1" :inactive-value="0" />
         </el-form-item>
       </el-form>
