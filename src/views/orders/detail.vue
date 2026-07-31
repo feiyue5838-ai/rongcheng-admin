@@ -33,8 +33,8 @@
             <template v-if="showParsedRemark">
               <div class="remark-json">
                 <div v-for="(val, key) in parsedRemark" :key="key" class="remark-item">
-                  <span class="remark-key">{{ remarkLabel(key) }}:</span>
-                  <span class="remark-val">{{ formatRemarkValue(key, val) }}</span>
+                  <span class="remark-key">{{ remarkLabel(String(key)) }}:</span>
+                  <span class="remark-val">{{ formatRemarkValue(String(key), val) }}</span>
                 </div>
               </div>
             </template>

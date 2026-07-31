@@ -174,8 +174,8 @@ async function fetchOrders() {
   try {
     const params: any = { page: query.page, pageSize: query.pageSize }
     if (query.module) params.module = query.module
-    const res = await getAfterSalesOrders(params)
-    orders.value = res.rows || []
+    const res: any = await getAfterSalesOrders(params)
+    orders.value = res.list || res.rows || []
     total.value = res.total || 0
   } catch (e: any) {
     ElMessage.error(e?.message || '加载失败')

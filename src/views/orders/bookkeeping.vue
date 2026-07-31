@@ -3,7 +3,6 @@
     <div class="page-header">
       <h2>代理记账订单</h2>
       <div>
-        <el-button @click="exportOrders">导出</el-button>
         <el-button type="primary" @click="fetchOrders">刷新</el-button>
       </div>
     </div>
@@ -35,7 +34,7 @@
 
       <!-- 表格 -->
       <el-table :data="list" v-loading="loading" stripe>
-        <el-table-column prop="orderNo" label="订单号" width="200" />
+        <el-table-column prop="orderNo" label="订单号" width="220" />
         <el-table-column label="纳税人类型" width="110">
           <template #default="{ row }">
             <el-tag :type="row.taxpayerType === 'general' ? 'warning' : 'info'" size="small">
@@ -140,34 +139,34 @@ function statusType(s: number) {
 
 function formatDate(d: string) { return d ? dayjs(d).format('YYYY-MM-DD HH:mm') : '-' }
 
-function parseRemark(raw: string | null) {
-  if (!raw) return { taxpayerType: '', taxpayerTypeText: '-', cycle: '', cycleText: '-', addons: { invoice: false, social: false, fund: false } }
-  try {
-    const r = JSON.parse(raw)
-    return {
-      taxpayerType: r.taxpayerType || '',
-      taxpayerTypeText: taxpayerTypeMap[r.taxpayerType] || r.taxpayerType || '-',
-      cycle: r.cycle || '',
-      cycleText: cycleMap[r.cycle] || r.cycle || '-',
-      addons: {
-        invoice: !!r.invoice,
-        social: !!r.social,
-        fund: !!r.fund,
-      },
-    }
-  } catch {
-    return { taxpayerType: '', taxpayerTypeText: '-', cycle: '', cycleText: '-', addons: { invoice: false, social: false, fund: false } }
-  }
-}
-
 async function fetchOrders() {
   loading.value = true
   try {
     query.startDate = dateRange.value?.[0] || ''
     query.endDate = dateRange.value?.[1] || ''
     const res: any = await getBookkeepingOrders(query)
-    list.value = (res.list || []).map((o: any) => ({ ...o, ...parseRemark(o.remark) }))
-    pagination.value = res.pagination
+    list.value = (res.list || []).map((o: any) => {
+      const extra = o.extra || {}
+      return {
+        ...o,
+        orderNo: o.orderNo || '',
+        contactPhone: o.contactPhone || '',
+        totalPrice: o.totalPrice || 0,
+        payPrice: o.payPrice || 0,
+        statusText: o.statusText || '',
+        createdAt: o.createdAt || '',
+        taxpayerType: extra.taxpayerType || '',
+        taxpayerTypeText: taxpayerTypeMap[extra.taxpayerType] || extra.taxpayerType || '-',
+        cycle: extra.cycle || '',
+        cycleText: cycleMap[extra.cycle] || extra.cycle || '-',
+        addons: {
+          invoice: !!extra.invoice,
+          social: !!extra.social,
+          fund: !!extra.fund,
+        },
+      }
+    })
+    pagination.value = { total: res.pagination?.total || 0, page: res.pagination?.page || 1, pageSize: res.pagination?.pageSize || 20 }
   } finally { loading.value = false }
 }
 
@@ -219,8 +218,6 @@ function reset() {
   dateRange.value = []
   search()
 }
-
-function exportOrders() { ElMessage.info('导出功能开发中') }
 
 onMounted(fetchOrders)
 </script>
