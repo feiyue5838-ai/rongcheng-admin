@@ -124,7 +124,7 @@
           分类：{{ categoryNameMap[filterCatId] }}
         </el-tag>
         <el-tag v-if="filterSubKey" closable size="small" @close="clearFilterSub">
-          子分组：{{ subTypeName(filterSubKey) }}
+          子分组：{{ subTypeName(filterSubKey, categoryNameMap[filterCatId]) }}
         </el-tag>
         <el-tag v-if="filterText" closable size="small" @close="clearFilterText">
           搜索：{{ filterText }}
@@ -159,7 +159,7 @@
 
         <el-table-column label="子分组" width="130">
           <template #default="{ row }">
-            <span v-if="row.templateType" style="color:#555;font-size:13px">{{ subTypeName(row.templateType) }}</span>
+            <span v-if="row.templateType" style="color:#555;font-size:13px">{{ subTypeName(row.templateType, row.newspaperCategories?.name) }}</span>
             <span v-else style="color:#ccc">—</span>
           </template>
         </el-table-column>
@@ -361,7 +361,7 @@
       即将修改 <strong>{{ selectedRows.length }}</strong> 条模板的所属分类
     </div>
     <el-form-item label="新的所属分类" :required="true">
-      <el-select v-model="batchNewCatId" placeholder="选择新分类" style="width:100%" filterable>
+      <el-select v-model="batchNewCatId" placeholder="选择新分类" style="width:100%" filterable @change="batchNewSubKey = ''">
         <el-option v-for="c in categoryList" :key="c.id" :label="c.name" :value="c.id" />
       </el-select>
     </el-form-item>
@@ -854,9 +854,15 @@ function clearFilterSub() { filterSubKey.value = ''; currentPage.value = 1 }
 function clearFilterText() { filterText.value = ''; currentPage.value = 1 }
 function clearAllFilters() { filterCatId.value = ''; filterSubKey.value = ''; filterText.value = ''; currentPage.value = 1 }
 
-// ===== 子分类名称查找 =====
-function subTypeName(key: string): string {
+// ===== 子分类名称查找（按分类优先，避免跨分类同名 key 错配） =====
+function subTypeName(key: string, catName?: string): string {
   if (!key) return ''
+  // 1. 指定分类内精确查找
+  if (catName && subTypesMap.value[catName]) {
+    const found = (subTypesMap.value[catName] as any[]).find(s => s.key === key)
+    if (found) return found.name
+  }
+  // 2. 全局兜底（兼容无分类上下文）
   for (const arr of Object.values(subTypesMap.value)) {
     const found = (arr as any[]).find(s => s.key === key)
     if (found) return found.name
