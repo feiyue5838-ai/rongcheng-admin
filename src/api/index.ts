@@ -103,6 +103,7 @@ export const updatePackage = (id: string, data: any) => request.put(`/seals/pack
 export const deletePackage = (id: string) => request.delete(`/seals/packages/${id}`)
 
 export const getNewspapers = (params?: any) => request.get('/newspapers', { params })
+export const getAllNewspapers = () => request.get('/newspapers/all')
 export const getNewspaperCategories = () => request.get('/newspapers/categories')
 export const createNewspaper = (data: any) => request.post('/newspapers', data)
 export const updateNewspaper = (id: string, data: any) => request.put(`/newspapers/${id}`, data)
@@ -111,12 +112,15 @@ export const createNewspaperCategory = (data: any) => request.post('/newspapers/
 export const updateNewspaperCategory = (id: string, data: any) => request.put(`/newspapers/categories/${id}`, data)
 export const deleteNewspaperCategory = (id: string) => request.delete(`/newspapers/categories/${id}`)
 export const getTemplates = (params?: any) => request.get('/newspapers/templates', { params })
+export const getTemplateMeta = () => request.get('/newspapers/template-meta')
 export const createTemplate = (data: any) => request.post('/newspapers/templates', data)
 export const updateTemplate = (id: string, data: any) => request.put(`/newspapers/templates/${id}`, data)
 export const deleteTemplate = (id: string) => request.delete(`/newspapers/templates/${id}`)
 
 // ==================== 用户接口 ====================
 export const getUsers = (params?: any) => request.get('/users/admin/list', { params })
+export const updateUser = (id: string, data: object) => request.put(`/users/admin/${id}`, data)
+export const deleteUser = (id: string) => request.delete(`/users/admin/${id}`)
 
 // ==================== 评价接口 ====================
 export const getReviews = (params?: any) => request.get('/reviews/admin/list', { params })
@@ -127,7 +131,7 @@ export const updateReviewStatus = (id: string, status: 'pending' | 'approved' | 
 
 // ==================== 问答接口 ====================
 export const getQuestions = (params?: any) => request.get('/questions/admin/list', { params })
-export const updateQuestionStatus = (id: string, status: 'pending' | 'published' | 'rejected') =>
+export const updateQuestionStatus = (id: string, status: 'pending' | 'approved' | 'rejected') =>
   request.put(`/questions/${id}/status`, { status })
 export const replyQuestion = (id: string, content: string) =>
   request.post(`/questions/${id}/replies`, { content })
@@ -143,6 +147,7 @@ export const createAdmin = (data: any) => request.post('/admin/admins', data)
 export const updateAdmin = (id: string, data: any) => request.put(`/admin/admins/${id}`, data)
 export const deleteAdmin = (id: string) => request.delete(`/admin/admins/${id}`)
 export const getLogs = (params?: any) => request.get('/admin/logs', { params })
+export const getLogModules = () => request.get('/admin/logs/modules')
 
 // ==================== 上传接口 ====================
 export const uploadImage = (file: File) => {
