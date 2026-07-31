@@ -6,7 +6,7 @@
       <div class="filter-bar">
         <el-tabs v-model="activeStatus" @tab-change="handleStatusChange" style="margin-bottom: 16px">
           <el-tab-pane label="待审核" name="pending" />
-          <el-tab-pane label="已发布" name="published" />
+          <el-tab-pane label="已通过" name="approved" />
           <el-tab-pane label="已驳回" name="rejected" />
           <el-tab-pane label="全部" name="" />
         </el-tabs>
@@ -54,22 +54,22 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="author" label="提问者" width="120" show-overflow-tooltip>
+        <el-table-column prop="userName" label="提问者" width="120" show-overflow-tooltip>
           <template #default="{ row }">
-            {{ row.author?.nickname || row.author?.phone || '匿名用户' }}
+            {{ row.userName || '匿名用户' }}
           </template>
         </el-table-column>
         <el-table-column prop="replyCount" label="回复数" width="80" align="center">
           <template #default="{ row }">
-            <el-badge :value="row.question_replies?.length || 0" :hidden="!row.question_replies?.length" type="primary">
-              <span>{{ row.question_replies?.length || 0 }}</span>
+            <el-badge :value="row.questionReplies?.length || 0" :hidden="!row.questionReplies?.length" type="primary">
+              <span>{{ row.questionReplies?.length || 0 }}</span>
             </el-badge>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
             <el-tag v-if="row.status === 'pending'" type="warning" size="small">待审核</el-tag>
-            <el-tag v-else-if="row.status === 'published'" type="success" size="small">已发布</el-tag>
+            <el-tag v-else-if="row.status === 'approved'" type="success" size="small">已通过</el-tag>
             <el-tag v-else-if="row.status === 'rejected'" type="danger" size="small">已驳回</el-tag>
             <el-tag v-else type="info" size="small">{{ row.status }}</el-tag>
           </template>
@@ -81,7 +81,7 @@
           <template #default="{ row }">
             <!-- 审核按钮：仅在待审核状态显示 -->
             <template v-if="row.status === 'pending'">
-              <el-button type="success" link @click="handleAudit(row, 'published')">通过</el-button>
+              <el-button type="success" link @click="handleAudit(row, 'approved')">通过</el-button>
               <el-button type="danger" link @click="handleAudit(row, 'rejected')">驳回</el-button>
             </template>
             <el-button type="primary" link @click="showReplyDialog(row)">回复</el-button>
@@ -111,12 +111,12 @@
       </div>
 
       <!-- 已有回复列表 -->
-      <div v-if="currentQuestion?.question_replies?.length" style="margin-bottom: 16px">
+      <div v-if="currentQuestion?.questionReplies?.length" style="margin-bottom: 16px">
         <div style="font-size: 14px; font-weight: 500; margin-bottom: 12px">已有回复：</div>
-        <div v-for="(reply, index) in currentQuestion.question_replies" :key="index" class="reply-item">
+        <div v-for="(reply, index) in currentQuestion.questionReplies" :key="index" class="reply-item">
           <div class="reply-header">
-            <span class="reply-author">{{ reply.author_name || '管理员' }}</span>
-            <span class="reply-time">{{ formatDate(reply.created_at) }}</span>
+            <span class="reply-author">{{ reply.authorName || '管理员' }}</span>
+            <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
             <el-button type="danger" link size="small" @click="handleDeleteReply(reply.id)">删除</el-button>
           </div>
           <div class="reply-content">{{ reply.content }}</div>
@@ -142,21 +142,21 @@
       <el-descriptions :column="1" border>
         <el-descriptions-item label="问题内容">{{ currentQuestion?.content }}</el-descriptions-item>
         <el-descriptions-item label="所属模块">{{ getModuleName(currentQuestion?.module) }}</el-descriptions-item>
-        <el-descriptions-item label="提问者">{{ currentQuestion?.author?.nickname || currentQuestion?.author?.phone || '匿名用户' }}</el-descriptions-item>
+        <el-descriptions-item label="提问者">{{ currentQuestion?.userName || '匿名用户' }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag v-if="currentQuestion?.status === 'pending'" type="warning" size="small">待审核</el-tag>
-          <el-tag v-else-if="currentQuestion?.status === 'published'" type="success" size="small">已发布</el-tag>
+          <el-tag v-else-if="currentQuestion?.status === 'approved'" type="success" size="small">已通过</el-tag>
           <el-tag v-else-if="currentQuestion?.status === 'rejected'" type="danger" size="small">已驳回</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="发布时间">{{ formatDate(currentQuestion?.createdAt) }}</el-descriptions-item>
       </el-descriptions>
 
-      <div v-if="currentQuestion?.question_replies?.length" style="margin-top: 20px">
+      <div v-if="currentQuestion?.questionReplies?.length" style="margin-top: 20px">
         <div style="font-size: 14px; font-weight: 500; margin-bottom: 12px">回复记录：</div>
-        <div v-for="(reply, index) in currentQuestion.question_replies" :key="index" class="reply-item">
+        <div v-for="(reply, index) in currentQuestion.questionReplies" :key="index" class="reply-item">
           <div class="reply-header">
-            <span class="reply-author">{{ reply.author_name || '管理员' }}</span>
-            <span class="reply-time">{{ formatDate(reply.created_at) }}</span>
+            <span class="reply-author">{{ reply.authorName || '管理员' }}</span>
+            <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
           </div>
           <div class="reply-content">{{ reply.content }}</div>
         </div>
@@ -265,8 +265,8 @@ async function fetchQuestions() {
 }
 
 // 审核问答
-async function handleAudit(row: any, status: 'published' | 'rejected') {
-  const actionText = status === 'published' ? '通过' : '驳回'
+async function handleAudit(row: any, status: 'approved' | 'rejected') {
+  const actionText = status === 'approved' ? '通过' : '驳回'
   try {
     await ElMessageBox.confirm(`确认${actionText}该问答？`, '审核确认', {
       confirmButtonText: '确定',
@@ -341,8 +341,8 @@ async function handleDeleteReply(replyId: string) {
     // 刷新当前问答详情
     fetchQuestions()
     // 更新对话框中的数据
-    if (currentQuestion.value.question_replies) {
-      currentQuestion.value.question_replies = currentQuestion.value.question_replies.filter((r: any) => r.id !== replyId)
+    if (currentQuestion.value.questionReplies) {
+      currentQuestion.value.questionReplies = currentQuestion.value.questionReplies.filter((r: any) => r.id !== replyId)
     }
   } catch (e: any) {
     if (e !== 'cancel') {
