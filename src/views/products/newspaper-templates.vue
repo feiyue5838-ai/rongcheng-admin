@@ -467,6 +467,7 @@ const loading = ref(false)
 const categoryList = ref<any[]>([])
 const newspapers = ref<any[]>([])
 const templates = ref<any[]>([])
+const templatesTotal = ref(0)
 const subTypesMap = ref<Record<string, { key: string; name: string }[]>>({})
 
 // ===== 筛选 =====
@@ -480,7 +481,7 @@ const pageSize = ref(20)
 const selectedRows = ref<any[]>([])
 
 // ===== 统计 =====
-const statTotal = computed(() => displayedTemplates.value.length)
+const statTotal = computed(() => templatesTotal.value || templates.value.length)
 const statOn = computed(() => templates.value.filter(t => t.status === 1).length)
 const statOff = computed(() => templates.value.filter(t => t.status === 0).length)
 const statNew = ref(0) // 暂无接口，先写死
@@ -912,8 +913,10 @@ async function reloadNewspapers() {
 async function reloadTemplates() {
   loading.value = true
   try {
-    const list = normalize(await getTemplates())
+    const tRaw = await getTemplates()
+    const list = normalize(tRaw)
     templates.value = list
+    templatesTotal.value = (tRaw as any)?.total ?? list.length
   } finally {
     loading.value = false
   }
@@ -936,7 +939,8 @@ async function reloadAll() {
     const mAny = mRes as any
     subTypesMap.value = mAny?.subTypes || {}
     templates.value = normalize(tRes)
-    console.log('[DEBUG] templates.value after set:', templates.value.length)
+    templatesTotal.value = (tRes as any)?.total ?? templates.value.length
+    console.log('[DEBUG] templates.value after set:', templates.value.length, '/ total:', templatesTotal.value)
   } catch (e: any) {
     ElMessage.error('加载数据失败: ' + (e?.message || '未知错误'))
     console.error('reloadAll error:', e)
@@ -1021,6 +1025,12 @@ onMounted(async () => {
   font-size: 24px;
   font-weight: 700;
   line-height: 1;
+}
+.stat-sub {
+  display: block;
+  font-size: 11px;
+  opacity: .75;
+  margin-top: 2px;
 }
 
 .stat-blue  { background: linear-gradient(135deg, #5B6FE8, #7B8FFF); }
