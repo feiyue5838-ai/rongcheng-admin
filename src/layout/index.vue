@@ -33,10 +33,6 @@
           <el-menu-item index="/orders/seal">刻章订单</el-menu-item>
           <el-menu-item index="/orders/newspaper">登报订单</el-menu-item>
           <el-menu-item index="/orders/bookkeeping">代理记账订单</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="afterSales">
-          <template #title><el-icon><Warning /></el-icon><span>售后管理</span></template>
           <el-menu-item index="/after-sales/orders">售后订单</el-menu-item>
           <el-menu-item index="/after-sales/refund-records">退款记录</el-menu-item>
         </el-sub-menu>
