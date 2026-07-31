@@ -922,17 +922,24 @@ async function reloadTemplates() {
 async function reloadAll() {
   loading.value = true
   try {
+    console.log('[DEBUG] reloadAll starting...')
     const [nRes, cRes, mRes, tRes] = await Promise.all([
       getNewspapers(),
       getNewspaperCategories(),
       getTemplateMeta(),
-      getTemplates(),
+      getTemplates({ page: 1, pageSize: 500 }), // 一次拉全量
     ])
+    console.log('[DEBUG] templates raw response:', tRes)
+    console.log('[DEBUG] templates normalized:', normalize(tRes))
     newspapers.value = normalize(nRes)
     categoryList.value = normalize(cRes)
     const mAny = mRes as any
     subTypesMap.value = mAny?.subTypes || {}
     templates.value = normalize(tRes)
+    console.log('[DEBUG] templates.value after set:', templates.value.length)
+  } catch (e: any) {
+    ElMessage.error('加载数据失败: ' + (e?.message || '未知错误'))
+    console.error('reloadAll error:', e)
   } finally {
     loading.value = false
   }
