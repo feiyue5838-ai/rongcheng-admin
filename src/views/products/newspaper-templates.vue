@@ -71,6 +71,7 @@
           placeholder="全部子分组"
           clearable
           filterable
+          :filter-method="() => {}"
           style="width: 200px"
           @change="handleSubChange"
         >
