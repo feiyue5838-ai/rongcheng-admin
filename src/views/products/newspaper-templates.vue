@@ -70,15 +70,14 @@
           v-model="filterSubKey"
           placeholder="全部子分组"
           clearable
-          style="width: 160px"
-          :disabled="!filterCatId"
+          style="width: 180px"
           @change="handleSubChange"
         >
           <el-option label="全部子分组" value="" />
           <el-option
             v-for="s in currentSubOptions"
             :key="s.key"
-            :label="s.name"
+            :label="s.label"
             :value="s.key"
           />
         </el-select>
@@ -492,10 +491,24 @@ const categoryNameMap = computed(() => {
 })
 
 // 当前分类的子分类下拉选项（工具栏用）
+// 全部分类时显示所有子分组（去重，带分类名标注）
 const currentSubOptions = computed(() => {
-  if (!filterCatId.value) return []
+  if (!filterCatId.value) {
+    // 全部分类：聚合所有子分组，去重 key，标注所属分类
+    const all = []
+    const seen = new Set()
+    for (const [catName, subs] of Object.entries(subTypesMap.value)) {
+      for (const s of (subs as any[])) {
+        if (!seen.has(s.key)) {
+          seen.add(s.key)
+          all.push({ ...s, label: `${s.name} (${catName})` })
+        }
+      }
+    }
+    return all.sort((a, b) => a.name.localeCompare(b.name, 'zh'))
+  }
   const catName = categoryNameMap.value[filterCatId.value] || ''
-  return subTypesMap.value[catName] || []
+  return (subTypesMap.value[catName] || []).map(s => ({ ...s, label: s.name }))
 })
 
 // 模板编辑弹窗的子分类选项
