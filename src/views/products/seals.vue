@@ -158,8 +158,8 @@
                 </div>
               </div>
               <div class="card-body">
-                <div class="card-category" :title="row.seal_categories?.name || row.categoryName || ''">
-                  <el-tag v-if="row.seal_categories?.name" size="small" type="info" effect="plain">{{ row.seal_categories.name }}</el-tag>
+                <div class="card-category" :title="row.sealCategories?.name || row.categoryName || ''">
+                  <el-tag v-if="row.sealCategories?.name" size="small" type="info" effect="plain">{{ row.sealCategories.name }}</el-tag>
                   <el-tag v-else-if="row.categoryName" size="small" type="info" effect="plain">{{ row.categoryName }}</el-tag>
                   <el-tag v-else-if="isElectronic && getSealSubType(row.name)" size="small" type="info" effect="plain">{{ getSealSubType(row.name) }}</el-tag>
                 </div>
@@ -530,7 +530,7 @@ const PROVINCE_CITY_OPTIONS = Object.keys(provinceToCities).map((prov) => ({
 }))
 
 // 市 → 省 反向映射，用于编辑时回显级联路径
-const CITY_TO_PROVINCE = {}
+const CITY_TO_PROVINCE: Record<string, string> = {}
 for (const [prov, cities] of Object.entries(provinceToCities)) {
   for (const c of cities) CITY_TO_PROVINCE[c] = prov
 }
@@ -577,8 +577,14 @@ async function loadPkgSealOptions(sceneId?: string) {
       const res: any = await getSealSceneProducts(sceneId)
       pkgSealOptions.value = Array.isArray(res?.seals) ? res.seals : []
     } else {
+      // 非企业路由 or 未选场景时：只展示当前分类下的印章（避免跨模块印章混入）
+      const cat = activeSceneId.value
+        ? businessCategories.value.find((c) => c.id === activeSceneId.value)
+        : null
+      const catName = cat?.name || ''
       const all: any = await getSeals()
-      pkgSealOptions.value = Array.isArray(all) ? all : (all?.items || [])
+      const list = Array.isArray(all) ? all : (all?.items || [])
+      pkgSealOptions.value = list.filter((s: any) => s._sceneName === catName)
     }
   } catch {
     pkgSealOptions.value = []
@@ -674,7 +680,7 @@ async function fetchSealsByCategory(catId: string) {
       const cat = categories.value.find((c) => c.id === catId)
       seals.value = list
         .filter((s: any) => s.name && s.name.startsWith('电子'))
-        .map((s: any) => ({ ...s, categoryName: s.seal_categories?.name || '—', _sceneName: cat?.name || '电子印章' }))
+        .map((s: any) => ({ ...s, categoryName: s.sealCategories?.name || '—', _sceneName: cat?.name || '电子印章' }))
       packages.value = []
     } else if (isPersonal.value) {
       // 个人印章：全量拉取后前端按 name 过滤
@@ -683,10 +689,10 @@ async function fetchSealsByCategory(catId: string) {
       const cat = categories.value.find((c) => c.id === catId)
       seals.value = list
         .filter((s: any) => {
-          const n = s.seal_categories?.name
+          const n = s.sealCategories?.name
           return n === '个人印章' || n === '电子个人签名章'
         })
-        .map((s: any) => ({ ...s, categoryName: s.seal_categories?.name || '—', _sceneName: cat?.name || '个人印章' }))
+        .map((s: any) => ({ ...s, categoryName: s.sealCategories?.name || '—', _sceneName: cat?.name || '个人印章' }))
       packages.value = []
     } else {
       const cat = categories.value.find((c) => c.id === catId)
@@ -707,7 +713,7 @@ async function fetchCategoryProducts(catId: string, catName: string): Promise<an
       if (!res?.seals) return []
       return res.seals.map((s: any) => ({
         ...s,
-        categoryName: s.seal_categories?.name || '—',
+        categoryName: s.sealCategories?.name || '—',
         _sceneName: catName,
       }))
     }
@@ -716,7 +722,7 @@ async function fetchCategoryProducts(catId: string, catName: string): Promise<an
     if (!res?.seals) return []
     return res.seals.map((s: any) => ({
       ...s,
-      categoryName: s.seal_categories?.name || '—',
+      categoryName: s.sealCategories?.name || '—',
       _sceneName: catName,
     }))
   } catch {
@@ -753,7 +759,7 @@ function showDialog(type: string, row?: any) {
     if (isPersonal.value) ctxSceneId = personalScene.value?.id || ''
     else if (isElectronic.value) ctxSceneId = electronicScene.value?.id || ''
     else ctxSceneId = activeSceneId.value || ''
-    Object.assign(form, { ...row, sceneId: ctxSceneId, sealCategoryId: row.seal_categories?.id || '' })
+    Object.assign(form, { ...row, sceneId: ctxSceneId, sealCategoryId: row.sealCategories?.id || '' })
     getRegionPricesRows()
     pricingMode.value = Object.keys(form.region_prices || {}).length > 0 ? 'regional' : 'nationwide'
   } else {
