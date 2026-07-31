@@ -50,7 +50,6 @@ const router = createRouter({
         { path: 'products/scenes', name: 'Scenes', component: () => import('@/views/products/scenes.vue'), meta: { title: '场景管理' } },
         { path: 'products/packages', name: 'SealPackages', component: () => import('@/views/products/packages.vue'), meta: { title: '套餐管理' } },
         // 报纸管理 - 统一入口
-        // 报纸管理 - 统一入口
         { path: 'products/newspapers', name: 'Newspapers', component: () => import('@/views/products/newspapers.vue'), meta: { title: '报纸仓库' } },
         { path: 'products/newspaper-templates', name: 'NewspaperTemplates', component: () => import('@/views/products/newspaper-templates.vue'), meta: { title: '公告模板管理' } },
         // 代理记账管理
