@@ -20,9 +20,11 @@
         <el-table-column prop="createdAt" label="注册时间" width="170">
           <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="$router.push(`/orders/seal?keyword=${row.phone}`)">订单</el-button>
+            <el-button type="warning" link @click="handleToggleStatus(row)">{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
+            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -33,7 +35,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getUsers } from '@/api'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getUsers, updateUser, deleteUser } from '@/api'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
@@ -43,6 +46,23 @@ const query = reactive({ keyword: '', page: 1, pageSize: 20 })
 
 function formatDate(d: string) { return dayjs(d).format('YYYY-MM-DD HH:mm') }
 async function fetchUsers() { loading.value = true; try { const res: any = await getUsers(query); list.value = res.list; pagination.value = res.pagination } finally { loading.value = false } }
+async function handleToggleStatus(row: any) {
+  const newStatus = row.status === 1 ? 0 : 1
+  try {
+    await ElMessageBox.confirm(`确定要${newStatus === 1 ? '启用' : '禁用'}该用户吗？`, '提示', { type: 'warning' })
+    await updateUser(row.id, { status: newStatus })
+    row.status = newStatus
+    ElMessage.success(newStatus === 1 ? '已启用' : '已禁用')
+  } catch (e: any) { if (e !== 'cancel') ElMessage.error(e.message || '操作失败') }
+}
+async function handleDelete(row: any) {
+  try {
+    await ElMessageBox.confirm('确定删除该用户？删除后不可恢复。', '危险操作', { type: 'error', confirmButtonText: '删除' })
+    await deleteUser(row.id)
+    ElMessage.success('删除成功')
+    fetchUsers()
+  } catch (e: any) { if (e !== 'cancel') ElMessage.error(e.message || '删除失败') }
+}
 function search() { query.page = 1; fetchUsers() }
 function reset() { query.keyword = ''; search() }
 onMounted(fetchUsers)
