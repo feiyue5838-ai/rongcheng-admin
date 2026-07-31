@@ -232,6 +232,7 @@ const trendData = reactive({
   dates: [] as string[],
   seal: [] as number[],
   newspaper: [] as number[],
+  bookkeeping: [] as number[],
 })
 
 async function fetchData() {
@@ -269,6 +270,7 @@ async function fetchTrend() {
     trendData.dates = data.dates || []
     trendData.seal = data.seal || []
     trendData.newspaper = data.newspaper || []
+    trendData.bookkeeping = data.bookkeeping || []
     updateChart()
   } catch (e) {
     console.error('获取趋势数据失败', e)
@@ -296,7 +298,7 @@ function updateChart() {
         return html
       },
     },
-    legend: { data: ['刻章订单', '登报订单'], right: 0, top: 0 },
+    legend: { data: ['刻章订单', '登报订单', '代理记账'], right: 0, top: 0 },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: {
       type: 'category',
@@ -315,8 +317,9 @@ function updateChart() {
       },
     },
     series: [
-      { name: '刻章订单', type: 'bar', data: trendData.seal.length ? trendData.seal : [0,0,0,0,0,0,0], itemStyle: { color: '#3b82f6', borderRadius: [6, 6, 0, 0] }, barWidth: 18 },
-      { name: '登报订单', type: 'bar', data: trendData.newspaper.length ? trendData.newspaper : [0,0,0,0,0,0,0], itemStyle: { color: '#8b5cf6', borderRadius: [6, 6, 0, 0] }, barWidth: 18 },
+      { name: '刻章订单', type: 'bar', data: trendData.seal.length ? trendData.seal : [0,0,0,0,0,0,0], itemStyle: { color: '#3b82f6', borderRadius: [6, 6, 0, 0] }, barWidth: 14 },
+      { name: '登报订单', type: 'bar', data: trendData.newspaper.length ? trendData.newspaper : [0,0,0,0,0,0,0], itemStyle: { color: '#8b5cf6', borderRadius: [6, 6, 0, 0] }, barWidth: 14 },
+      { name: '代理记账', type: 'bar', data: trendData.bookkeeping.length ? trendData.bookkeeping : [0,0,0,0,0,0,0], itemStyle: { color: '#f59e0b', borderRadius: [6, 6, 0, 0] }, barWidth: 14 },
     ],
   }
   chart.setOption(option, true)

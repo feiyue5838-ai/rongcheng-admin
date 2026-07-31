@@ -58,13 +58,13 @@
           <el-input v-model="form.name" placeholder="如：小规模企业-全年代理记账" />
         </el-form-item>
         <el-form-item label="纳税人类型" required>
-          <el-select v-model="form.taxpayerType" style="width: 100%">
+          <el-select v-model="form.taxpayerType" style="width: 100%" :disabled="!!editId">
             <el-option label="小规模纳税人" value="small" />
             <el-option label="一般纳税人" value="general" />
           </el-select>
         </el-form-item>
         <el-form-item label="服务周期" required>
-          <el-select v-model="form.cycle" style="width: 100%">
+          <el-select v-model="form.cycle" style="width: 100%" :disabled="!!editId">
             <el-option label="全年" value="year" />
             <el-option label="半年" value="half" />
             <el-option label="预订" value="preorder" />
@@ -139,7 +139,7 @@ const fetchData = async () => {
   loading.value = true
   try {
     const res = await getBookkeepingPackages()
-    packages.value = res.data || res
+    packages.value = (res as any).list || (res as any).data || res
   } catch (e: any) {
     ElMessage.error(e.message || '获取数据失败')
   } finally {
@@ -177,6 +177,19 @@ const handleSubmit = async () => {
   if (!form.value.name) {
     ElMessage.warning('请输入套餐名称')
     return
+  }
+
+  // 新增时检查纳税人类型+服务周期组合是否已存在
+  if (!editId.value) {
+    const dup = packages.value.find(p =>
+      p.taxpayerType === form.value.taxpayerType && p.cycle === form.value.cycle
+    )
+    if (dup) {
+      const t = form.value.taxpayerType === 'small' ? '小规模纳税人' : '一般纳税人'
+      const c = cycleText[form.value.cycle]
+      ElMessage.error(`${t}·${c} 的套餐已存在，请勿重复创建`)
+      return
+    }
   }
 
   submitting.value = true
