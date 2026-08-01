@@ -249,6 +249,10 @@
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :min="0" style="width: 100%" />
         </el-form-item>
+        <el-form-item label="版面选择">
+          <el-switch v-model="form.enable_sections" :active-value="1" :inactive-value="0" />
+          <span style="margin-left: 8px; color: #909399; font-size: 12px">开启后小程序下单可选版面</span>
+        </el-form-item>
         <el-form-item label="报纸别名">
           <el-input v-model="form.alias" placeholder="如：北晚" />
         </el-form-item>
@@ -486,6 +490,7 @@ const form = reactive<any>({
   description: '',
   sort: 0,
   status: 1,
+  enable_sections: 1,
 })
 
 // 当前省份下的城市列表
@@ -690,6 +695,7 @@ function showDialog(type: string, row?: any) {
       description: row.description || '',
       sort: row.sort || 0,
       status: row.status ?? 1,
+      enable_sections: row.enableSections ?? 1,
     })
   } else {
     Object.assign(form, {
@@ -708,6 +714,7 @@ function showDialog(type: string, row?: any) {
       description: '',
       sort: 0,
       status: 1,
+      enable_sections: 1,
     })
   }
   dialogVisible.value = true
@@ -738,6 +745,7 @@ async function saveNewspaper() {
       description: form.description,
       sort: form.sort,
       status: form.status ?? 1,
+      enable_sections: form.enable_sections ?? 1,
     }
     if (isEdit.value) {
       await updateNewspaper(form.id, data)
