@@ -197,3 +197,9 @@ export const confirmAfterSalesRefund = (id: string, amount?: number) =>
   request.post(`/after-sales/orders/${id}/confirm-refund`, amount != null ? { amount } : {})
 export const rejectAfterSales = (id: string, reason: string) => request.post(`/after-sales/orders/${id}/reject`, { reason })
 export const getRefundRecords = (params?: object) => request.get('/after-sales/refund-records', { params })
+
+// ==================== 版面管理 API ====================
+export const getNewspaperSections = (newspaperId: string) => request.get(`/newspapers/${newspaperId}/sections`)
+export const createNewspaperSection = (newspaperId: string, data: object) => request.post(`/newspapers/${newspaperId}/sections`, data)
+export const updateNewspaperSection = (newspaperId: string, sectionId: string, data: object) => request.put(`/newspapers/${newspaperId}/sections/${sectionId}`, data)
+export const deleteNewspaperSection = (newspaperId: string, sectionId: string) => request.delete(`/newspapers/${newspaperId}/sections/${sectionId}`)

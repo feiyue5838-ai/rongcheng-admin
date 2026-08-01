@@ -1,34 +1,115 @@
 <template>
-  <div>
+  <div class="newspapers-page">
+    <!-- 页面头部 -->
     <div class="page-header">
       <h2>报纸仓库</h2>
-      <el-button type="primary" @click="showDialog('add')">添加报纸</el-button>
+      <el-button type="primary" @click="showDialog('add')">
+        <el-icon><Plus /></el-icon>
+        新增报纸
+      </el-button>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="stats-row">
+      <div class="stat-card blue">
+        <div class="stat-icon">📰</div>
+        <div class="stat-info">
+          <div class="stat-num">{{ stats.total }}</div>
+          <div class="stat-label">报纸总数</div>
+        </div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <div class="stat-num">{{ stats.active }}</div>
+          <div class="stat-label">正常合作</div>
+        </div>
+      </div>
+      <div class="stat-card gray">
+        <div class="stat-icon">⏸️</div>
+        <div class="stat-info">
+          <div class="stat-num">{{ stats.inactive }}</div>
+          <div class="stat-label">已停用</div>
+        </div>
+      </div>
+      <div class="stat-card cyan">
+        <div class="stat-icon">📊</div>
+        <div class="stat-info">
+          <div class="stat-num">{{ stats.avgPrice }}</div>
+          <div class="stat-label">平均单价</div>
+        </div>
+      </div>
     </div>
 
     <div class="page-card">
-      <el-input
-        v-model="searchKey"
-        placeholder="按报纸名称搜索"
-        clearable
-        prefix-icon="Search"
-        style="margin-bottom: 12px; max-width: 320px"
-      />
-      <el-tabs v-model="activeRegion" class="region-tabs">
-        <el-tab-pane :label="`全部 (${regionCounts.all})`" name="" />
-        <el-tab-pane :label="`全国 (${regionCounts['全国']})`" name="全国" />
-        <el-tab-pane :label="`华北 (${regionCounts['华北']})`" name="华北" />
-        <el-tab-pane :label="`东北 (${regionCounts['东北']})`" name="东北" />
-        <el-tab-pane :label="`华东 (${regionCounts['华东']})`" name="华东" />
-        <el-tab-pane :label="`华中 (${regionCounts['华中']})`" name="华中" />
-        <el-tab-pane :label="`华南 (${regionCounts['华南']})`" name="华南" />
-        <el-tab-pane :label="`西南 (${regionCounts['西南']})`" name="西南" />
-        <el-tab-pane :label="`西北 (${regionCounts['西北']})`" name="西北" />
-      </el-tabs>
-      <el-table :data="displayedNewspapers" v-loading="loading" stripe>
+      <!-- 筛选区域 -->
+      <div class="filter-row">
+        <el-input
+          v-model="searchKey"
+          placeholder="搜索报纸名称"
+          clearable
+          prefix-icon="Search"
+          style="width: 280px"
+        />
+        <el-select v-model="filterRegion" placeholder="全部大区" clearable style="width: 130px" @change="onRegionChange">
+          <el-option label="全部大区" value="" />
+          <el-option label="全国" value="全国" />
+          <el-option label="华北" value="华北" />
+          <el-option label="东北" value="东北" />
+          <el-option label="华东" value="华东" />
+          <el-option label="华中" value="华中" />
+          <el-option label="华南" value="华南" />
+          <el-option label="西南" value="西南" />
+          <el-option label="西北" value="西北" />
+        </el-select>
+        <el-select v-model="filterProvince" placeholder="全部省份" clearable style="width: 150px" @change="onFilterProvinceChange">
+          <el-option label="全部省份" value="" />
+          <el-option v-for="p in filteredProvinces" :key="p.code" :label="p.name" :value="p.name" />
+        </el-select>
+        <el-select v-model="filterCity" placeholder="全部城市" clearable style="width: 150px">
+          <el-option label="全部城市" value="" />
+          <el-option v-for="c in filteredCities" :key="c.code" :label="c.name" :value="c.name" />
+        </el-select>
+        <el-select v-model="filterStatus" placeholder="全部状态" clearable style="width: 130px">
+          <el-option label="全部状态" value="" />
+          <el-option label="合作中" :value="1" />
+          <el-option label="已停用" :value="0" />
+        </el-select>
+        <el-select v-model="filterLevel" placeholder="全部级别" clearable style="width: 130px">
+          <el-option label="全部级别" value="" />
+          <el-option label="国家级" :value="3" />
+          <el-option label="省级" :value="2" />
+          <el-option label="普通" :value="1" />
+        </el-select>
+        <el-button type="primary" @click="handleSearch">
+          <el-icon><Search /></el-icon>
+          查询
+        </el-button>
+        <el-button @click="handleReset">
+          <el-icon><Refresh /></el-icon>
+          重置
+        </el-button>
+      </div>
+      <!-- 表格 -->
+      <el-table
+        :data="displayedNewspapers"
+        v-loading="loading"
+        stripe
+        style="margin-top: 16px"
+        row-key="id"
+        :expand-row-keys="Array.from(expandedRows)"
+      >
         <el-table-column prop="name" label="报纸名称" min-width="160" />
+        <el-table-column prop="level" label="级别" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="row.level===3?'danger':row.level===2?'warning':'info'">
+              {{ ['','普通','省级','国家级'][row.level] }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="region" label="大区" width="90">
           <template #default="{ row }">
-            <el-tag size="small" type="info">{{ row.region || '—' }}</el-tag>
+            <span>{{ row.region || '—' }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="province" label="省份" width="100">
@@ -37,29 +118,88 @@
           </template>
         </el-table-column>
         <el-table-column prop="city" label="城市" width="100" />
-        <el-table-column prop="level" label="级别" width="100">
+        <el-table-column prop="minWords" label="最少字数" width="90">
           <template #default="{ row }">
-            <el-tag size="small" :type="row.level===3?'danger':row.level===2?'warning':''">
-              {{ ['','普通','省级','国家级'][row.level] }}
-            </el-tag>
+            <span>{{ row.minWords || 50 }}字</span>
           </template>
         </el-table-column>
         <el-table-column prop="pricePerWord" label="单价(元/字)" width="110">
-          <template #default="{ row }">¥{{ row.pricePerWord }}</template>
+          <template #default="{ row }">
+            <span class="price">¥{{ parseFloat(row.pricePerWord).toFixed(2) }}</span>
+          </template>
         </el-table-column>
-        <el-table-column prop="minWords" label="最少字数" width="90" />
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }">
             <el-switch v-model="row.status" :active-value="1" :inactive-value="0" @change="toggleStatus(row)" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="showDialog('edit', row)">编辑</el-button>
-            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+            <el-button type="info" link size="small" @click="handleExpandChange(row)">
+              {{ expandedRows.has(row.id) ? '收起' : '版面' }}
+              <el-icon class="el-icon--right" v-if="expandedRows.has(row.id)"><ArrowUp /></el-icon>
+              <el-icon class="el-icon--right" v-else><ArrowDown /></el-icon>
+            </el-button>
+            <el-button type="primary" link size="small" @click="showDialog('edit', row)">编辑</el-button>
+            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+
+        <!-- 展开行：版面列表 -->
+        <el-table-column type="expand" width="1">
+          <template #default="{ row }">
+            <div class="section-expand-wrap">
+              <div class="section-expand-header">
+                <span class="section-expand-title">{{ row.name }} - 版面管理</span>
+                <el-button type="primary" size="small" @click="openAddSection(row)">
+                  <el-icon><Plus /></el-icon>新增版面
+                </el-button>
+              </div>
+              <el-table :data="getRowSections(row.id)" size="small" border class="section-table">
+                <el-table-column prop="name" label="版面名称" min-width="120" />
+                <el-table-column prop="category" label="类别" width="100" />
+                <el-table-column prop="listPrice" label="刊例价(元)" width="110">
+                  <template #default="{ row: s }">
+                    <span class="price">¥{{ Number(s.listPrice || 0).toFixed(2) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="deadlineTime" label="截稿时间" width="100" />
+                <el-table-column prop="publishCycle" label="见报周期" width="100" />
+                <el-table-column prop="sort" label="排序" width="70" />
+                <el-table-column prop="status" label="状态" width="70">
+                  <template #default="{ row: s }">
+                    <el-tag size="small" :type="s.status === 1 ? 'success' : 'info'">{{ s.status === 1 ? '启用' : '停用' }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="remark" label="备注" min-width="120" />
+                <el-table-column label="操作" width="130" fixed="right">
+                  <template #default="{ row: s }">
+                    <el-button type="primary" link size="small" @click="openEditSection(row, s)">编辑</el-button>
+                    <el-button type="danger" link size="small" @click="deleteSection(row, s)">删除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <div v-if="!getRowSections(row.id).length" class="section-empty">
+                暂无版面，点击「新增版面」添加
+              </div>
+            </div>
           </template>
         </el-table-column>
       </el-table>
+      
+      <!-- 分页 -->
+      <div class="pagination">
+        <span class="pagination-info">共 {{ total }} 条</span>
+        <el-pagination
+          v-model:current-page="pageNum"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
 
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑报纸' : '添加报纸'" width="600px">
@@ -130,13 +270,58 @@
         <el-button type="primary" @click="saveNewspaper" :loading="saving">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 版面管理弹窗 -->
+    <el-dialog v-model="sectionDialogVisible" :title="sectionDialogTitle" width="520px">
+      <el-form :model="sectionForm" label-width="100px">
+        <el-form-item label="版面名称" required>
+          <el-input v-model="sectionForm.name" placeholder="如：头版、分类广告版" />
+        </el-form-item>
+        <el-form-item label="版面类别">
+          <el-input v-model="sectionForm.category" placeholder="如：头版、副刊" />
+        </el-form-item>
+        <el-form-item label="刊例价(元)">
+          <el-input-number v-model="sectionForm.list_price" :min="0" :precision="2" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="截稿时间">
+          <el-input v-model="sectionForm.deadline_time" placeholder="如：17:00" />
+        </el-form-item>
+        <el-form-item label="见报周期">
+          <el-select v-model="sectionForm.publish_cycle" placeholder="选择见报周期" clearable style="width: 100%">
+            <el-option label="次日见报" value="次日见报" />
+            <el-option label="隔日见报" value="隔日见报" />
+            <el-option label="3日内见报" value="3日内见报" />
+            <el-option label="5日内见报" value="5日内见报" />
+            <el-option label="7日内见报" value="7日内见报" />
+            <el-option label="一周见报" value="一周见报" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="sectionForm.sort" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-radio-group v-model="sectionForm.status">
+            <el-radio :label="1">启用</el-radio>
+            <el-radio :label="0">停用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="sectionForm.remark" type="textarea" rows="2" placeholder="备注信息" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="sectionDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveSection" :loading="sectionLoading">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { getAllNewspapers, getNewspaperCategories, createNewspaper, updateNewspaper, deleteNewspaper } from '@/api'
+import { getAllNewspapers, getNewspaperCategories, createNewspaper, updateNewspaper, deleteNewspaper, getNewspaperSections, createNewspaperSection, updateNewspaperSection, deleteNewspaperSection } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Search, Refresh, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 
 // ============ 行政区划数据（与小程序 region-data.js 对齐）============
 const PROVINCES = [
@@ -251,11 +436,36 @@ function getCityName(code: string): string {
 
 // ============ 组件逻辑 ============
 const loading = ref(false)
-const activeRegion = ref('')
 const saving = ref(false)
+const sectionLoading = ref(false)
+const sectionDialogVisible = ref(false)
+const sectionDialogTitle = ref('')
+const sectionIsEdit = ref(false)
+const currentNewspaperId = ref('')
+const editingSectionId = ref('')
+const expandedRows = ref<Set<string>>(new Set())
+const sections = ref<any[]>([])
+const sectionForm = reactive<any>({
+  name: '',
+  category: '',
+  list_price: 0,
+  deadline_time: '',
+  publish_cycle: '',
+  sort: 0,
+  status: 1,
+  remark: '',
+})
+const sectionFormRef = ref()
 const categories = ref<any[]>([])
 const allNewspapers = ref<any[]>([])
 const searchKey = ref('')
+const filterRegion = ref('')
+const filterProvince = ref('')
+const filterCity = ref('')
+const filterLevel = ref<number | ''>('')
+const filterStatus = ref<number | ''>('')
+const pageNum = ref(1)
+const pageSize = ref(10)
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const provinces = PROVINCES
@@ -284,11 +494,49 @@ const currentCities = computed(() => {
   return CITY_CODES[form.provinceCode] || [];
 })
 
+// 三级联动：大区 -> 省份列表
+const REGION_PROVINCES: Record<string, string[]> = {
+  '全国': [],
+  '华北': ['北京市', '天津市', '河北省', '山西省', '内蒙古自治区'],
+  '东北': ['辽宁省', '吉林省', '黑龙江省'],
+  '华东': ['上海市', '江苏省', '浙江省', '安徽省', '福建省', '江西省', '山东省'],
+  '华中': ['河南省', '湖北省', '湖南省'],
+  '华南': ['广东省', '广西壮族自治区', '海南省'],
+  '西南': ['重庆市', '四川省', '贵州省', '云南省', '西藏自治区'],
+  '西北': ['陕西省', '甘肃省', '青海省', '宁夏回族自治区', '新疆维吾尔自治区'],
+}
+
+// 筛选后的省份列表
+const filteredProvinces = computed(() => {
+  if (!filterRegion.value) return PROVINCES
+  const provinceNames = REGION_PROVINCES[filterRegion.value] || []
+  return PROVINCES.filter(p => provinceNames.includes(p.name))
+})
+
+// 筛选后的城市列表
+const filteredCities = computed(() => {
+  if (!filterProvince.value) return []
+  const provinceCode = PROVINCES.find(p => p.name === filterProvince.value)?.code
+  if (!provinceCode) return []
+  return CITY_CODES[provinceCode] || []
+})
+
+// 大区切换 -> 清空省份和城市
+function onRegionChange() {
+  filterProvince.value = ''
+  filterCity.value = ''
+}
+
+// 筛选区：省份切换 -> 清空城市
+function onFilterProvinceChange() {
+  filterCity.value = ''
+}
+
+// 表单：省份切换 -> 清空城市 + 自动推导大区
 function onProvinceChange() {
-  form.cityCode = ''; // 切换省份时清空城市
-  // 自动推导大区
+  form.cityCode = ''
   if (form.provinceCode) {
-    form.region = PROVINCE_TO_REGION[form.provinceCode] || '';
+    form.region = PROVINCE_TO_REGION[form.provinceCode] || ''
   }
 }
 
@@ -303,31 +551,124 @@ async function fetchNewspapers() {
   }
 }
 
-// 各 Tab 数量统计
-const REGIONS = ['全国', '华北', '东北', '华东', '华中', '华南', '西南', '西北', '港澳台'] as const
-const regionCounts = computed(() => {
-  const counts: Record<string, number> = { all: allNewspapers.value.length }
-  for (const r of REGIONS) counts[r] = 0
-  for (const n of allNewspapers.value) {
-    if (n.region && counts[n.region] !== undefined) {
-      counts[n.region]++
-    }
-  }
-  return counts
+// 统计数据
+const stats = computed(() => {
+  const total = allNewspapers.value.length
+  const active = allNewspapers.value.filter(n => n.status === 1).length
+  const inactive = allNewspapers.value.filter(n => n.status === 0).length
+  const avgPrice = allNewspapers.value.length > 0 
+    ? (allNewspapers.value.reduce((sum, n) => sum + parseFloat(n.pricePerWord || 0), 0) / allNewspapers.value.length).toFixed(2)
+    : '0.00'
+  return { total, active, inactive, avgPrice: `¥${avgPrice}` }
 })
 
-// Tab + 搜索双重过滤
-const displayedNewspapers = computed(() => {
+// 总数（用于分页）
+const total = computed(() => {
   let list = allNewspapers.value
-  if (activeRegion.value) {
-    list = list.filter(n => n.region === activeRegion.value)
+  if (filterRegion.value) {
+    list = list.filter(n => n.region === filterRegion.value)
+  }
+  if (filterProvince.value) {
+    const filterName = filterProvince.value.replace(/省$|市$|自治区$/, '')
+    list = list.filter(n => {
+      const dataName = (n.province || '').replace(/省$|市$|自治区$/, '')
+      return dataName === filterName
+    })
+  }
+  if (filterCity.value) {
+    const filterName = filterCity.value.replace(/市$/, '')
+    list = list.filter(n => {
+      const dataName = (n.city || '').replace(/市$/, '')
+      return dataName === filterName
+    })
+  }
+  if (filterLevel.value !== '') {
+    list = list.filter(n => n.level === filterLevel.value)
+  }
+  if (filterStatus.value !== '') {
+    list = list.filter(n => n.status === filterStatus.value)
   }
   const kw = searchKey.value.trim().toLowerCase()
   if (kw) {
     list = list.filter(n => (n.name || '').toLowerCase().includes(kw))
   }
-  return list
+  return list.length
 })
+
+// 筛选后的列表（带分页）
+const displayedNewspapers = computed(() => {
+  let list = allNewspapers.value
+  
+  // 大区筛选
+  if (filterRegion.value) {
+    list = list.filter(n => n.region === filterRegion.value)
+  }
+  
+  // 省份筛选（兼容带/不带"省/市/自治区"后缀）
+  if (filterProvince.value) {
+    const filterName = filterProvince.value.replace(/省$|市$|自治区$/, '')
+    list = list.filter(n => {
+      const dataName = (n.province || '').replace(/省$|市$|自治区$/, '')
+      return dataName === filterName
+    })
+  }
+  
+  // 城市筛选（兼容带/不带"市"后缀）
+  if (filterCity.value) {
+    const filterName = filterCity.value.replace(/市$/, '')
+    list = list.filter(n => {
+      const dataName = (n.city || '').replace(/市$/, '')
+      return dataName === filterName
+    })
+  }
+  
+  // 级别筛选
+  if (filterLevel.value !== '') {
+    list = list.filter(n => n.level === filterLevel.value)
+  }
+  
+  // 状态筛选
+  if (filterStatus.value !== '') {
+    list = list.filter(n => n.status === filterStatus.value)
+  }
+  
+  // 关键词搜索
+  const kw = searchKey.value.trim().toLowerCase()
+  if (kw) {
+    list = list.filter(n => (n.name || '').toLowerCase().includes(kw))
+  }
+  
+  // 分页
+  const start = (pageNum.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return list.slice(start, end)
+})
+
+// 查询按钮
+function handleSearch() {
+  pageNum.value = 1
+}
+
+// 重置按钮
+function handleReset() {
+  searchKey.value = ''
+  filterRegion.value = ''
+  filterProvince.value = ''
+  filterCity.value = ''
+  filterLevel.value = ''
+  filterStatus.value = ''
+  pageNum.value = 1
+}
+
+// 分页
+function handleSizeChange(val: number) {
+  pageSize.value = val
+  pageNum.value = 1
+}
+
+function handlePageChange(val: number) {
+  pageNum.value = val
+}
 
 function showDialog(type: string, row?: any) {
   isEdit.value = type === 'edit'
@@ -425,6 +766,92 @@ async function toggleStatus(row: any) {
   ElMessage.success('状态已更新')
 }
 
+// ==================== 版面管理 ====================
+async function handleExpandChange(row: any) {
+  if (expandedRows.value.has(row.id)) {
+    expandedRows.value.delete(row.id)
+    expandedRows.value = new Set(expandedRows.value) // trigger reactivity
+    return
+  }
+  expandedRows.value.add(row.id)
+  expandedRows.value = new Set(expandedRows.value) // trigger reactivity
+  if (sections.value.find(s => s._newspaperId === row.id)) return
+  try {
+    const res: any = await getNewspaperSections(row.id)
+    const list = res.list || res.data?.list || []
+    list.forEach((s: any) => { s._newspaperId = row.id })
+    sections.value = [...sections.value.filter(s => s._newspaperId !== row.id), ...list]
+  } catch (e: any) {
+    ElMessage.error(e?.message || '加载版面失败')
+  }
+}
+
+function getRowSections(newspaperId: string) {
+  return sections.value.filter(s => s._newspaperId === newspaperId)
+}
+
+function openAddSection(row: any) {
+  currentNewspaperId.value = row.id
+  sectionIsEdit.value = false
+  sectionDialogTitle.value = `添加版面 - ${row.name}`
+  Object.assign(sectionForm, { name: '', category: '', list_price: 0, deadline_time: '', publish_cycle: '', sort: 0, status: 1, remark: '' })
+  sectionDialogVisible.value = true
+}
+
+function openEditSection(row: any, section: any) {
+  currentNewspaperId.value = row.id
+  sectionIsEdit.value = true
+  editingSectionId.value = section.id
+  sectionDialogTitle.value = `编辑版面 - ${row.name}`
+  Object.assign(sectionForm, {
+    name: section.name,
+    category: section.category || '',
+    list_price: section.listPrice || 0,
+    deadline_time: section.deadlineTime || '',
+    publish_cycle: section.publishCycle || '',
+    sort: section.sort || 0,
+    status: section.status ?? 1,
+    remark: section.remark || '',
+  })
+  sectionDialogVisible.value = true
+}
+
+async function saveSection() {
+  if (!sectionForm.name) { ElMessage.warning('请填写版面名称'); return }
+  sectionLoading.value = true
+  try {
+    if (sectionIsEdit.value) {
+      if (editingSectionId.value) {
+        await updateNewspaperSection(currentNewspaperId.value, editingSectionId.value, { ...sectionForm })
+      }
+    } else {
+      await createNewspaperSection(currentNewspaperId.value, { ...sectionForm })
+    }
+    ElMessage.success('保存成功')
+    sectionDialogVisible.value = false
+    const rowId = currentNewspaperId.value
+    const res: any = await getNewspaperSections(rowId)
+    const list = res.list || res.data?.list || []
+    list.forEach((s: any) => { s._newspaperId = rowId })
+    sections.value = [...sections.value.filter(s => s._newspaperId !== rowId), ...list]
+  } catch (e: any) {
+    ElMessage.error(e?.message || '保存失败')
+  } finally {
+    sectionLoading.value = false
+  }
+}
+
+async function deleteSection(row: any, section: any) {
+  await ElMessageBox.confirm('确认删除该版面？', '提示')
+  try {
+    await deleteNewspaperSection(row.id, section.id)
+    ElMessage.success('删除成功')
+    sections.value = sections.value.filter(s => !(s._newspaperId === row.id && s.id === section.id))
+  } catch (e: any) {
+    ElMessage.error(e?.message || '删除失败')
+  }
+}
+
 onMounted(async () => {
   const res: any = await getNewspaperCategories()
   categories.value = res.value || res.data?.list || res.list || res || []
@@ -433,6 +860,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.newspapers-page {
+  padding: 0;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -444,13 +875,128 @@ onMounted(async () => {
   font-size: 20px;
   font-weight: 600;
 }
+
+/* 统计卡片 */
+.stats-row {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 18px;
+  border-radius: 8px;
+  color: #fff;
+  min-width: 0;
+  min-height: 104px;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stat-num {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  opacity: .9;
+  margin-top: 4px;
+}
+
+.stat-card.blue  { background: linear-gradient(135deg, #5B6FE8, #7B8FFF); }
+.stat-card.green { background: linear-gradient(135deg, #52c41a, #73d13d); }
+.stat-card.gray  { background: linear-gradient(135deg, #8c8c8c, #bfbfbf); }
+.stat-card.cyan  { background: linear-gradient(135deg, #13c2c2, #36cfc9); }
+
 .page-card {
   background: #fff;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 20px;
   box-shadow: 0 1px 4px rgba(0,0,0,.08);
 }
-:deep(.region-tabs) {
-  margin-bottom: 16px;
+
+/* 筛选区域 */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* 价格 */
+.price {
+  font-weight: 600;
+  color: #f56c6c;
+}
+
+/* 分页 */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.pagination-info {
+  font-size: 13px;
+  color: #909399;
+}
+
+/* 版面展开区 */
+.section-expand-wrap {
+  padding: 16px 20px;
+  background: #f8f9fc;
+}
+
+.section-expand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-expand-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.section-table {
+  margin-top: 4px;
+  background: #fff;
+}
+
+.section-empty {
+  text-align: center;
+  color: #909399;
+  font-size: 13px;
+  padding: 16px 0;
 }
 </style>
