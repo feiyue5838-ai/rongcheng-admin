@@ -59,7 +59,7 @@
         </el-sub-menu>
 
         <el-sub-menu index="userCenter">
-          <template #title><el-icon><User /></el-icon><span>用户中心</span></template>
+          <template #title><el-icon><User /></el-icon><span>用户与内容</span></template>
           <el-menu-item index="/users">用户管理</el-menu-item>
           <el-menu-item index="/reviews">评价管理</el-menu-item>
           <el-menu-item index="/questions">问答管理</el-menu-item>
