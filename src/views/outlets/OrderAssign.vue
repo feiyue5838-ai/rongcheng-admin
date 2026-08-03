@@ -27,36 +27,37 @@
       <el-button type="primary" @click="loadData">搜索</el-button>
     </div>
 
-    <!-- 待分配订单 -->
+    <!-- 待分配订单（表格） -->
     <div v-if="activeTab === 'pending'">
       <div v-if="loading" v-loading="loading" style="min-height:200px" />
-      <div v-else-if="tableData.length === 0" class="empty-state">
-        <el-empty description="暂无待分配订单" />
-      </div>
-      <div v-else class="order-cards">
-        <div v-for="item in tableData" :key="item.id" class="order-card">
-          <div class="card-header">
-            <span class="order-no">{{ item.orderNo }}</span>
-            <el-tag :type="getModuleTagType(item.module)" size="small">{{ getModuleLabel(item.module) }}</el-tag>
-          </div>
-          <div class="card-body">
-            <div class="info-row"><span class="label">公司名称：</span>{{ item.companyName || '-' }}</div>
-            <div class="info-row"><span class="label">业务类型：</span>{{ item.type }}</div>
-            <div class="info-row"><span class="label">联系电话：</span>{{ item.contactPhone || '-' }}</div>
-            <div class="info-row"><span class="label">服务区域：</span>{{ item.serviceRegion || formatAddress(item.addressJson) || '-' }}</div>
-            <div v-if="item.customerAddress" class="info-row">
-              <span class="label">客户地址：</span>
-              <span style="color:#333">{{ item.customerAddress.fullAddress }}</span>
-              <span style="color:#666;margin-left:8px">({{ item.customerAddress.contact }} {{ item.customerAddress.phone }})</span>
-            </div>
-            <div class="info-row"><span class="label">订单金额：</span><span style="color:#5B6FE8;font-weight:600">¥{{ item.payPrice || item.totalPrice }}</span></div>
-            <div class="info-row"><span class="label">下单时间：</span>{{ formatDate(item.createdAt) }}</div>
-          </div>
-          <div class="card-footer">
-            <el-button type="primary" size="small" @click="openAssignDialog(item)">分配网点</el-button>
-          </div>
-        </div>
-      </div>
+      <el-empty v-else-if="tableData.length === 0" description="暂无待分配订单" />
+      <el-table v-else :data="tableData" stripe v-loading="loading" class="assign-table">
+        <el-table-column prop="orderNo" label="订单编号" width="190" />
+        <el-table-column label="模块" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getModuleTagType(row.module)" size="small">{{ getModuleLabel(row.module) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="companyName" label="公司名称" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="type" label="印章类型" width="130" show-overflow-tooltip />
+        <el-table-column prop="contactPhone" label="联系电话" width="130" />
+        <el-table-column label="服务区域" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.serviceRegion || formatAddress(row.addressJson) || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="订单金额" width="110">
+          <template #default="{ row }">
+            <span style="color:#5B6FE8;font-weight:600">¥{{ row.payPrice || row.totalPrice }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createdAt" label="下单时间" width="170">
+          <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" size="small" @click="openAssignDialog(row)">分配网点</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
 
     <!-- 已分配订单 -->
@@ -237,15 +238,6 @@ onMounted(loadData)
 .page-header { margin-bottom: 20px; }
 .page-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
 .filter-bar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; }
-.order-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
-.order-card { border: 1px solid #eee; border-radius: 8px; padding: 16px; background: #fff; transition: box-shadow 0.2s; }
-.order-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
-.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.order-no { font-weight: 600; color: #333; }
-.card-body { margin-bottom: 12px; }
-.info-row { font-size: 13px; color: #666; line-height: 1.8; }
-.info-row .label { color: #999; }
-.card-footer { display: flex; justify-content: flex-end; }
 .pagination { display: flex; justify-content: flex-end; margin-top: 16px; }
 .empty-state { padding: 60px 0; }
 </style>
