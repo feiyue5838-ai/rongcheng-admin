@@ -102,8 +102,10 @@
             <el-table-column prop="createdAt" label="创建时间" width="170">
               <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
             </el-table-column>
-            <el-table-column label="操作" width="180" fixed="right">
+            <el-table-column label="操作" width="220" fixed="right">
               <template #default="{ row }">
+                <el-button v-if="row.status === 0" type="success" link @click="toggleAnnStatus(row, 1)">发布</el-button>
+                <el-button v-else type="warning" link @click="toggleAnnStatus(row, 0)">发布下架</el-button>
                 <el-button type="primary" link @click="openAnnDialog(row)">编辑</el-button>
                 <el-button type="danger" link @click="deleteAnnouncement(row)">删除</el-button>
               </template>
@@ -285,6 +287,16 @@ async function saveAnnouncement() {
     loadAnnouncements()
   } catch (e) { ElMessage.error(e.message || '保存失败') } finally { annSaving.value = false }
 }
+async function toggleAnnStatus(row, newStatus) {
+  const action = newStatus === 1 ? '发布' : '下架'
+  await ElMessageBox.confirm(`确定${action}公告「${row.title}」吗？`, '提示', { type: 'warning' })
+  try {
+    await request.put(`/content/announcements/${row.id}`, { status: newStatus })
+    ElMessage.success(`${action}成功`)
+    loadAnnouncements()
+  } catch (e) { ElMessage.error(e.message || `${action}失败`) }
+}
+
 async function deleteAnnouncement(row) {
   await ElMessageBox.confirm(`确定删除公告「${row.title}」吗？`, '提示', { type: 'warning' })
   try {
