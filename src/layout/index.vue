@@ -63,9 +63,7 @@
           <el-menu-item index="/users">用户管理</el-menu-item>
           <el-menu-item index="/reviews">评价管理</el-menu-item>
           <el-menu-item index="/questions">问答管理</el-menu-item>
-          <el-menu-item index="/content/banners">Banner 管理</el-menu-item>
-          <el-menu-item index="/content/announcements">公告管理</el-menu-item>
-          <el-menu-item index="/content/intros">业务介绍</el-menu-item>
+          <el-menu-item index="/content">内容管理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="system">

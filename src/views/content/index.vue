@@ -1,0 +1,327 @@
+<template>
+  <div>
+    <el-tabs v-model="activeTab" class="content-tabs" @tab-change="onTabChange">
+      <!-- ============ Banner ============ -->
+      <el-tab-pane label="Banner 管理" name="banners">
+        <div class="page-header">
+          <h2>Banner 管理</h2>
+          <el-button type="primary" @click="openBannerDialog()">新增 Banner</el-button>
+        </div>
+        <div class="page-card">
+          <el-table :data="banners" v-loading="bannerLoading" stripe>
+            <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column label="图片" width="160">
+              <template #default="{ row }">
+                <el-image v-if="row.image" :src="row.image" style="width: 140px; height: 70px; border-radius: 4px" :preview-src-list="[row.image]" fit="cover" />
+              </template>
+            </el-table-column>
+            <el-table-column prop="title" label="标题" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="link" label="跳转链接" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="sort" label="排序" width="80" />
+            <el-table-column prop="status" label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+                  {{ row.status === 1 ? '启用' : '禁用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="createdAt" label="创建时间" width="170">
+              <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="180" fixed="right">
+              <template #default="{ row }">
+                <el-button type="primary" link @click="openBannerDialog(row)">编辑</el-button>
+                <el-button type="danger" link @click="deleteBanner(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <el-dialog v-model="bannerVisible" :title="bannerForm.id ? '编辑 Banner' : '新增 Banner'" width="560px">
+          <el-form :model="bannerForm" label-width="100px">
+            <el-form-item label="标题">
+              <el-input v-model="bannerForm.title" placeholder="Banner 标题" />
+            </el-form-item>
+            <el-form-item label="图片">
+              <el-upload :action="'/api/upload/seal'" :show-file-list="false" :on-success="bannerUploadSuccess" :before-upload="bannerBeforeUpload" accept="image/*">
+                <el-button>选择图片</el-button>
+              </el-upload>
+              <el-image v-if="bannerForm.image" :src="bannerForm.image" style="width: 200px; margin-top: 8px; border-radius: 4px" />
+            </el-form-item>
+            <el-form-item label="跳转链接">
+              <el-input v-model="bannerForm.link" placeholder="如 /pages/seal-tab/index" />
+            </el-form-item>
+            <el-form-item label="排序">
+              <el-input-number v-model="bannerForm.sort" :min="0" />
+            </el-form-item>
+            <el-form-item label="状态">
+              <el-switch v-model="bannerForm.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="禁用" />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <el-button @click="bannerVisible = false">取消</el-button>
+            <el-button type="primary" :loading="bannerSaving" @click="saveBanner">保存</el-button>
+          </template>
+        </el-dialog>
+      </el-tab-pane>
+
+      <!-- ============ 公告 ============ -->
+      <el-tab-pane label="公告管理" name="announcements">
+        <div class="page-header">
+          <h2>公告管理</h2>
+          <el-button type="primary" @click="openAnnDialog()">新增公告</el-button>
+        </div>
+        <div class="page-card">
+          <el-table :data="announcements" v-loading="annLoading" stripe>
+            <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="content" label="内容" min-width="300" show-overflow-tooltip />
+            <el-table-column prop="status" label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+                  {{ row.status === 1 ? '启用' : '禁用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="createdAt" label="创建时间" width="170">
+              <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="180" fixed="right">
+              <template #default="{ row }">
+                <el-button type="primary" link @click="openAnnDialog(row)">编辑</el-button>
+                <el-button type="danger" link @click="deleteAnnouncement(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <el-dialog v-model="annVisible" :title="annForm.id ? '编辑公告' : '新增公告'" width="560px">
+          <el-form :model="annForm" label-width="80px">
+            <el-form-item label="标题">
+              <el-input v-model="annForm.title" placeholder="公告标题" />
+            </el-form-item>
+            <el-form-item label="内容">
+              <el-input v-model="annForm.content" type="textarea" :rows="5" placeholder="公告内容" />
+            </el-form-item>
+            <el-form-item label="状态">
+              <el-switch v-model="annForm.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="禁用" />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <el-button @click="annVisible = false">取消</el-button>
+            <el-button type="primary" :loading="annSaving" @click="saveAnnouncement">保存</el-button>
+          </template>
+        </el-dialog>
+      </el-tab-pane>
+
+      <!-- ============ 业务介绍 ============ -->
+      <el-tab-pane label="业务介绍" name="intros">
+        <div class="page-header">
+          <h2>业务介绍管理</h2>
+          <el-button type="primary" @click="openIntroDialog()">新增介绍</el-button>
+        </div>
+        <div class="page-card">
+          <el-table :data="intros" v-loading="introLoading" stripe>
+            <el-table-column prop="sort" label="排序" width="80" />
+            <el-table-column label="图片" width="180">
+              <template #default="{ row }">
+                <el-image v-if="row.image" :src="row.image" style="width: 160px; height: 90px; border-radius: 4px" :preview-src-list="[row.image]" fit="cover" />
+              </template>
+            </el-table-column>
+            <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="subtitle" label="副标题" min-width="200" show-overflow-tooltip />
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+                  {{ row.status === 1 ? '启用' : '禁用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="180" fixed="right">
+              <template #default="{ row }">
+                <el-button type="primary" link @click="openIntroDialog(row)">编辑</el-button>
+                <el-button type="danger" link @click="deleteIntro(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <el-dialog v-model="introVisible" :title="introForm.id ? '编辑业务介绍' : '新增业务介绍'" width="560px">
+          <el-form :model="introForm" label-width="100px">
+            <el-form-item label="标题">
+              <el-input v-model="introForm.title" placeholder="如：官方备案" />
+            </el-form-item>
+            <el-form-item label="副标题">
+              <el-input v-model="introForm.subtitle" type="textarea" :rows="3" placeholder="介绍文案" />
+            </el-form-item>
+            <el-form-item label="宣传图片">
+              <el-upload :action="'/api/upload/seal'" :show-file-list="false" :on-success="introUploadSuccess" :before-upload="introBeforeUpload" accept="image/*">
+                <el-button>选择图片</el-button>
+              </el-upload>
+              <el-image v-if="introForm.image" :src="introForm.image" style="width: 200px; margin-top: 8px; border-radius: 4px" />
+            </el-form-item>
+            <el-form-item label="排序">
+              <el-input-number v-model="introForm.sort" :min="0" />
+            </el-form-item>
+            <el-form-item label="状态">
+              <el-switch v-model="introForm.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="禁用" />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <el-button @click="introVisible = false">取消</el-button>
+            <el-button type="primary" :loading="introSaving" @click="saveIntro">保存</el-button>
+          </template>
+        </el-dialog>
+      </el-tab-pane>
+    </el-tabs>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import request from '@/api'
+import { formatDate } from '@/utils/format'
+
+const activeTab = ref('banners')
+
+function beforeUpload(file) {
+  if (file.size > 2 * 1024 * 1024) { ElMessage.error('图片不能超过 2MB'); return false }
+  return true
+}
+
+// ==================== Banner ====================
+const banners = ref([])
+const bannerLoading = ref(false)
+const bannerSaving = ref(false)
+const bannerVisible = ref(false)
+const bannerForm = reactive({ id: null, title: '', image: '', link: '', sort: 0, status: 1 })
+
+async function loadBanners() {
+  bannerLoading.value = true
+  try {
+    const res = await request.get('/content/banners')
+    banners.value = res.list || []
+  } catch { /* ignore */ } finally { bannerLoading.value = false }
+}
+function openBannerDialog(row) {
+  if (row) Object.assign(bannerForm, row)
+  else Object.assign(bannerForm, { id: null, title: '', image: '', link: '', sort: 0, status: 1 })
+  bannerVisible.value = true
+}
+function bannerUploadSuccess(res) {
+  if (res.url) bannerForm.image = res.url
+  else ElMessage.error('上传失败')
+}
+async function saveBanner() {
+  bannerSaving.value = true
+  try {
+    if (bannerForm.id) await request.put(`/content/banners/${bannerForm.id}`, bannerForm)
+    else await request.post('/content/banners', bannerForm)
+    ElMessage.success('保存成功')
+    bannerVisible.value = false
+    loadBanners()
+  } catch (e) { ElMessage.error(e.message || '保存失败') } finally { bannerSaving.value = false }
+}
+async function deleteBanner(row) {
+  await ElMessageBox.confirm(`确定删除 Banner「${row.title}」吗？`, '提示', { type: 'warning' })
+  try {
+    await request.delete(`/content/banners/${row.id}`)
+    ElMessage.success('删除成功')
+    loadBanners()
+  } catch (e) { ElMessage.error(e.message || '删除失败') }
+}
+
+// ==================== 公告 ====================
+const announcements = ref([])
+const annLoading = ref(false)
+const annSaving = ref(false)
+const annVisible = ref(false)
+const annForm = reactive({ id: null, title: '', content: '', status: 1 })
+
+async function loadAnnouncements() {
+  annLoading.value = true
+  try {
+    const res = await request.get('/content/announcements')
+    announcements.value = res.list || []
+  } catch { /* ignore */ } finally { annLoading.value = false }
+}
+function openAnnDialog(row) {
+  if (row) Object.assign(annForm, row)
+  else Object.assign(annForm, { id: null, title: '', content: '', status: 1 })
+  annVisible.value = true
+}
+async function saveAnnouncement() {
+  annSaving.value = true
+  try {
+    if (annForm.id) await request.put(`/content/announcements/${annForm.id}`, annForm)
+    else await request.post('/content/announcements', annForm)
+    ElMessage.success('保存成功')
+    annVisible.value = false
+    loadAnnouncements()
+  } catch (e) { ElMessage.error(e.message || '保存失败') } finally { annSaving.value = false }
+}
+async function deleteAnnouncement(row) {
+  await ElMessageBox.confirm(`确定删除公告「${row.title}」吗？`, '提示', { type: 'warning' })
+  try {
+    await request.delete(`/content/announcements/${row.id}`)
+    ElMessage.success('删除成功')
+    loadAnnouncements()
+  } catch (e) { ElMessage.error(e.message || '删除失败') }
+}
+
+// ==================== 业务介绍 ====================
+const intros = ref([])
+const introLoading = ref(false)
+const introSaving = ref(false)
+const introVisible = ref(false)
+const introForm = reactive({ id: null, title: '', subtitle: '', image: '', sort: 0, status: 1 })
+
+async function loadIntros() {
+  introLoading.value = true
+  try {
+    const res = await request.get('/content/intros')
+    intros.value = res.list || []
+  } catch { /* ignore */ } finally { introLoading.value = false }
+}
+function openIntroDialog(row) {
+  if (row) Object.assign(introForm, row)
+  else Object.assign(introForm, { id: null, title: '', subtitle: '', image: '', sort: 0, status: 1 })
+  introVisible.value = true
+}
+function introUploadSuccess(res) {
+  if (res.url) introForm.image = res.url
+  else ElMessage.error('上传失败')
+}
+async function saveIntro() {
+  introSaving.value = true
+  try {
+    if (introForm.id) await request.put(`/content/intros/${introForm.id}`, introForm)
+    else await request.post('/content/intros', introForm)
+    ElMessage.success('保存成功')
+    introVisible.value = false
+    loadIntros()
+  } catch (e) { ElMessage.error(e.message || '保存失败') } finally { introSaving.value = false }
+}
+async function deleteIntro(row) {
+  await ElMessageBox.confirm(`确定删除「${row.title}」吗？`, '提示', { type: 'warning' })
+  try {
+    await request.delete(`/content/intros/${row.id}`)
+    ElMessage.success('删除成功')
+    loadIntros()
+  } catch (e) { ElMessage.error(e.message || '删除失败') }
+}
+
+// 首次切到某 tab 时才加载（减少无意义请求）
+function onTabChange(name) {
+  if (name === 'banners' && banners.value.length === 0) loadBanners()
+  else if (name === 'announcements' && announcements.value.length === 0) loadAnnouncements()
+  else if (name === 'intros' && intros.value.length === 0) loadIntros()
+}
+
+onMounted(loadBanners)
+</script>
+
+<style scoped>
+.content-tabs { background: #fff; border-radius: 12px; padding: 8px 16px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin: 8px 0 16px; }
+.page-header h2 { margin: 0; font-size: 22px; font-weight: 600; }
+.page-card { background: #fff; border-radius: 12px; padding: 20px; }
+</style>
