@@ -250,6 +250,10 @@ function getAssignmentText(status) {
   const map = { 0: '未分配', 1: '已分配', 2: '制作中', 3: '已完成' }
   return map[status] || '未知'
 }
+function getAssignmentTagType(status) {
+  const map = { 0: 'info', 1: 'primary', 2: 'warning', 3: 'success' }
+  return map[status] || 'info'
+}
 function getModuleLabel(m) {
   const map = { seal: '刻章', newspaper: '登报', bookkeeping: '代理记账' }
   return map[m] || m
