@@ -99,23 +99,33 @@
       </el-dialog>
 
       <!-- 分配网点弹窗 -->
-      <el-dialog v-model="assignVisible" title="分配网点" width="480px">
-        <el-form label-width="100px">
-          <el-form-item label="订单">
-            <span style="color:#666">{{ assignTarget?.orderNo }}</span>
-          </el-form-item>
-          <el-form-item label="选择网点" required>
-            <el-select v-model="assignForm.outletId" filterable placeholder="请选择网点" style="width: 100%">
-              <el-option v-for="s in outletList" :key="s.id" :label="`${s.name}（${s.phone}）`" :value="s.id" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="备注">
-            <el-input v-model="assignForm.remark" type="textarea" placeholder="可选，如特殊说明" />
-          </el-form-item>
-        </el-form>
+      <el-dialog v-model="assignVisible" title="分配网点" width="600px">
+        <div style="margin-bottom:12px;color:#666;font-size:13px">
+          订单号：<b style="color:#333">{{ assignTarget?.orderNo }}</b>
+          &nbsp;&nbsp;|&nbsp;&nbsp;
+          已选：<b style="color:#5B6FE8">{{ currentOutletName || '—' }}</b>
+        </div>
+        <el-table
+          :data="outletList"
+          height="360"
+          highlight-current-row
+          :row-class-name="tableRowClassName"
+          @row-click="onOutletRowClick"
+          style="cursor:pointer"
+        >
+          <el-table-column type="index" label="序号" width="60" align="center" />
+          <el-table-column prop="name" label="网点名称" min-width="160" />
+          <el-table-column prop="phone" label="联系电话" width="130" />
+          <el-table-column prop="address" label="地址" min-width="200" show-overflow-tooltip />
+        </el-table>
+        <div style="margin-top:12px">
+          <el-input v-model="assignForm.remark" type="textarea" placeholder="分配备注（可选）" :rows="2" />
+        </div>
         <template #footer>
           <el-button @click="assignVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmAssign" :loading="assigning">确认分配</el-button>
+          <el-button type="primary" @click="confirmAssign" :loading="assigning" :disabled="!assignForm.outletId">
+            确认分配
+          </el-button>
         </template>
       </el-dialog>
     </div>
@@ -188,15 +198,26 @@ const assigning = ref(false)
 const outletList = ref<any[]>([])
 const assignTarget = ref<any>(null)
 const assignForm = ref({ outletId: '', remark: '' })
+const currentOutletName = ref('')
+
+function tableRowClassName({ row }: { row: any }) {
+  return row.id === assignForm.value.outletId ? 'current-row' : ''
+}
 
 async function showAssignDialog(row: any) {
   assignTarget.value = row
   assignForm.value = { outletId: '', remark: '' }
+  currentOutletName.value = ''
   assignVisible.value = true
   try {
     const res: any = await getOutletsAPI({ page: 1, pageSize: 100 })
     outletList.value = res.list || []
   } catch { /* ignore */ }
+}
+
+function onOutletRowClick(row: any) {
+  assignForm.value.outletId = row.id
+  currentOutletName.value = row.name
 }
 
 async function confirmAssign() {
@@ -284,4 +305,5 @@ onMounted(fetchOrders)
 .page-card { background: #fff; padding: 20px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,21,41,.08); }
 .search-form { margin-bottom: 16px; }
 .text-muted { color: #999; font-size: 12px; }
+::v-deep .current-row td { background-color: #EBF5FF !important; color: #5B6FE8; font-weight: 600; }
 </style>
