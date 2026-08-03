@@ -203,10 +203,10 @@ const currentOrder = ref(null)
 const assignForm = reactive({ outletId: '', remark: '' })
 const currentOutletName = ref('')
 
-function tableRowClassName({ row }: { row: any }) {
+function tableRowClassName({ row }) {
   return row.id === assignForm.outletId ? 'current-row' : ''
 }
-function onOutletRowClick(row: any) {
+function onOutletRowClick(row) {
   assignForm.outletId = row.id
   currentOutletName.value = row.name
 }
