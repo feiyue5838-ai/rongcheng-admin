@@ -113,13 +113,32 @@
       <div v-else>
         <el-table :data="tableData" v-loading="loading" stripe>
           <el-table-column prop="orderNo" label="订单编号" width="170" />
-          <el-table-column prop="companyName" label="公司名称" min-width="160" />
-          <el-table-column prop="type" label="印章类型" width="120" />
+          <el-table-column label="模块" width="100">
+            <template #default="{ row }">
+              <el-tag :type="getModuleTagType(row.module)" size="small">{{ getModuleLabel(row.module) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="companyName" label="公司名称" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="contactPhone" label="联系电话" width="130" />
+          <el-table-column label="服务区域" min-width="140" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.serviceRegion || formatAddress(row.addressJson) || '-' }}</template>
+          </el-table-column>
+          <el-table-column label="分配网点" min-width="140" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span v-if="row.assignment?.outlet">{{ row.assignment.outlet.name }}</span>
+              <span v-else class="text-gray">-</span>
+            </template>
+          </el-table-column>
           <el-table-column label="分配状态" width="100">
             <template #default="{ row }">
               <el-tag :type="getAssignmentTagType(row.assignmentStatus)" size="small">
                 {{ getAssignmentText(row.assignmentStatus) }}
               </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="订单金额" width="110">
+            <template #default="{ row }">
+              <span class="price-cell">¥{{ row.payPrice || row.totalPrice }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="createdAt" label="下单时间" width="170">
@@ -150,7 +169,7 @@
         已选：<b style="color:#5B6FE8">{{ currentOutletName || '—' }}</b>
       </div>
       <div style="margin-bottom:8px">
-        <el-input v-model="outletKeyword" placeholder="搜索网点名称/城市/电话" clearable size="small">
+        <el-input v-model="outletKeyword" placeholder="搜索网点名称/城市/电话" clearable size="small" autofocus>
           <template #prefix><span style="color:#909399">🔍</span></template>
         </el-input>
       </div>
@@ -196,7 +215,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getUnassignedOrdersAPI, assignOrderAPI, getOutletsAPI, getOrderStatistics } from '@/api'
+import { getUnassignedOrdersAPI, getAssignedOrdersAPI, assignOrderAPI, getOutletsAPI, getOrderStatistics } from '@/api'
 import { formatDate } from '@/utils/format'
 
 const activeTab = ref('pending')
@@ -275,7 +294,9 @@ async function loadData() {
         } catch { /* ignore */ }
       }
     } else {
-      tableData.value = []
+      const res = await getAssignedOrdersAPI({ page: page.value, pageSize: pageSize.value, keyword: keyword.value, module: module.value })
+      tableData.value = res.list
+      total.value = res.pagination.total
     }
   } catch (err) {
     ElMessage.error('加载失败')

@@ -178,6 +178,7 @@ export const getOutletOverviewAPI = () => request.get('/outlets/admin/overview')
 
 // ==================== 订单分配 API ====================
 export const getUnassignedOrdersAPI = (params: object) => request.get('/orders/unassigned', { params })
+export const getAssignedOrdersAPI = (params: object) => request.get('/orders/assigned', { params })
 export const assignOrderAPI = (orderId: string, data: { outletId: string; remark?: string }) => request.post(`/orders/${orderId}/assign`, { outlet_id: data.outletId, remark: data.remark })
 
 // ==================== 交付回执 API ====================
