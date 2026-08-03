@@ -71,6 +71,16 @@
           <el-button type="primary" @click="openAnnDialog()">新增公告</el-button>
         </div>
         <div class="page-card">
+          <div class="filter-bar" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <el-select v-model="annFilter.status" placeholder="状态" clearable style="width:120px">
+              <el-option label="全部" :value="undefined" />
+              <el-option label="启用" :value="1" />
+              <el-option label="禁用" :value="0" />
+            </el-select>
+            <el-input v-model="annFilter.keyword" placeholder="搜索标题/内容" clearable style="width:200px" @keyup.enter="loadAnnouncements" />
+            <el-button type="primary" @click="loadAnnouncements">搜索</el-button>
+            <el-button @click="annFilter.status=undefined;annFilter.keyword='';loadAnnouncements()">重置</el-button>
+          </div>
           <el-table :data="announcements" v-loading="annLoading" stripe>
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
@@ -82,6 +92,13 @@
                 </el-tag>
               </template>
             </el-table-column>
+            <el-table-column prop="publishedAt" label="发布时间" width="170">
+              <template #default="{ row }">{{ formatDate(row.publishedAt) }}</template>
+            </el-table-column>
+            <el-table-column prop="expiredAt" label="下线时间" width="170">
+              <template #default="{ row }">{{ formatDate(row.expiredAt) }}</template>
+            </el-table-column>
+            <el-table-column prop="operator" label="操作人" width="120" show-overflow-tooltip />
             <el-table-column prop="createdAt" label="创建时间" width="170">
               <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
             </el-table-column>
@@ -100,6 +117,12 @@
             </el-form-item>
             <el-form-item label="内容">
               <el-input v-model="annForm.content" type="textarea" :rows="5" placeholder="公告内容" />
+            </el-form-item>
+            <el-form-item label="发布时间">
+              <el-date-picker v-model="annForm.publishedAt" type="datetime" placeholder="选择发布时间（选填）" style="width:100%" value-format="YYYY-MM-DD HH:mm:ss" />
+            </el-form-item>
+            <el-form-item label="下线时间">
+              <el-date-picker v-model="annForm.expiredAt" type="datetime" placeholder="选择下线时间（选填）" style="width:100%" value-format="YYYY-MM-DD HH:mm:ss" />
             </el-form-item>
             <el-form-item label="状态">
               <el-switch v-model="annForm.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="禁用" />
@@ -232,20 +255,24 @@ async function deleteBanner(row) {
 // ==================== 公告 ====================
 const announcements = ref([])
 const annLoading = ref(false)
+const annFilter = reactive({ status: undefined, keyword: '' })
 const annSaving = ref(false)
 const annVisible = ref(false)
-const annForm = reactive({ id: null, title: '', content: '', status: 1 })
+const annForm = reactive({ id: null, title: '', content: '', publishedAt: null, expiredAt: null, status: 1 })
 
 async function loadAnnouncements() {
   annLoading.value = true
   try {
-    const res = await request.get('/content/announcements')
+    const params = {}
+    if (annFilter.status !== undefined) params.status = annFilter.status
+    if (annFilter.keyword) params.keyword = annFilter.keyword
+    const res = await request.get('/content/announcements', { params })
     announcements.value = res.list || []
   } catch { /* ignore */ } finally { annLoading.value = false }
 }
 function openAnnDialog(row) {
   if (row) Object.assign(annForm, row)
-  else Object.assign(annForm, { id: null, title: '', content: '', status: 1 })
+  else Object.assign(annForm, { id: null, title: '', content: '', publishedAt: null, expiredAt: null, status: 1 })
   annVisible.value = true
 }
 async function saveAnnouncement() {
