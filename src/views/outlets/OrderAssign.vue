@@ -27,6 +27,30 @@
       <el-button type="primary" @click="loadData">搜索</el-button>
     </div>
 
+    <!-- 统计卡片 -->
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-value" style="color:#E6A23C">{{ pendingCount }}</div>
+        <div class="stat-label">待分配订单</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:#67C23A">{{ assignedCount }}</div>
+        <div class="stat-label">已分配订单</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:#909399">{{ pendingSealCount }}</div>
+        <div class="stat-label">刻章</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:#909399">{{ pendingNewspaperCount }}</div>
+        <div class="stat-label">登报</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:#909399">{{ pendingBookkeepingCount }}</div>
+        <div class="stat-label">代理记账</div>
+      </div>
+    </div>
+
     <!-- 待分配订单（表格） -->
     <div v-if="activeTab === 'pending'">
       <div v-if="loading" v-loading="loading" style="min-height:200px" />
@@ -124,13 +148,17 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getUnassignedOrdersAPI, assignOrderAPI, getOutletsAPI } from '@/api'
+import { getUnassignedOrdersAPI, assignOrderAPI, getOutletsAPI, getOrderStatistics } from '@/api'
 import { formatDate } from '@/utils/format'
 
 const activeTab = ref('pending')
 const loading = ref(false)
 const tableData = ref([])
 const pendingCount = ref(0)
+const assignedCount = ref(0)
+const pendingSealCount = ref(0)
+const pendingNewspaperCount = ref(0)
+const pendingBookkeepingCount = ref(0)
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
@@ -180,12 +208,27 @@ async function loadData() {
   loading.value = true
   try {
     if (activeTab.value === 'pending') {
-      const res = await getUnassignedOrdersAPI({ page: page.value, pageSize: pageSize.value, keyword: keyword.value, module: module.value })
-      tableData.value = res.list
-      total.value = res.pagination.total
-      pendingCount.value = res.pagination.total
+      // 先拉模块分布（不带 module 过滤的全量，待分配口径）
+      const [resAll, resFiltered] = await Promise.all([
+        getUnassignedOrdersAPI({ page: 1, pageSize: 1, keyword: keyword.value }),
+        getUnassignedOrdersAPI({ page: page.value, pageSize: pageSize.value, keyword: keyword.value, module: module.value }),
+      ])
+      pendingCount.value = resAll.pagination.total
+      tableData.value = resFiltered.list
+      total.value = resFiltered.pagination.total
+      // 模块分布：全量列表中按 module 统计（仅当前筛选结果内）
+      const list = resFiltered.list || []
+      pendingSealCount.value = list.filter(i => i.module === 'seal').length
+      pendingNewspaperCount.value = list.filter(i => i.module === 'newspaper').length
+      pendingBookkeepingCount.value = list.filter(i => i.module === 'bookkeeping').length
+      // 已分配数从统计接口取
+      if (assignedCount.value === 0) {
+        try {
+          const stats = await getOrderStatistics()
+          assignedCount.value = stats.assigned || stats.assignedCount || 0
+        } catch { /* ignore */ }
+      }
     } else {
-      // 已分配订单可复用 getOrdersAPI，筛选 assignmentStatus > 0
       tableData.value = []
     }
   } catch (err) {
@@ -240,4 +283,8 @@ onMounted(loadData)
 .filter-bar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; }
 .pagination { display: flex; justify-content: flex-end; margin-top: 16px; }
 .empty-state { padding: 60px 0; }
+.stat-cards { display: flex; gap: 16px; margin-bottom: 16px; }
+.stat-card { flex: 1; background: #fff; border-radius: 8px; padding: 16px 20px; border: 1px solid #f0f0f0; text-align: center; }
+.stat-value { font-size: 28px; font-weight: 700; line-height: 1.2; }
+.stat-label { font-size: 13px; color: #999; margin-top: 6px; }
 </style>
