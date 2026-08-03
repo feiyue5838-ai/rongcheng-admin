@@ -217,11 +217,11 @@ async function loadData() {
   try {
     const [outletRes, ordersRes] = await Promise.all([
       getOutletAPI(selectedOutlet.value),
-      getOutletOrdersAPI(selectedOutlet.value, { page: 1, pageSize: 10 }),
+      getOutletOrdersAPI(selectedOutlet.value, { page: 1, pageSize: 100 }),
     ])
     currentOutlet.value = outletRes
-    recentOrders.value = ordersRes.list
-    // 从列表中计算统计数据
+    recentOrders.value = ordersRes.list.slice(0, 10)
+    // 从全部订单计算统计数据（取 100 条近似）
     const allOrders = ordersRes.list
     stats.value = {
       pending: allOrders.filter(o => o.status === 1).length,
@@ -242,7 +242,7 @@ function onAccept(order) {
 async function onConfirmAccept() {
   actionLoading.value = true
   try {
-    await fetch(`/api/orders/${currentOrder.value.orderId}/accept`, {
+    const res = await fetch(`/api/orders/${currentOrder.value.orderId}/accept`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
@@ -250,6 +250,10 @@ async function onConfirmAccept() {
       },
       body: JSON.stringify({ outletId: selectedOutlet.value }),
     })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.message || `HTTP ${res.status}`)
+    }
     ElMessage.success('接单成功')
     acceptDialogVisible.value = false
     loadData()
@@ -271,7 +275,7 @@ async function onConfirmComplete() {
   if (!valid) return
   actionLoading.value = true
   try {
-    await fetch(`/api/orders/${currentOrder.value.orderId}/deliver`, {
+    const res = await fetch(`/api/orders/${currentOrder.value.orderId}/deliver`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
@@ -285,6 +289,10 @@ async function onConfirmComplete() {
         outletId: selectedOutlet.value,
       }),
     })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.message || `HTTP ${res.status}`)
+    }
     ElMessage.success('交货成功')
     completeDialogVisible.value = false
     loadData()
