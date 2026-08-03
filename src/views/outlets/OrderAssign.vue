@@ -1,26 +1,71 @@
 <template>
-  <div class="order-assign">
+  <div class="page-wrapper">
     <div class="page-header">
       <h2>订单分配管理</h2>
     </div>
 
-    <!-- tab 切换 -->
-    <el-tabs v-model="activeTab" @tab-change="loadData">
-      <el-tab-pane label="待分配订单" name="pending">
-        <template #label>
-          待分配 <el-badge :value="pendingCount" :hidden="!pendingCount" type="warning" />
-        </template>
-      </el-tab-pane>
-      <el-tab-pane label="已分配订单" name="assigned" />
-    </el-tabs>
+    <div class="page-card">
 
-    <!-- 筛选栏（白色卡片） -->
-    <div class="filter-card">
-      <div class="filter-bar">
-        <el-input v-model="keyword" placeholder="搜索订单号/公司名称" style="width:240px" clearable @keyup.enter="loadData">
-          <template #prefix><el-icon><Search /></el-icon></template>
-        </el-input>
-        <el-select v-model="module" placeholder="全部模块" style="width:140px" clearable @change="loadData">
+      <!-- tab 切换 -->
+      <el-tabs v-model="activeTab" @tab-change="loadData" class="assign-tabs">
+        <el-tab-pane label="待分配订单" name="pending">
+          <template #label>
+            待分配 <el-badge :value="pendingCount" :hidden="!pendingCount" type="warning" />
+          </template>
+        </el-tab-pane>
+        <el-tab-pane label="已分配订单" name="assigned" />
+      </el-tabs>
+
+      <!-- 统计行（渐变背景） -->
+      <div class="stats-row">
+        <div class="stat-card stat-orange">
+          <div class="stat-icon">📋</div>
+          <div class="stat-info">
+            <span class="stat-num">{{ pendingCount }}</span>
+            <span class="stat-label">待分配订单</span>
+          </div>
+        </div>
+        <div class="stat-card stat-green">
+          <div class="stat-icon">✓</div>
+          <div class="stat-info">
+            <span class="stat-num">{{ assignedCount }}</span>
+            <span class="stat-label">已分配订单</span>
+          </div>
+        </div>
+        <div class="stat-card stat-blue">
+          <div class="stat-icon">🔏</div>
+          <div class="stat-info">
+            <span class="stat-num">{{ pendingSealCount }}</span>
+            <span class="stat-label">刻章</span>
+          </div>
+        </div>
+        <div class="stat-card stat-blue">
+          <div class="stat-icon">📰</div>
+          <div class="stat-info">
+            <span class="stat-num">{{ pendingNewspaperCount }}</span>
+            <span class="stat-label">登报</span>
+          </div>
+        </div>
+        <div class="stat-card stat-blue">
+          <div class="stat-icon">📊</div>
+          <div class="stat-info">
+            <span class="stat-num">{{ pendingBookkeepingCount }}</span>
+            <span class="stat-label">代理记账</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工具栏 -->
+      <div class="toolbar-row">
+        <el-input
+          v-model="keyword"
+          placeholder="搜索订单号/公司名称..."
+          clearable
+          prefix-icon="Search"
+          style="width:240px"
+          @keyup.enter="loadData"
+        />
+        <el-select v-model="module" placeholder="全部模块" clearable style="width:140px" @change="loadData">
           <el-option label="刻章" value="seal" />
           <el-option label="登报" value="newspaper" />
           <el-option label="代理记账" value="bookkeeping" />
@@ -30,64 +75,12 @@
         </el-button>
         <el-button @click="keyword=''; module=''; loadData()">重置</el-button>
       </div>
-    </div>
 
-    <!-- 统计卡片 -->
-    <div class="stat-cards">
-      <div class="stat-card stat-card--warning">
-        <div class="stat-icon">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="#E6A23C" stroke-width="1.8" stroke-linecap="round"/><path d="M9 12h6M9 16h4" stroke="#E6A23C" stroke-width="1.8" stroke-linecap="round"/></svg>
-        </div>
-        <div class="stat-body">
-          <div class="stat-value" style="color:#E6A23C">{{ pendingCount }}</div>
-          <div class="stat-label">待分配订单</div>
-        </div>
-      </div>
-      <div class="stat-card stat-card--success">
-        <div class="stat-icon">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#67C23A" stroke-width="1.8"/><path d="M8.5 12.5l2.5 2.5 4.5-5" stroke="#67C23A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="stat-body">
-          <div class="stat-value" style="color:#67C23A">{{ assignedCount }}</div>
-          <div class="stat-label">已分配订单</div>
-        </div>
-      </div>
-      <div class="stat-card stat-card--gray">
-        <div class="stat-icon">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#909399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="stat-body">
-          <div class="stat-value">{{ pendingSealCount }}</div>
-          <div class="stat-label">刻章</div>
-        </div>
-      </div>
-      <div class="stat-card stat-card--gray">
-        <div class="stat-icon">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 4h16v16H4z" stroke="#909399" stroke-width="1.8" rx="2"/><path d="M8 8h8M8 12h5M8 16h3" stroke="#909399" stroke-width="1.8" stroke-linecap="round"/></svg>
-        </div>
-        <div class="stat-body">
-          <div class="stat-value">{{ pendingNewspaperCount }}</div>
-          <div class="stat-label">登报</div>
-        </div>
-      </div>
-      <div class="stat-card stat-card--gray">
-        <div class="stat-icon">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 7h6M9 11h6M9 15h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="#909399" stroke-width="1.8" stroke-linecap="round"/></svg>
-        </div>
-        <div class="stat-body">
-          <div class="stat-value">{{ pendingBookkeepingCount }}</div>
-          <div class="stat-label">代理记账</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 表格区域（白色卡片） -->
-    <div class="table-card">
-      <!-- 待分配订单（表格） -->
+      <!-- 待分配订单 -->
       <div v-if="activeTab === 'pending'">
         <div v-if="loading" v-loading="loading" style="min-height:200px" />
         <el-empty v-else-if="tableData.length === 0" description="暂无待分配订单" />
-        <el-table v-else :data="tableData" stripe class="assign-table">
+        <el-table v-else :data="tableData" stripe>
           <el-table-column prop="orderNo" label="订单编号" width="190" />
           <el-table-column label="模块" width="100">
             <template #default="{ row }">
@@ -102,7 +95,7 @@
           </el-table-column>
           <el-table-column label="订单金额" width="110">
             <template #default="{ row }">
-              <span style="color:#5B6FE8;font-weight:600">¥{{ row.payPrice || row.totalPrice }}</span>
+              <span class="price-cell">¥{{ row.payPrice || row.totalPrice }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="createdAt" label="下单时间" width="170">
@@ -116,36 +109,37 @@
         </el-table>
       </div>
 
-    <!-- 已分配订单 -->
-    <div v-else>
-      <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="orderNo" label="订单编号" width="170" />
-        <el-table-column prop="companyName" label="公司名称" min-width="160" />
-        <el-table-column prop="type" label="印章类型" width="120" />
-        <el-table-column label="分配状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getAssignmentTagType(row.assignmentStatus)" size="small">
-              {{ getAssignmentText(row.assignmentStatus) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="下单时间" width="170">
-          <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
-        </el-table-column>
-      </el-table>
+      <!-- 已分配订单 -->
+      <div v-else>
+        <el-table :data="tableData" v-loading="loading" stripe>
+          <el-table-column prop="orderNo" label="订单编号" width="170" />
+          <el-table-column prop="companyName" label="公司名称" min-width="160" />
+          <el-table-column prop="type" label="印章类型" width="120" />
+          <el-table-column label="分配状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="getAssignmentTagType(row.assignmentStatus)" size="small">
+                {{ getAssignmentText(row.assignmentStatus) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="createdAt" label="下单时间" width="170">
+            <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
+          </el-table-column>
+        </el-table>
       </div>
-    </div>
 
-    <!-- 分页 -->
-    <div class="pagination">
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        :total="total"
-        :page-sizes="[10, 20, 50]"
-        layout="total, sizes, prev, pager, next"
-        @change="loadData"
-      />
+      <!-- 分页 -->
+      <div class="pagination-wrap">
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="pageSize"
+          :total="total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          @change="loadData"
+        />
+      </div>
+
     </div>
 
     <!-- 分配弹窗 -->
@@ -154,7 +148,7 @@
         <el-form-item label="选择网点">
           <el-select
             v-model="assignForm.outletId"
-            placeholder="请选择网点"
+            placeholder="请选择负责承接的网点"
             filterable
             style="width:100%"
           >
@@ -215,13 +209,13 @@ function getAssignmentText(status) {
   const map = { 0: '未分配', 1: '已分配', 2: '制作中', 3: '已完成' }
   return map[status] || '未知'
 }
-function getModuleLabel(module) {
+function getModuleLabel(m) {
   const map = { seal: '刻章', newspaper: '登报', bookkeeping: '代理记账' }
-  return map[module] || module
+  return map[m] || m
 }
-function getModuleTagType(module) {
+function getModuleTagType(m) {
   const map = { seal: '', newspaper: 'success', bookkeeping: 'warning' }
-  return map[module] || 'info'
+  return map[m] || 'info'
 }
 function formatAddress(addressJson) {
   if (!addressJson) return '-'
@@ -241,7 +235,6 @@ async function loadData() {
   loading.value = true
   try {
     if (activeTab.value === 'pending') {
-      // 先拉模块分布（不带 module 过滤的全量，待分配口径）
       const [resAll, resFiltered] = await Promise.all([
         getUnassignedOrdersAPI({ page: 1, pageSize: 1, keyword: keyword.value }),
         getUnassignedOrdersAPI({ page: page.value, pageSize: pageSize.value, keyword: keyword.value, module: module.value }),
@@ -249,12 +242,10 @@ async function loadData() {
       pendingCount.value = resAll.pagination.total
       tableData.value = resFiltered.list
       total.value = resFiltered.pagination.total
-      // 模块分布：全量列表中按 module 统计（仅当前筛选结果内）
       const list = resFiltered.list || []
       pendingSealCount.value = list.filter(i => i.module === 'seal').length
       pendingNewspaperCount.value = list.filter(i => i.module === 'newspaper').length
       pendingBookkeepingCount.value = list.filter(i => i.module === 'bookkeeping').length
-      // 已分配数从统计接口取
       if (assignedCount.value === 0) {
         try {
           const stats = await getOrderStatistics()
@@ -278,7 +269,6 @@ async function openAssignDialog(order) {
   try {
     const res = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
     const all = res.list || []
-    // 推荐网点排前面
     const recommendedIds = new Set((order.recommendedOutlets || []).map(o => o.id))
     const recommended = all.filter(o => recommendedIds.has(o.id))
     const others = all.filter(o => !recommendedIds.has(o.id))
@@ -292,7 +282,6 @@ async function openAssignDialog(order) {
 async function onConfirmAssign() {
   const valid = await assignFormRef.value.validate().catch(() => false)
   if (!valid) return
-
   submitting.value = true
   try {
     await assignOrderAPI(currentOrder.value.id, assignForm)
@@ -309,101 +298,114 @@ async function onConfirmAssign() {
 onMounted(loadData)
 </script>
 
-<style scoped>
-.order-assign { padding: 24px; }
-.page-header { margin-bottom: 20px; }
-.page-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+<style scoped lang="scss">
+.page-wrapper { padding: 0; }
 
-/* 筛选栏白色卡片 */
-.filter-card {
+.page-header {
+  margin-bottom: 16px;
+  h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f1f1f;
+    margin: 0;
+  }
+}
+
+.page-card {
   background: #fff;
   border-radius: 10px;
-  padding: 16px 20px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-  margin-bottom: 16px;
+  overflow: hidden;
 }
-.filter-bar {
+
+/* tab 定制 */
+:deep(.assign-tabs > .el-tabs__header) {
+  margin-bottom: 0;
+  padding: 0 16px;
+}
+:deep(.assign-tabs .el-tabs__item) {
+  font-size: 14px;
+  height: 48px;
+  line-height: 48px;
+}
+
+/* 统计行 */
+.stats-row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stat-card {
+  flex: 1;
+  display: flex;
   align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  color: #fff;
+  min-width: 0;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stat-num {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  opacity: .9;
+  margin-top: 2px;
+}
+
+.stat-orange { background: linear-gradient(135deg, #faad14, #ffc53d); color: #fff; }
+.stat-green  { background: linear-gradient(135deg, #52c41a, #73d13d); }
+.stat-blue   { background: linear-gradient(135deg, #5B6FE8, #7B8FFF); }
+
+/* 工具栏 */
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
   flex-wrap: wrap;
 }
 
-/* 统计卡片 */
-.stat-cards { display: flex; gap: 12px; margin-bottom: 16px; }
-.stat-card {
-  flex: 1;
-  background: #fff;
-  border-radius: 10px;
-  padding: 16px 14px 14px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  border-top: 3px solid transparent;
-  transition: box-shadow 0.2s, transform 0.2s;
-  cursor: default;
-  min-width: 0;
-}
-.stat-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  transform: translateY(-1px);
-}
-.stat-card--warning { border-top-color: #E6A23C; }
-.stat-card--success { border-top-color: #67C23A; }
-.stat-card--gray    { border-top-color: #909399; }
-.stat-icon { flex-shrink: 0; }
-.stat-icon svg { width: 28px; height: 28px; display: block; }
-.stat-body { min-width: 0; }
-.stat-value {
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-.stat-label {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 3px;
-  white-space: nowrap;
-}
-
-/* 表格白色卡片 */
-.table-card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 0;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-  overflow: hidden;
-}
-:deep(.assign-table .el-table__header th) {
-  background: #f5f7fa !important;
-  color: #606266;
+/* 金额单元格 */
+.price-cell {
+  color: #5B6FE8;
   font-weight: 600;
-  font-size: 13px;
-}
-:deep(.assign-table .el-table__row) {
-  transition: background 0.15s;
-}
-:deep(.assign-table .el-table__row:hover > td) {
-  background: #f0f4ff !important;
-}
-:deep(.assign-table .el-table__cell) {
-  font-size: 13px;
-}
-:deep(.assign-table .el-button--primary) {
-  background: #5B6FE8;
-  border-color: #5B6FE8;
-}
-:deep(.assign-table .el-button--primary:hover) {
-  background: #4a5fd4;
-  border-color: #4a5fd4;
 }
 
-/* 分页 */
-.pagination { display: flex; justify-content: flex-end; margin-top: 16px; }
+/* 分页居中 */
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 8px;
+}
 
-/* 分配弹窗 */
+/* 弹窗 */
 :deep(.assign-dialog .el-dialog__header) {
   border-bottom: 1px solid #f0f0f0;
   padding: 16px 20px;
@@ -417,6 +419,6 @@ onMounted(loadData)
   padding: 24px 20px;
 }
 
-/* 空白状态 */
+/* 空白 */
 :deep(.el-empty) { padding: 40px 0; }
 </style>
