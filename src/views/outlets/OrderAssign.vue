@@ -149,8 +149,13 @@
         &nbsp;&nbsp;|&nbsp;&nbsp;
         已选：<b style="color:#5B6FE8">{{ currentOutletName || '—' }}</b>
       </div>
+      <div style="margin-bottom:8px">
+        <el-input v-model="outletKeyword" placeholder="搜索网点名称/城市/电话" clearable size="small">
+          <template #prefix><span style="color:#909399">🔍</span></template>
+        </el-input>
+      </div>
       <el-table
-        :data="outlets"
+        :data="filteredOutlets"
         height="360"
         highlight-current-row
         :row-class-name="tableRowClassName"
@@ -158,8 +163,21 @@
         style="cursor:pointer"
       >
         <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column prop="name" label="网点名称" min-width="160" />
-        <el-table-column prop="phone" label="联系电话" width="130" />
+        <el-table-column prop="name" label="网点名称" min-width="160">
+          <template #default="{ row }">
+            <span v-html="highlight(row.name)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="城市" width="110">
+          <template #default="{ row }">
+            <span v-html="highlight(row.city)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="联系电话" width="130">
+          <template #default="{ row }">
+            <span v-html="highlight(row.phone)" />
+          </template>
+        </el-table-column>
         <el-table-column prop="address" label="地址" min-width="200" show-overflow-tooltip />
       </el-table>
       <div style="margin-top:12px">
@@ -176,7 +194,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getUnassignedOrdersAPI, assignOrderAPI, getOutletsAPI, getOrderStatistics } from '@/api'
 import { formatDate } from '@/utils/format'
@@ -199,6 +217,7 @@ const assignDialogVisible = ref(false)
 const submitting = ref(false)
 const outlets = ref([])
 const currentOrder = ref(null)
+const outletKeyword = ref('')
 
 const assignForm = reactive({ outletId: '', remark: '' })
 const currentOutletName = ref('')
@@ -206,33 +225,8 @@ const currentOutletName = ref('')
 function tableRowClassName({ row }) {
   return row.id === assignForm.outletId ? 'current-row' : ''
 }
-function onOutletRowClick(row) {
-  assignForm.outletId = row.id
-  currentOutletName.value = row.name
-}
 
-async function openAssignDialog(order) {
-  currentOrder.value = order
-  assignForm.outletId = ''
-  assignForm.remark = ''
-  currentOutletName.value = ''
-  try {
-    const res = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
-    const all = res.list || []
-    const recommendedIds = new Set((order.recommendedOutlets || []).map((o: any) => o.id))
-    const recommended = all.filter((o: any) => recommendedIds.has(o.id))
-    const others = all.filter((o: any) => !recommendedIds.has(o.id))
-    outlets.value = [...recommended, ...others]
-  } catch {
-    ElMessage.error('加载网点列表失败')
-  }
-  assignDialogVisible.value = true
-}
 
-function getAssignmentTagType(status) {
-  const map = { 0: 'info', 1: 'warning', 2: '', 3: 'success' }
-  return map[status] || 'info'
-}
 function getAssignmentText(status) {
   const map = { 0: '未分配', 1: '已分配', 2: '制作中', 3: '已完成' }
   return map[status] || '未知'
@@ -298,14 +292,47 @@ async function openAssignDialog(order) {
   try {
     const res = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
     const all = res.list || []
-    const recommendedIds = new Set((order.recommendedOutlets || []).map((o: any) => o.id))
-    const recommended = all.filter((o: any) => recommendedIds.has(o.id))
-    const others = all.filter((o: any) => !recommendedIds.has(o.id))
+    const recommendedIds = new Set((order.recommendedOutlets || []).map((o) => o.id))
+    const recommended = all.filter((o) => recommendedIds.has(o.id))
+    const others = all.filter((o) => !recommendedIds.has(o.id))
     outlets.value = [...recommended, ...others]
+    outletKeyword.value = ''
   } catch {
     ElMessage.error('加载网点列表失败')
   }
   assignDialogVisible.value = true
+}
+
+const filteredOutlets = computed(() => {
+  const kw = outletKeyword.value.trim().toLowerCase()
+  if (!kw) return outlets.value
+  return outlets.value.filter((o) => {
+    const name = (o.name || '').toLowerCase()
+    const city = (o.city || '').toLowerCase()
+    const phone = (o.phone || '').toLowerCase()
+    return name.includes(kw) || city.includes(kw) || phone.includes(kw)
+  })
+})
+
+function highlight(val) {
+  const text = val == null ? '' : String(val)
+  const kw = outletKeyword.value.trim()
+  if (!kw) return escapeHtml(text)
+  const idx = text.toLowerCase().indexOf(kw.toLowerCase())
+  if (idx < 0) return escapeHtml(text)
+  const before = text.slice(0, idx)
+  const hit = text.slice(idx, idx + kw.length)
+  const after = text.slice(idx + kw.length)
+  return `${escapeHtml(before)}<mark style="background:#FFF3A0;color:inherit;padding:0 2px;border-radius:2px">${escapeHtml(hit)}</mark>${escapeHtml(after)}`
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+}
+
+function onOutletRowClick(row) {
+  assignForm.outletId = row.id
+  currentOutletName.value = row.name || ''
 }
 
 async function onConfirmAssign() {

@@ -151,12 +151,12 @@ const query = reactive({ page: 1, pageSize: 20, keyword: '', status: '', taxpaye
 const dateRange = ref<string[]>([])
 const total = ref(0)
 
-function statusType(status: number) {
-  const map: Record<number, string> = { 1: 'warning', 2: 'primary', 3: '', 4: 'success', 5: 'success', 6: 'info', 7: 'warning', 8: 'danger', 9: 'info' }
+function statusType(status) {
+  const map = { 1: 'warning', 2: 'primary', 3: '', 4: 'success', 5: 'success', 6: 'info', 7: 'warning', 8: 'danger', 9: 'info' }
   return map[status] || ''
 }
 
-function formatDate(d: string) { return d ? dayjs(d).format('YYYY-MM-DD HH:mm') : '-' }
+function formatDate(d) { return d ? dayjs(d).format('YYYY-MM-DD HH:mm') : '-' }
 
 // 退款
 const refundVisible = ref(false)
@@ -165,7 +165,7 @@ const refundTarget = ref<any>(null)
 const refundAmount = ref(0)
 const refundReason = ref('客户申请退款')
 
-function openRefund(row: any) {
+function openRefund(row) {
   refundTarget.value = row
   refundAmount.value = row.payPrice || row.totalPrice || 0
   refundReason.value = '客户申请退款'
@@ -185,7 +185,7 @@ async function confirmRefund() {
     ElMessage.success('退款申请已提交')
     refundVisible.value = false
     fetchOrders()
-  } catch (e: any) {
+  } catch (e) {
     ElMessage.error(e?.message || '退款失败')
   } finally {
     refundLoading.value = false
@@ -200,22 +200,22 @@ const assignTarget = ref<any>(null)
 const assignForm = ref({ outletId: '', remark: '' })
 const currentOutletName = ref('')
 
-function tableRowClassName({ row }: { row: any }) {
+function tableRowClassName({ row }) {
   return row.id === assignForm.value.outletId ? 'current-row' : ''
 }
 
-async function showAssignDialog(row: any) {
+async function showAssignDialog(row) {
   assignTarget.value = row
   assignForm.value = { outletId: '', remark: '' }
   currentOutletName.value = ''
   assignVisible.value = true
   try {
-    const res: any = await getOutletsAPI({ page: 1, pageSize: 100 })
+    const res = await getOutletsAPI({ page: 1, pageSize: 100 })
     outletList.value = res.list || []
   } catch { /* ignore */ }
 }
 
-function onOutletRowClick(row: any) {
+function onOutletRowClick(row) {
   assignForm.value.outletId = row.id
   currentOutletName.value = row.name
 }
@@ -228,7 +228,7 @@ async function confirmAssign() {
     ElMessage.success('分配成功')
     assignVisible.value = false
     fetchOrders()
-  } catch (e: any) {
+  } catch (e) {
     ElMessage.error(e?.message || '分配失败')
   } finally {
     assigning.value = false
@@ -236,7 +236,7 @@ async function confirmAssign() {
 }
 
 // 确认付款 / 完成
-async function handleMarkPaid(order: any) {
+async function handleMarkPaid(order) {
   try {
     await fetch(`/api/orders/admin/${order.id}`, {
       method: 'PUT',
@@ -245,12 +245,12 @@ async function handleMarkPaid(order: any) {
     }).then(r => r.json()).then(r => { if (!r.success) throw new Error(r.message) })
     ElMessage.success('已标记为已支付')
     fetchOrders()
-  } catch (e: any) {
+  } catch (e) {
     ElMessage.error(e?.message || '操作失败')
   }
 }
 
-async function handleComplete(order: any) {
+async function handleComplete(order) {
   try {
     await fetch(`/api/orders/admin/${order.id}`, {
       method: 'PUT',
@@ -259,7 +259,7 @@ async function handleComplete(order: any) {
     }).then(r => r.json()).then(r => { if (!r.success) throw new Error(r.message) })
     ElMessage.success('已标记为已完成')
     fetchOrders()
-  } catch (e: any) {
+  } catch (e) {
     ElMessage.error(e?.message || '操作失败')
   }
 }
@@ -267,7 +267,7 @@ async function handleComplete(order: any) {
 async function fetchOrders() {
   loading.value = true
   try {
-    const params: any = {
+    const params = {
       page: query.page,
       pageSize: query.pageSize,
       module: 'bookkeeping'
@@ -279,7 +279,7 @@ async function fetchOrders() {
       params.startDate = dateRange.value[0]
       params.endDate = dateRange.value[1]
     }
-    const res: any = await fetch('/api/orders/admin/list?' + new URLSearchParams(params).toString()).then(r => r.json())
+    const res = await fetch('/api/orders/admin/list?' + new URLSearchParams(params).toString()).then(r => r.json())
     list.value = res.list || []
     total.value = res.total || 0
   } catch (e) {
