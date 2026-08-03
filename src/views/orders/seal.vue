@@ -96,20 +96,66 @@
       </template>
     </el-dialog>
     <!-- 分配网点对话框 -->
-    <el-dialog v-model="assignVisible" title="分配网点" width="480px">
-      <el-form label-width="100px">
-        <el-form-item label="选择网点">
-          <el-select v-model="assignForm.outletId" filterable placeholder="请选择网点" style="width: 100%">
-            <el-option v-for="s in outletList" :key="s.id" :label="`${s.name}（${s.phone}）`" :value="s.id" />
-          </el-select>
-        </el-form-item>
+    <el-dialog v-model="assignVisible" title="分配网点" width="640px" :close-on-click-modal="false">
+      <div v-if="currentAssignOrder.address_json" class="assign-order-info">
+        收货地址：{{ parseAddress(currentAssignOrder.address_json) }}
+      </div>
+      <el-table
+        :data="outletList"
+        border
+        highlight-current-row
+        @row-click="(row) => assignForm.outletId = row.id"
+        :row-class-name="(row) => assignForm.outletId === row.id ? 'selected-row' : ''"
+        v-loading="assignLoading"
+        style="margin: 12px 0"
+      >
+        <el-table-column width="50" align="center">
+          <template #default="{ row }">
+            <el-radio v-model="assignForm.outletId" :value="row.id" />
+          </template>
+        </el-table-column>
+        <el-table-column label="网点信息" min-width="180">
+          <template #default="{ row }">
+            <div class="outlet-name">{{ row.name }}</div>
+            <div class="outlet-contact">{{ row.contact }} {{ row.phone }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column label="地区" width="130">
+          <template #default="{ row }">
+            <span>{{ row.province || '-' }}</span>
+            <span v-if="row.city"> / {{ row.city }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="业务类型" width="130">
+          <template #default="{ row }">
+            <span v-if="row.outlet_business_types && row.outlet_business_types.length > 0">
+              <el-tag v-for="b in row.outlet_business_types.slice(0,2)" :key="b.business_type?.code"
+                size="small" style="margin-right: 4px">{{ b.business_type?.name || b.business_type?.code }}</el-tag>
+              <span v-if="row.outlet_business_types.length > 2" style="font-size: 11px; color: #999">+{{ row.outlet_business_types.length - 2 }}</span>
+            </span>
+            <span v-else style="color: #999; font-size: 12px">全部</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="匹配度" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.matchScore >= 100" type="success" size="small">精确匹配</el-tag>
+            <el-tag v-else-if="row.matchScore >= 50" type="warning" size="small">省级匹配</el-tag>
+            <el-tag v-else-if="row.matchScore > 0" type="info" size="small">有覆盖</el-tag>
+            <span v-else style="color: #bbb; font-size: 12px">无覆盖</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div v-if="outletList.length === 0 && !assignLoading" style="text-align:center; padding: 20px; color: #999">
+        暂无可用网点，请先在派单规则中配置服务区域
+      </div>
+      <el-form label-width="80px" style="margin-top: 8px">
         <el-form-item label="备注">
-          <el-input v-model="assignForm.remark" type="textarea" placeholder="可选" />
+          <el-input v-model="assignForm.remark" type="textarea" placeholder="可选，填写分配说明" :rows="2" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="assignVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmAssign" :loading="assigning">确认分配</el-button>
+        <el-button type="primary" @click="confirmAssign" :loading="assigning" :disabled="!assignForm.outletId">确认分配</el-button>
       </template>
     </el-dialog>
   </div>
@@ -117,7 +163,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getSealOrders, updateOrder, assignOrderAPI, getOutletsAPI } from '@/api'
+import { getSealOrders, updateOrder, assignOrderAPI, getAvailableOutlets } from '@/api'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 
@@ -141,6 +187,7 @@ const deliverForm = reactive({ expressCompany: '', expressNo: '', adminRemark: '
 
 const assignVisible = ref(false)
 const assigning = ref(false)
+const assignLoading = ref(false)
 const outletList = ref<any[]>([])
 const currentAssignOrder = ref<any>({})
 const assignForm = reactive({ outletId: '', remark: '' })
@@ -156,6 +203,11 @@ function assignStatusType(status: number) {
 }
 
 function formatDate(date: string) { return dayjs(date).format('YYYY-MM-DD HH:mm') }
+
+function parseAddress(json: string) {
+  try { const a = JSON.parse(json); return [a.province, a.city, a.district, a.detail].filter(Boolean).join(''); }
+  catch { return json; }
+}
 
 async function fetchOrders() {
   loading.value = true
@@ -200,10 +252,21 @@ async function showAssignDialog(order: any) {
   assignForm.remark = ''
   currentAssignOrder.value = order
   assignVisible.value = true
+  assignLoading.value = true
   try {
-    const res: any = await getOutletsAPI({ page: 1, pageSize: 100 })
-    outletList.value = res.list || []
-  } catch { /* ignore */ }
+    // 优先用智能推荐接口（带匹配分），传入收货地址和业务类型
+    const params: any = {}
+    if (order.address_json) params.addressJson = order.address_json
+    // 根据订单类型推断业务类型（seal订单→seal，newspaper订单→newspaper等）
+    const bizType = order.type?.includes('刻章') ? 'seal' : order.type?.includes('登报') ? 'newspaper' : 'accounting'
+    if (bizType) params.businessType = bizType
+    const res: any = await getAvailableOutlets(params)
+    outletList.value = res || []
+  } catch {
+    outletList.value = []
+  } finally {
+    assignLoading.value = false
+  }
 }
 
 async function confirmAssign() {
@@ -221,3 +284,31 @@ function exportOrders() { ElMessage.info('导出功能开发中') }
 
 onMounted(fetchOrders)
 </script>
+
+<style scoped>
+.assign-order-info {
+  background: #f5f7fa;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+}
+.outlet-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+.outlet-contact {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+}
+:deep(.selected-row) td {
+  background: #ecf5ff !important;
+}
+:deep(.el-table .selected-row td:first-child .el-radio__inner) {
+  background: #5B6FE8;
+  border-color: #5B6FE8;
+}
+</style>

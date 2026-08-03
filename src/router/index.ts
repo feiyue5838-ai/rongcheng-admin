@@ -77,6 +77,7 @@ const router = createRouter({
         { path: 'system/admins', name: 'Admins', component: () => import('@/views/system/admins.vue'), meta: { title: '管理员' } },
         { path: 'system/logs', name: 'Logs', component: () => import('@/views/system/logs.vue'), meta: { title: '操作日志' } },
         { path: 'system/configs', name: 'Configs', component: () => import('@/views/system/configs.vue'), meta: { title: '系统配置' } },
+        { path: 'system/dispatch-rules', name: 'DispatchRules', component: () => import('@/views/system/dispatch-rules.vue'), meta: { title: '派单规则' } },
         // 404 兜底：未匹配路由重定向到工作台（防止删路由/旧书签导致白屏）
         { path: ':pathMatch(.*)*', redirect: '/dashboard' },
       ],

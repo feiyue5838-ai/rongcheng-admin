@@ -178,7 +178,7 @@ export const getOutletOverviewAPI = () => request.get('/outlets/admin/overview')
 
 // ==================== 订单分配 API ====================
 export const getUnassignedOrdersAPI = (params: object) => request.get('/orders/unassigned', { params })
-export const assignOrderAPI = (orderId: string, data: { outletId: string; remark?: string }) => request.post(`/orders/${orderId}/assign`, { outletId: data.outletId, remark: data.remark })
+export const assignOrderAPI = (orderId: string, data: { outletId: string; remark?: string }) => request.post(`/orders/${orderId}/assign`, { outlet_id: data.outletId, remark: data.remark })
 
 // ==================== 交付回执 API ====================
 export const getDeliveryReceiptsAPI = (params: object) => request.get('/delivery-receipts', { params })
@@ -203,3 +203,19 @@ export const getNewspaperSections = (newspaperId: string) => request.get(`/newsp
 export const createNewspaperSection = (newspaperId: string, data: object) => request.post(`/newspapers/${newspaperId}/sections`, data)
 export const updateNewspaperSection = (newspaperId: string, sectionId: string, data: object) => request.put(`/newspapers/${newspaperId}/sections/${sectionId}`, data)
 export const deleteNewspaperSection = (newspaperId: string, sectionId: string) => request.delete(`/newspapers/${newspaperId}/sections/${sectionId}`)
+
+// ==================== 派单规则 API ====================
+export const getDispatchConfig = () => request.get('/dispatch/config')
+export const updateDispatchConfig = (data: { mode?: string; auto_assign?: boolean; business_type_filter?: boolean }) =>
+  request.put('/dispatch/config', data)
+export const getDispatchPriorities = () => request.get('/dispatch/priorities')
+export const setDispatchPriority = (outletId: string, data: { priority: number; remark?: string }) =>
+  request.put(`/dispatch/priorities/${outletId}`, data)
+export const batchSetDispatchPriorities = (items: Array<{ outlet_id: string; priority: number }>) =>
+  request.post('/dispatch/priorities/batch', { items })
+export const getForcedRegions = () => request.get('/dispatch/forced-regions')
+export const addForcedRegion = (data: { province: string; city?: string; remark?: string }) =>
+  request.post('/dispatch/forced-regions', data)
+export const removeForcedRegion = (id: string) => request.delete(`/dispatch/forced-regions/${id}`)
+export const getAvailableOutlets = (params?: { addressJson?: string; businessType?: string }) =>
+  request.get('/dispatch/outlets/available', { params })

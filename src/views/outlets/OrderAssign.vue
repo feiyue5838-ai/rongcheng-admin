@@ -142,31 +142,34 @@
 
     </div>
 
-    <!-- 分配弹窗 -->
-    <el-dialog v-model="assignDialogVisible" title="分配网点" width="560px" class="assign-dialog">
-      <el-form ref="assignFormRef" :model="assignForm" :rules="assignRules" label-width="90px">
-        <el-form-item label="选择网点">
-          <el-select
-            v-model="assignForm.outletId"
-            placeholder="请选择负责承接的网点"
-            filterable
-            style="width:100%"
-          >
-            <el-option
-              v-for="s in outlets"
-              :key="s.id"
-              :label="`${s.name}（${s.province || ''}${s.city || ''}，累计${s.totalOrders}单）`"
-              :value="s.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="分配备注">
-          <el-input v-model="assignForm.remark" type="textarea" :rows="3" placeholder="选填，可填写客户特殊要求" />
-        </el-form-item>
-      </el-form>
+    <!-- 分配网点弹窗 -->
+    <el-dialog v-model="assignDialogVisible" title="分配网点" width="600px" class="assign-dialog">
+      <div style="margin-bottom:12px;color:#666;font-size:13px">
+        订单号：<b style="color:#333">{{ currentOrder?.orderNo }}</b>
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        已选：<b style="color:#5B6FE8">{{ currentOutletName || '—' }}</b>
+      </div>
+      <el-table
+        :data="outlets"
+        height="360"
+        highlight-current-row
+        :row-class-name="tableRowClassName"
+        @row-click="onOutletRowClick"
+        style="cursor:pointer"
+      >
+        <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column prop="name" label="网点名称" min-width="160" />
+        <el-table-column prop="phone" label="联系电话" width="130" />
+        <el-table-column prop="address" label="地址" min-width="200" show-overflow-tooltip />
+      </el-table>
+      <div style="margin-top:12px">
+        <el-input v-model="assignForm.remark" type="textarea" placeholder="分配备注（可选）" :rows="2" />
+      </div>
       <template #footer>
         <el-button @click="assignDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="onConfirmAssign">确认分配</el-button>
+        <el-button type="primary" :loading="submitting" @click="onConfirmAssign" :disabled="!assignForm.outletId">
+          确认分配
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -194,12 +197,37 @@ const module = ref('')
 
 const assignDialogVisible = ref(false)
 const submitting = ref(false)
-const assignFormRef = ref(null)
 const outlets = ref([])
 const currentOrder = ref(null)
 
 const assignForm = reactive({ outletId: '', remark: '' })
-const assignRules = { outletId: [{ required: true, message: '请选择网点', trigger: 'change' }] }
+const currentOutletName = ref('')
+
+function tableRowClassName({ row }: { row: any }) {
+  return row.id === assignForm.outletId ? 'current-row' : ''
+}
+function onOutletRowClick(row: any) {
+  assignForm.outletId = row.id
+  currentOutletName.value = row.name
+}
+
+async function openAssignDialog(order) {
+  currentOrder.value = order
+  assignForm.outletId = ''
+  assignForm.remark = ''
+  currentOutletName.value = ''
+  try {
+    const res = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
+    const all = res.list || []
+    const recommendedIds = new Set((order.recommendedOutlets || []).map((o: any) => o.id))
+    const recommended = all.filter((o: any) => recommendedIds.has(o.id))
+    const others = all.filter((o: any) => !recommendedIds.has(o.id))
+    outlets.value = [...recommended, ...others]
+  } catch {
+    ElMessage.error('加载网点列表失败')
+  }
+  assignDialogVisible.value = true
+}
 
 function getAssignmentTagType(status) {
   const map = { 0: 'info', 1: 'warning', 2: '', 3: 'success' }
@@ -266,12 +294,13 @@ async function openAssignDialog(order) {
   currentOrder.value = order
   assignForm.outletId = ''
   assignForm.remark = ''
+  currentOutletName.value = ''
   try {
     const res = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
     const all = res.list || []
-    const recommendedIds = new Set((order.recommendedOutlets || []).map(o => o.id))
-    const recommended = all.filter(o => recommendedIds.has(o.id))
-    const others = all.filter(o => !recommendedIds.has(o.id))
+    const recommendedIds = new Set((order.recommendedOutlets || []).map((o: any) => o.id))
+    const recommended = all.filter((o: any) => recommendedIds.has(o.id))
+    const others = all.filter((o: any) => !recommendedIds.has(o.id))
     outlets.value = [...recommended, ...others]
   } catch {
     ElMessage.error('加载网点列表失败')
@@ -280,8 +309,7 @@ async function openAssignDialog(order) {
 }
 
 async function onConfirmAssign() {
-  const valid = await assignFormRef.value.validate().catch(() => false)
-  if (!valid) return
+  if (!assignForm.outletId) { ElMessage.warning('请选择网点'); return }
   submitting.value = true
   try {
     await assignOrderAPI(currentOrder.value.id, assignForm)
@@ -416,7 +444,14 @@ onMounted(loadData)
   font-size: 15px;
 }
 :deep(.assign-dialog .el-dialog__body) {
-  padding: 24px 20px;
+  padding: 16px 20px 20px;
+}
+
+/* 表格行高亮 */
+:deep(.current-row td) {
+  background-color: #EBF5FF !important;
+  color: #5B6FE8;
+  font-weight: 600;
 }
 
 /* 空白 */

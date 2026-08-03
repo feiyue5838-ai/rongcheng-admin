@@ -78,6 +78,7 @@
           <el-menu-item index="/system/admins">管理员</el-menu-item>
           <el-menu-item index="/system/logs">操作日志</el-menu-item>
           <el-menu-item index="/system/configs">系统配置</el-menu-item>
+          <el-menu-item index="/system/dispatch-rules">派单规则</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
