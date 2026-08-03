@@ -42,7 +42,7 @@
               <el-input v-model="bannerForm.title" placeholder="Banner 标题" />
             </el-form-item>
             <el-form-item label="图片">
-              <el-upload :action="'/api/upload/seal'" :show-file-list="false" :on-success="bannerUploadSuccess" :before-upload="bannerBeforeUpload" accept="image/*">
+              <el-upload :action="'/api/upload/seal'" :show-file-list="false" :on-success="bannerUploadSuccess" :before-upload="beforeUpload" accept="image/*">
                 <el-button>选择图片</el-button>
               </el-upload>
               <el-image v-if="bannerForm.image" :src="bannerForm.image" style="width: 200px; margin-top: 8px; border-radius: 4px" />
@@ -152,7 +152,7 @@
               <el-input v-model="introForm.subtitle" type="textarea" :rows="3" placeholder="介绍文案" />
             </el-form-item>
             <el-form-item label="宣传图片">
-              <el-upload :action="'/api/upload/seal'" :show-file-list="false" :on-success="introUploadSuccess" :before-upload="introBeforeUpload" accept="image/*">
+              <el-upload :action="'/api/upload/seal'" :show-file-list="false" :on-success="introUploadSuccess" :before-upload="beforeUpload" accept="image/*">
                 <el-button>选择图片</el-button>
               </el-upload>
               <el-image v-if="introForm.image" :src="introForm.image" style="width: 200px; margin-top: 8px; border-radius: 4px" />
