@@ -62,6 +62,10 @@ const router = createRouter({
         { path: 'reviews', name: 'Reviews', component: () => import('@/views/reviews/index.vue'), meta: { title: '评价管理' } },
         // 问答管理
         { path: 'questions', name: 'Questions', component: () => import('@/views/questions/index.vue'), meta: { title: '问答管理' } },
+        // 内容管理
+        { path: 'content/banners', name: 'Banners', component: () => import('@/views/content/Banners.vue'), meta: { title: 'Banner管理' } },
+        { path: 'content/announcements', name: 'Announcements', component: () => import('@/views/content/Announcements.vue'), meta: { title: '公告管理' } },
+        { path: 'content/intros', name: 'Intros', component: () => import('@/views/content/Intros.vue'), meta: { title: '业务介绍管理' } },
         // 网点管理
         { path: 'outlets', name: 'Outlets', component: () => import('@/views/outlets/OutletList.vue'), meta: { title: '合作网点' } },
         { path: 'outlets/dashboard', name: 'OutletDashboard', component: () => import('@/views/outlets/OutletDashboard.vue'), meta: { title: '网点控制台' } },
