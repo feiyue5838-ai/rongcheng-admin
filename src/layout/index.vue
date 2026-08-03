@@ -58,20 +58,12 @@
           </el-sub-menu>
         </el-sub-menu>
 
-        <el-menu-item index="/users">
-          <el-icon><User /></el-icon>
-          <span>用户管理</span>
-        </el-menu-item>
-
-        <el-menu-item index="/reviews">
-          <el-icon><ChatDotRound /></el-icon>
-          <span>评价管理</span>
-        </el-menu-item>
-
-        <el-menu-item index="/questions">
-          <el-icon><ChatLineRound /></el-icon>
-          <span>问答管理</span>
-        </el-menu-item>
+        <el-sub-menu index="userCenter">
+          <template #title><el-icon><User /></el-icon><span>用户中心</span></template>
+          <el-menu-item index="/users">用户管理</el-menu-item>
+          <el-menu-item index="/reviews">评价管理</el-menu-item>
+          <el-menu-item index="/questions">问答管理</el-menu-item>
+        </el-sub-menu>
 
         <el-sub-menu index="system">
           <template #title><el-icon><Setting /></el-icon><span>系统管理</span></template>
