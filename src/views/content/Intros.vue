@@ -62,7 +62,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { request } from '@/api'
+import request from '@/api'
 import { formatDate } from '@/utils/format'
 
 const loading = ref(false)
