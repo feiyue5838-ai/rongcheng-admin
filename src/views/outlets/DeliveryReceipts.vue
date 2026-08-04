@@ -10,21 +10,56 @@
       </div>
     </div>
 
-    <!-- 筛选栏 -->
+    <!-- 统计卡片 -->
+    <div class="stats-grid" v-if="!statsError || stats.total > 0 || stats.sealCount > 0 || stats.certificateCount > 0 || stats.todayCount > 0">
+      <div class="stat-card stat-primary">
+        <div class="stat-icon"><el-icon><FolderOpened /></el-icon></div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.total }}</div>
+          <div class="stat-label">回执总数</div>
+        </div>
+      </div>
+      <div class="stat-card stat-blue">
+        <div class="stat-icon"><el-icon><Picture /></el-icon></div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.sealCount }}</div>
+          <div class="stat-label">印章照片</div>
+        </div>
+      </div>
+      <div class="stat-card stat-green">
+        <div class="stat-icon"><el-icon><DocumentChecked /></el-icon></div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.certificateCount }}</div>
+          <div class="stat-label">交付凭证</div>
+        </div>
+      </div>
+      <div class="stat-card stat-orange">
+        <div class="stat-icon"><el-icon><Calendar /></el-icon></div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.todayCount }}</div>
+          <div class="stat-label">今日新增</div>
+        </div>
+      </div>
+    </div>
+    <div v-if="statsError" class="stats-error">
+      <span>统计加载失败</span>
+      <el-button size="small" @click="loadStats">重试</el-button>
+    </div>
+
+    <!-- 筛选栏（全部条件一排） -->
     <div class="filter-section">
-      <!-- 基础筛选行 -->
       <div class="filter-row">
         <el-input
           v-model="filters.keyword"
           placeholder="搜索订单号 / 公司名称"
-          style="width:220px"
+          style="width:180px"
           clearable
           @keyup.enter="handleSearch"
         >
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
 
-        <el-select v-model="filters.type" placeholder="凭证类型" style="width:130px" clearable @change="handleSearch">
+        <el-select v-model="filters.type" placeholder="凭证类型" style="width:110px" clearable @change="handleSearch">
           <el-option label="全部类型" value="" />
           <el-option label="印章照片" value="seal" />
           <el-option label="交付凭证" value="certificate" />
@@ -39,46 +74,36 @@
           start-placeholder="开始日期"
           end-placeholder="结束日期"
           value-format="YYYY-MM-DD"
-          style="width:260px"
+          style="width:220px"
           @change="handleDateChange"
         />
+
+        <el-select v-model="filters.region" placeholder="所属大区" style="width:120px" clearable @change="onRegionChange">
+          <el-option label="全部大区" value="" />
+          <el-option v-for="r in regionOptions" :key="r" :label="r" :value="r" />
+        </el-select>
+
+        <el-select v-model="filters.province" placeholder="所属省份" style="width:130px" clearable @change="handleSearch">
+          <el-option label="全部省份" value="" />
+          <el-option v-for="p in provinceOptions" :key="p" :label="p" :value="p" />
+        </el-select>
+
+        <el-select v-model="filters.outletId" placeholder="所属网点" style="width:150px" clearable @change="handleSearch">
+          <el-option label="全部网点" value="" />
+          <el-option v-for="o in outlets" :key="o.id" :label="o.name" :value="o.id" />
+        </el-select>
 
         <el-button type="primary" @click="handleSearch">
           <el-icon><Search /></el-icon> 搜索
         </el-button>
         <el-button @click="resetFilters">重置</el-button>
-      </div>
 
-      <!-- 高级筛选折叠 -->
-      <div class="filter-advanced">
-        <span class="advanced-toggle" @click="showAdvanced = !showAdvanced">
-          <el-icon><component :is="showAdvanced ? 'ArrowUp' : 'ArrowDown'" /></el-icon>
-          高级筛选
-        </span>
-
-        <div v-show="showAdvanced" class="advanced-row">
-          <el-select v-model="filters.region" placeholder="所属大区" style="width:140px" clearable @change="onRegionChange">
-            <el-option label="全部大区" value="" />
-            <el-option v-for="r in regionOptions" :key="r" :label="r" :value="r" />
-          </el-select>
-
-          <el-select v-model="filters.province" placeholder="所属省份" style="width:160px" clearable @change="handleSearch">
-            <el-option label="全部省份" value="" />
-            <el-option v-for="p in provinceOptions" :key="p" :label="p" :value="p" />
-          </el-select>
-
-          <el-select v-model="filters.outletId" placeholder="所属网点" style="width:180px" clearable @change="handleSearch">
-            <el-option label="全部网点" value="" />
-            <el-option v-for="o in outlets" :key="o.id" :label="o.name" :value="o.id" />
-          </el-select>
-
-          <!-- 多选批量操作 -->
-          <div class="batch-actions" v-if="selected.length > 0">
-            <el-divider direction="vertical" />
-            <span class="selected-count">{{ selected.length }} 条已选</span>
-            <el-button size="small" @click="handleBatchDownload">批量下载</el-button>
-            <el-button size="small" type="danger" plain @click="selected = []">清除</el-button>
-          </div>
+        <!-- 多选批量操作 -->
+        <div class="batch-actions" v-if="selected.length > 0">
+          <el-divider direction="vertical" />
+          <span class="selected-count">{{ selected.length }} 条已选</span>
+          <el-button size="small" @click="handleBatchDownload">批量下载</el-button>
+          <el-button size="small" type="danger" plain @click="selected = []">清除</el-button>
         </div>
       </div>
     </div>
@@ -221,11 +246,29 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getDeliveryReceiptsAPI, getOutletsAPI } from '@/api'
+import { getDeliveryReceiptsAPI, getOutletsAPI, getDeliveryReceiptStatsAPI } from '@/api'
 import { formatDate } from '@/utils/format'
 import {
   Search, Document, Picture, ZoomIn, Download, ArrowDown, ArrowUp,
+  FolderOpened, DocumentChecked, Calendar,
 } from '@element-plus/icons-vue'
+
+// ---------- 统计卡片 ----------
+const statsError = ref(false)
+const stats = reactive({ total: 0, sealCount: 0, certificateCount: 0, todayCount: 0 })
+
+const loadStats = async () => {
+  try {
+    statsError.value = false
+    const res = await getDeliveryReceiptStatsAPI()
+    stats.total = res.total ?? 0
+    stats.sealCount = res.sealCount ?? 0
+    stats.certificateCount = res.certificateCount ?? 0
+    stats.todayCount = res.todayCount ?? 0
+  } catch {
+    statsError.value = true
+  }
+}
 
 // ---------- 数据 ----------
 const loading = ref(false)
@@ -233,7 +276,6 @@ const tableData = ref([])
 const selected = ref([])
 const previewVisible = ref(false)
 const previewUrl = ref('')
-const showAdvanced = ref(false)
 
 // ---------- 分页 ----------
 const page = ref(1)
@@ -375,12 +417,91 @@ function previewImage(row) {
 
 // ---------- 初始化 ----------
 onMounted(async () => {
+  loadStats()
   await loadOutlets()
   loadData()
 })
 </script>
 
 <style scoped>
+/* 统计卡片 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.stat-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 20px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  transition: transform .2s, box-shadow .2s;
+  cursor: default;
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.1);
+}
+.stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.stat-info { flex: 1; }
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+.stat-label { font-size: 13px; color: #666; }
+
+.stat-primary {
+  background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%);
+  border: 1px solid rgba(91,111,232,.15);
+}
+.stat-primary .stat-icon { background: linear-gradient(135deg, #5B6FE8, #7B8FF8); color: #fff; }
+.stat-primary .stat-value { color: #3d4fc4; }
+
+.stat-blue {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae0ff 100%);
+  border: 1px solid rgba(24,144,255,.15);
+}
+.stat-blue .stat-icon { background: linear-gradient(135deg, #1890ff, #69c0ff); color: #fff; }
+.stat-blue .stat-value { color: #0958d9; }
+
+.stat-green {
+  background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+  border: 1px solid rgba(82,196,26,.15);
+}
+.stat-green .stat-icon { background: linear-gradient(135deg, #52c41a, #73d13d); color: #fff; }
+.stat-green .stat-value { color: #389e0d; }
+
+.stat-orange {
+  background: linear-gradient(135deg, #fff7e6 0%, #ffe8c2 100%);
+  border: 1px solid rgba(250,140,22,.15);
+}
+.stat-orange .stat-icon { background: linear-gradient(135deg, #fa8c16, #ffa940); color: #fff; }
+.stat-orange .stat-value { color: #c87619; }
+
+.stats-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f5222d;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
 .receipt-list-page { padding: 0 4px; }
 
 .page-header {
@@ -402,29 +523,9 @@ onMounted(async () => {
 }
 .filter-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   flex-wrap: wrap;
-}
-.filter-advanced { margin-top: 10px; }
-.advanced-toggle {
-  font-size: 13px;
-  color: #5b6fe8;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  user-select: none;
-}
-.advanced-toggle:hover { color: #3d4fd9; }
-.advanced-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 8px;
-  padding-top: 10px;
-  border-top: 1px solid #f0f0f0;
 }
 .batch-actions {
   display: flex;

@@ -248,8 +248,8 @@
           </el-descriptions>
         </div>
 
-        <!-- 印章照片 -->
-        <div v-if="sealImageList.length > 0" class="receipt-info">
+        <!-- 印章照片（刻章订单才显示）-->
+        <div v-if="detailOrder.type !== '登报声明' && sealImageList.length > 0" class="receipt-info">
           <div class="section-title"><el-icon><Picture /></el-icon> 印章照片</div>
           <div class="receipt-images">
             <el-image
@@ -259,7 +259,38 @@
               :preview-src-list="sealImageList.map(x=>x.url)"
               fit="cover"
               style="width:80px;height:80px;border-radius:6px;margin-right:8px"
-            />
+              @error="onImageError(r)"
+            >
+              <template #error>
+                <div class="image-error">
+                  <el-icon><Picture /></el-icon>
+                  <span>加载失败</span>
+                </div>
+              </template>
+            </el-image>
+          </div>
+        </div>
+
+        <!-- 报纸样张（登报订单专属）-->
+        <div v-if="detailOrder.type === '登报声明' && sealImageList.length > 0" class="receipt-info">
+          <div class="section-title"><el-icon><Document /></el-icon> 报纸样张</div>
+          <div class="receipt-images">
+            <el-image
+              v-for="r in sealImageList"
+              :key="r.id"
+              :src="r.url"
+              :preview-src-list="sealImageList.map(x=>x.url)"
+              fit="cover"
+              style="width:80px;height:80px;border-radius:6px;margin-right:8px"
+              @error="onImageError(r)"
+            >
+              <template #error>
+                <div class="image-error">
+                  <el-icon><Picture /></el-icon>
+                  <span>加载失败</span>
+                </div>
+              </template>
+            </el-image>
           </div>
         </div>
 
@@ -274,13 +305,24 @@
               :preview-src-list="receiptList.map(x=>x.url)"
               fit="cover"
               style="width:80px;height:80px;border-radius:6px;margin-right:8px"
-            />
+              @error="onImageError(r)"
+            >
+              <template #error>
+                <div class="image-error">
+                  <el-icon><Picture /></el-icon>
+                  <span>加载失败</span>
+                </div>
+              </template>
+            </el-image>
           </div>
         </div>
 
-        <!-- 印章明细 -->
+        <!-- 订单明细（根据 item_type 动态切换标题）-->
         <div v-if="detailOrder.orderItems?.length > 0" class="items-info">
-          <div class="section-title"><el-icon><Postcard /></el-icon> 印章明细</div>
+          <div class="section-title">
+            <el-icon><Postcard /></el-icon>
+            {{ detailOrder.type === '登报声明' ? '登报明细' : (detailOrder.type === '代理记账' ? '服务明细' : '印章明细') }}
+          </div>
           <el-table :data="detailOrder.orderItems" size="small" border>
             <el-table-column prop="name" label="名称" />
             <el-table-column prop="price" label="价格" align="right">
@@ -312,7 +354,7 @@ import {
 import { formatDate } from '@/utils/format'
 import {
   Refresh, Clock, Tools, CircleCheck, DataLine,
-  Check, Box, View, Plus, Shop, Van, Picture, Postcard, Loading, Bell,
+  Check, Box, View, Plus, Shop, Van, Picture, Postcard, Loading, Bell, Document,
 } from '@element-plus/icons-vue'
 
 const outletStore = useOutletStore()
@@ -356,6 +398,12 @@ const isImageUrl = (url) => /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url)
 
 // 缩略图地址（同域名访问）
 const getMaterialThumb = (url) => getMaterialUrl(url)
+
+// 图片加载失败处理（置标记，避免重复显示）
+const failedImages = ref(new Set())
+function onImageError(img) {
+  failedImages.value.add(img.id)
+}
 const completeFormRef = ref(null)
 const completeForm = reactive({ expressCompany: '', expressNo: '', remark: '' })
 const receiptFiles = ref([])
@@ -386,17 +434,28 @@ function getStatusTag(s) {
   return { 1: 'warning', 2: '', 3: 'primary', 4: 'success' }[s] || 'info'
 }
 
+// 按网点授权的业务类型过滤订单（orderItems.itemType 匹配 businessTypes.code）
+function getAuthorizedOrders(allOrders) {
+  const codes = outletStore.outletInfo?.businessTypes?.map(b => b.code) ?? []
+  if (!codes.length) return []
+  return allOrders.filter(o => {
+    if (!o.orderItems || o.orderItems.length === 0) return true
+    return o.orderItems.some(item => codes.includes(item.itemType))
+  })
+}
+
 async function loadData() {
   loading.value = true
   try {
     const res = await getMyOutletOrdersAPI({ page: 1, pageSize: 100 })
     const all = res.list || []
     outletStore.allOrders = all
+    const authorized = getAuthorizedOrders(all)
     stats.value = {
-      pending: all.filter(o => o.status === 1).length,
-      processing: all.filter(o => o.status === 2).length,
-      shipped: all.filter(o => o.status === 3).length,
-      completed: all.filter(o => o.status === 4).length,
+      pending: authorized.filter(o => o.status === 1).length,
+      processing: authorized.filter(o => o.status === 2).length,
+      shipped: authorized.filter(o => o.status === 3).length,
+      completed: authorized.filter(o => o.status === 4).length,
     }
     loadOrders()
   } catch (err) {
@@ -408,7 +467,8 @@ async function loadData() {
 
 function loadOrders() {
   const statusMap = { pending: 1, processing: 2, shipped: 3, completed: 4 }
-  orderList.value = outletStore.allOrders.filter(o => o.status === statusMap[activeTab.value])
+  const authorized = getAuthorizedOrders(outletStore.allOrders)
+  orderList.value = authorized.filter(o => o.status === statusMap[activeTab.value])
 }
 
 function onAccept(order) {
@@ -609,25 +669,40 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .welcome-bar {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 24px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
 
-  h2 { margin: 0; font-size: 22px; font-weight: 600; color: #333; }
-  .subtitle { margin: 4px 0 0; color: #999; font-size: 13px; }
+  h2 { margin: 0; font-size: 22px; font-weight: 600; color: #fff; }
+  .subtitle { margin: 4px 0 0; color: rgba(255,255,255,0.75); font-size: 13px; }
 
   .welcome-actions {
     display: flex;
     align-items: center;
     gap: 12px;
+    .el-button {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      color: #fff;
+      backdrop-filter: blur(6px);
+      &:hover {
+        background: rgba(255,255,255,0.28);
+      }
+    }
   }
   .notify-bell {
     :deep(.el-badge__content) { border: none; }
+    :deep(.el-button) {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      color: #fff;
+      backdrop-filter: blur(6px);
+    }
   }
 }
 
@@ -678,48 +753,80 @@ onUnmounted(() => {
 
 .stat-card {
   background: #fff;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 20px 24px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  transition: transform 0.2s;
-  &:hover { transform: translateY(-2px); }
+  gap: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
   .stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 26px;
+    flex-shrink: 0;
   }
 }
 
-.stat-pending .stat-icon { background: #fff7e6; color: #fa8c16; }
-.stat-processing .stat-icon { background: #e6f7ff; color: #1890ff; }
-.stat-shipped .stat-icon { background: #fff1f0; color: #ff4d4f; }
-.stat-completed .stat-icon { background: #f6ffed; color: #52c41a; }
+// 待接单 — 暖橙
+.stat-pending {
+  background: linear-gradient(135deg, #fff7e6 0%, #ffe8c2 100%);
+  border: 1px solid rgba(250, 140, 22, 0.15);
+  .stat-icon { background: rgba(250, 140, 22, 0.12); color: #e69138; }
+  .stat-value { color: #c87619; }
+}
+
+// 制作中 — 清爽蓝
+.stat-processing {
+  background: linear-gradient(135deg, #e6f4ff 0%, #cce8ff 100%);
+  border: 1px solid rgba(24, 144, 255, 0.15);
+  .stat-icon { background: rgba(24, 144, 255, 0.12); color: #1890ff; }
+  .stat-value { color: #096dd9; }
+}
+
+// 已发货 — 活力红
+.stat-shipped {
+  background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%);
+  border: 1px solid rgba(255, 77, 79, 0.15);
+  .stat-icon { background: rgba(255, 77, 79, 0.12); color: #ff4d4f; }
+  .stat-value { color: #cf1322; }
+}
+
+// 已完成 — 清新绿
+.stat-completed {
+  background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+  border: 1px solid rgba(82, 196, 26, 0.15);
+  .stat-icon { background: rgba(82, 196, 26, 0.12); color: #52c41a; }
+  .stat-value { color: #389e0d; }
+}
 
 .stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
+  font-size: 30px;
+  font-weight: 800;
   line-height: 1;
+  transition: color 0.2s;
 }
 
 .stat-label {
   font-size: 13px;
-  color: #999;
+  color: #888;
   margin-top: 4px;
 }
 
 .panel {
   background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .order-detail {
@@ -744,6 +851,22 @@ onUnmounted(() => {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .image-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background: #fafafa;
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    color: #999;
+    font-size: 12px;
+    gap: 4px;
+    .el-icon { font-size: 20px; }
   }
 }
 </style>

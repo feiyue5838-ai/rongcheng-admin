@@ -175,6 +175,8 @@ export const deleteOutletAPI = (id: string) => request.delete(`/outlets/${id}`)
 export const resetOutletPasswordAPI = (id: string) => request.post(`/outlets/${id}/reset-password`)
 export const getOutletOrdersAPI = (outletId: string, params: object) => request.get(`/outlets/${outletId}/orders`, { params })
 export const getOutletOverviewAPI = () => request.get('/outlets/admin/overview')
+export const setOutletBusinessTypesAPI = (id: string, businessTypeIds: string[]) =>
+  request.put(`/outlets/${id}/business-types`, { businessTypeIds })
 
 // ==================== 订单分配 API ====================
 export const getUnassignedOrdersAPI = (params: object) => request.get('/orders/unassigned', { params })
@@ -184,6 +186,7 @@ export const assignOrderAPI = (orderId: string, data: { outletId: string; remark
 // ==================== 交付回执 API ====================
 export const getDeliveryReceiptsAPI = (params: object) => request.get('/delivery-receipts', { params })
 export const getDeliveryReceiptAPI = (id: string) => request.get(`/delivery-receipts/${id}`)
+export const getDeliveryReceiptStatsAPI = () => request.get('/delivery-receipts/stats')
 
 // ==================== 代理记账套餐 API ====================
 export const getBookkeepingPackages = (params?: object) => request.get('/bookkeeping/packages', { params })

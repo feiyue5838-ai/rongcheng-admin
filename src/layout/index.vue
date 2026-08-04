@@ -22,7 +22,7 @@
         <el-sub-menu index="storeMgmt">
           <template #title><el-icon><Shop /></el-icon><span>网点管理</span></template>
           <el-menu-item index="/outlets/overview">全网点总览</el-menu-item>
-          <el-menu-item index="/outlets">网点列表</el-menu-item>
+          <el-menu-item index="/outlets">服务商列表</el-menu-item>
           <el-menu-item index="/outlets/dashboard">网点看板</el-menu-item>
           <el-menu-item index="/outlets/assign">订单分配</el-menu-item>
           <el-menu-item index="/outlets/receipts">交付回执</el-menu-item>

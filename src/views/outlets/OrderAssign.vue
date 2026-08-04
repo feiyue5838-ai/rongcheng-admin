@@ -32,27 +32,35 @@
             <span class="stat-label">已分配订单</span>
           </div>
         </div>
-        <div class="stat-card stat-blue">
+        <div class="stat-card stat-blue-seal">
           <div class="stat-icon">🔏</div>
           <div class="stat-info">
             <span class="stat-num">{{ pendingSealCount }}</span>
-            <span class="stat-label">刻章</span>
+            <span class="stat-label">待分配刻章</span>
           </div>
         </div>
         <div class="stat-card stat-blue">
           <div class="stat-icon">📰</div>
           <div class="stat-info">
             <span class="stat-num">{{ pendingNewspaperCount }}</span>
-            <span class="stat-label">登报</span>
+            <span class="stat-label">待分配登报</span>
           </div>
         </div>
         <div class="stat-card stat-blue">
           <div class="stat-icon">📊</div>
           <div class="stat-info">
             <span class="stat-num">{{ pendingBookkeepingCount }}</span>
-            <span class="stat-label">代理记账</span>
+            <span class="stat-label">待分配代理记账</span>
           </div>
         </div>
+      </div>
+
+      <div v-if="statsLoading || statsError" class="stats-status">
+        <span v-if="statsLoading">统计加载中…</span>
+        <span v-else-if="statsError" class="stats-error">
+          统计加载失败
+          <el-button link type="primary" size="small" @click="loadStats">重试</el-button>
+        </span>
       </div>
 
       <!-- 工具栏 -->
@@ -226,6 +234,8 @@ const assignedCount = ref(0)
 const pendingSealCount = ref(0)
 const pendingNewspaperCount = ref(0)
 const pendingBookkeepingCount = ref(0)
+const statsLoading = ref(false)
+const statsError = ref(false)
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
@@ -287,25 +297,36 @@ async function loadData() {
       pendingCount.value = resAll.pagination.total
       tableData.value = resFiltered.list
       total.value = resFiltered.pagination.total
-      const list = resFiltered.list || []
-      pendingSealCount.value = list.filter(i => i.module === 'seal').length
-      pendingNewspaperCount.value = list.filter(i => i.module === 'newspaper').length
-      pendingBookkeepingCount.value = list.filter(i => i.module === 'bookkeeping').length
-      if (assignedCount.value === 0) {
-        try {
-          const stats = await getOrderStatistics()
-          assignedCount.value = stats.assigned || stats.assignedCount || 0
-        } catch { /* ignore */ }
-      }
     } else {
       const res = await getAssignedOrdersAPI({ page: page.value, pageSize: pageSize.value, keyword: keyword.value, module: module.value })
       tableData.value = res.list
       total.value = res.pagination.total
     }
   } catch (err) {
-    ElMessage.error('加载失败')
+    tableData.value = []
+    total.value = 0
   } finally {
     loading.value = false
+  }
+  // 统计卡独立加载：列表接口失败不应阻断 stats 错误态的展示
+  loadStats()
+}
+
+async function loadStats() {
+  statsLoading.value = true
+  try {
+    const stats = await getOrderStatistics()
+    pendingCount.value = stats.pending ?? stats.pendingOrders ?? pendingCount.value
+    assignedCount.value = stats.assigned ?? stats.assignedOrders ?? 0
+    pendingSealCount.value = stats.pendingSeal ?? 0
+    pendingNewspaperCount.value = stats.pendingNewspaper ?? 0
+    pendingBookkeepingCount.value = stats.pendingBookkeeping ?? 0
+    statsError.value = false
+  } catch (e) {
+    statsError.value = true
+    console.warn('[stats] load failed:', e?.message || e)
+  } finally {
+    statsLoading.value = false
   }
 }
 
@@ -413,30 +434,33 @@ onMounted(loadData)
   display: flex;
   gap: 12px;
   padding: 14px 16px;
-  background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
   border-bottom: 1px solid #f0f0f0;
 }
 
 .stat-card {
   flex: 1;
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 8px;
-  color: #fff;
-  min-width: 0;
+  gap: 18px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
 }
 
 .stat-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: rgba(255,255,255,.2);
+  width: 52px;
+  height: 52px;
+  border-radius: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 22px;
   flex-shrink: 0;
 }
 
@@ -447,20 +471,48 @@ onMounted(loadData)
 }
 
 .stat-num {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   line-height: 1;
 }
 
 .stat-label {
-  font-size: 12px;
-  opacity: .9;
-  margin-top: 2px;
+  font-size: 13px;
+  margin-top: 4px;
 }
 
-.stat-orange { background: linear-gradient(135deg, #faad14, #ffc53d); color: #fff; }
-.stat-green  { background: linear-gradient(135deg, #52c41a, #73d13d); }
-.stat-blue   { background: linear-gradient(135deg, #5B6FE8, #7B8FFF); }
+// 待分配 — 警示红（对待接单）
+.stat-orange {
+  background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%);
+  border: 1px solid rgba(245, 34, 45, 0.15);
+  .stat-icon { background: rgba(245, 34, 45, 0.12); color: #f5222d; }
+  .stat-num { color: #cf1322; }
+  .stat-label { color: #888; }
+}
+// 已分配 — 清新绿（对已完成）
+.stat-green {
+  background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+  border: 1px solid rgba(82, 196, 26, 0.15);
+  .stat-icon { background: rgba(82, 196, 26, 0.12); color: #52c41a; }
+  .stat-num { color: #389e0d; }
+  .stat-label { color: #888; }
+}
+// 待分配刻章 — 清爽蓝（对制作中）
+.stat-blue-seal {
+  background: linear-gradient(135deg, #e6f4ff 0%, #cce8ff 100%);
+  border: 1px solid rgba(24, 144, 255, 0.15);
+  .stat-icon { background: rgba(24, 144, 255, 0.12); color: #1890ff; }
+  .stat-num { color: #096dd9; }
+  .stat-label { color: #888; }
+}
+// 待分配登报 / 代理记账 — 活力橙
+.stat-blue {
+  background: linear-gradient(135deg, #fff7e6 0%, #ffe8c2 100%);
+  border: 1px solid rgba(250, 140, 22, 0.15);
+  .stat-icon { background: rgba(250, 140, 22, 0.12); color: #fa8c16; }
+  .stat-num { color: #c87619; }
+  .stat-label { color: #888; }
+}
 
 /* 工具栏 */
 .toolbar-row {
@@ -508,4 +560,16 @@ onMounted(loadData)
 
 /* 空白 */
 :deep(.el-empty) { padding: 40px 0; }
+/* 统计状态条 */
+.stats-status {
+  padding: 6px 16px;
+  font-size: 12px;
+  color: #909399;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafbfc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stats-error { color: #f56c6c; }
 </style>

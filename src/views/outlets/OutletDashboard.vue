@@ -321,21 +321,45 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .Outlet-dashboard { }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .page-header h2 { margin: 0; font-size: 22px; font-weight: 600; line-height: 1.4; padding-bottom: 4px; }
 .header-actions { display: flex; gap: 12px; align-items: center; }
 .empty-state { padding: 80px 0; }
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-.stat-card { background: #fff; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-.stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-.stat-pending .stat-icon { background: #fff7e6; color: #fa8c16; }
-.stat-processing .stat-icon { background: #e6f7ff; color: #1890ff; }
-.stat-completed .stat-icon { background: #f6ffed; color: #52c41a; }
-.stat-today .stat-icon { background: #f0f5ff; color: #5B6FE8; }
-.stat-value { font-size: 28px; font-weight: 700; color: #333; line-height: 1; }
-.stat-label { font-size: 13px; color: #999; margin-top: 4px; }
+.stat-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); }
+}
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.stat-value { font-size: 30px; font-weight: 800; line-height: 1; }
+.stat-label { font-size: 13px; color: #888; margin-top: 4px; }
+
+// 待接单 — 暖橙
+.stat-pending { background: linear-gradient(135deg, #fff7e6 0%, #ffe8c2 100%); border: 1px solid rgba(250, 140, 22, 0.15); .stat-icon { background: rgba(250, 140, 22, 0.12); color: #e69138; } .stat-value { color: #c87619; } }
+// 制作中 — 清爽蓝
+.stat-processing { background: linear-gradient(135deg, #e6f4ff 0%, #cce8ff 100%); border: 1px solid rgba(24, 144, 255, 0.15); .stat-icon { background: rgba(24, 144, 255, 0.12); color: #1890ff; } .stat-value { color: #096dd9; } }
+// 已完成 — 清新绿
+.stat-completed { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); border: 1px solid rgba(82, 196, 26, 0.15); .stat-icon { background: rgba(82, 196, 26, 0.12); color: #52c41a; } .stat-value { color: #389e0d; } }
+// 今日新增 — 紫蓝
+.stat-today { background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%); border: 1px solid rgba(91, 111, 232, 0.15); .stat-icon { background: rgba(91, 111, 232, 0.12); color: #5B6FE8; } .stat-value { color: #3d4fc4; } }
 .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
 .panel { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
 .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }

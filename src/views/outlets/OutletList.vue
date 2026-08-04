@@ -8,8 +8,40 @@
       </el-button>
     </div>
 
+    <!-- 统计卡片 -->
+    <div class="stats-cards" style="margin-bottom: 12px;">
+      <div class="stat-card stat-total">
+        <div class="stat-icon">📍</div>
+        <div class="stat-info">
+          <div class="stat-value">{{ total }}</div>
+          <div class="stat-label">服务商总数</div>
+        </div>
+      </div>
+      <div class="stat-card stat-active">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <div class="stat-value">{{ statusCountMap[1] || 0 }}</div>
+          <div class="stat-label">营业中</div>
+        </div>
+      </div>
+      <div class="stat-card stat-inactive">
+        <div class="stat-icon">⏸️</div>
+        <div class="stat-info">
+          <div class="stat-value">{{ (statusCountMap[0] || 0) + (statusCountMap[2] || 0) + (statusCountMap[4] || 0) + (statusCountMap[5] || 0) }}</div>
+          <div class="stat-label">非营业</div>
+        </div>
+      </div>
+      <div class="stat-card stat-orders">
+        <div class="stat-icon">📦</div>
+        <div class="stat-info">
+          <div class="stat-value">{{ totalOrders }}</div>
+          <div class="stat-label">累计订单</div>
+        </div>
+      </div>
+    </div>
+
     <!-- 筛选栏 -->
-    <div class="filter-row" style="background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 16px;">
+    <div class="filter-row" style="background: #fff; padding: 14px 16px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 12px;">
       <el-input
         v-model="keyword"
         placeholder="搜索服务商名称/联系人/电话"
@@ -55,38 +87,6 @@
       <el-button @click="resetFilters">重置</el-button>
     </div>
 
-    <!-- 统计卡片 -->
-    <div class="stats-cards">
-      <div class="stat-card stat-primary">
-        <div class="stat-icon">📍</div>
-        <div class="stat-info">
-          <div class="stat-value">{{ total }}</div>
-          <div class="stat-label">服务商总数</div>
-        </div>
-      </div>
-      <div class="stat-card stat-success">
-        <div class="stat-icon">✅</div>
-        <div class="stat-info">
-          <div class="stat-value">{{ statusCountMap[1] || 0 }}</div>
-          <div class="stat-label">营业中</div>
-        </div>
-      </div>
-      <div class="stat-card stat-danger">
-        <div class="stat-icon">⏸️</div>
-        <div class="stat-info">
-          <div class="stat-value">{{ (statusCountMap[0] || 0) + (statusCountMap[2] || 0) + (statusCountMap[4] || 0) + (statusCountMap[5] || 0) }}</div>
-          <div class="stat-label">非营业</div>
-        </div>
-      </div>
-      <div class="stat-card stat-info">
-        <div class="stat-icon">📦</div>
-        <div class="stat-info">
-          <div class="stat-value">{{ totalOrders }}</div>
-          <div class="stat-label">累计订单</div>
-        </div>
-      </div>
-    </div>
-
     <!-- 表格 -->
     <el-table :data="tableData" stripe v-loading="loading">
       <el-table-column prop="name" label="服务商名称" min-width="160" show-overflow-tooltip />
@@ -129,6 +129,7 @@
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
           <el-button type="warning" link size="small" @click="onResetPassword(row)">重置密码</el-button>
+          <el-button type="success" link size="small" @click="openAuthDialog(row)">授权</el-button>
           <el-button type="danger" link size="small" @click="onDelete(row)">删除</el-button>
         </template>
       </el-table-column>
@@ -268,13 +269,36 @@
       </div>
       <div v-else style="color:#999;padding:24px;text-align:center">暂无证件</div>
     </el-dialog>
+
+    <!-- 业务授权弹窗 -->
+    <el-dialog v-model="authDialogVisible" :title="'业务授权 - ' + (authOutlet?.name || '')" width="460px">
+      <div style="padding:8px 0 16px;color:#666;font-size:14px">勾选该网点可承接的业务类型：</div>
+      <el-checkbox-group v-model="authForm.checkedTypes">
+        <el-checkbox label="bf454c50-4633-4720-bca1-9f13d1ed0c1b" style="display:block;margin-bottom:12px">
+          <span style="font-weight:600">刻章</span>
+          <span style="color:#999;font-size:12px;margin-left:8px">企业刻章、个人印章等</span>
+        </el-checkbox>
+        <el-checkbox label="03d494c6-4a38-43ad-88d5-0d29c55fab85" style="display:block;margin-bottom:12px">
+          <span style="font-weight:600">登报</span>
+          <span style="color:#999;font-size:12px;margin-left:8px">遗失声明、公告发布等</span>
+        </el-checkbox>
+        <el-checkbox label="49476a65-8257-45da-a826-7ef80d0cfb61" style="display:block">
+          <span style="font-weight:600">代理记账</span>
+          <span style="color:#999;font-size:12px;margin-left:8px">月度记账、税务申报等</span>
+        </el-checkbox>
+      </el-checkbox-group>
+      <template #footer>
+        <el-button @click="authDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="authSubmitting" @click="onAuthSubmit">保存授权</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, type ComponentPublicInstance } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getOutletsAPI, createOutletAPI, updateOutletAPI, deleteOutletAPI, resetOutletPasswordAPI, uploadImage } from '@/api'
+import { getOutletsAPI, createOutletAPI, updateOutletAPI, deleteOutletAPI, resetOutletPasswordAPI, uploadImage, setOutletBusinessTypesAPI } from '@/api'
 import { formatDate } from '@/utils/format'
 
 // ============ 行政区划数据（与报纸仓库对齐）============
@@ -619,6 +643,37 @@ const getStatusType = (status: number) => statusOptions.find(s => s.value === st
 
 const previewVisible = ref(false)
 const previewList = ref<any[]>([])
+
+// 业务授权弹窗
+const authDialogVisible = ref(false)
+const authOutlet = ref<any>(null)
+const authSubmitting = ref(false)
+const authForm = reactive({
+  checkedTypes: [] as string[],
+})
+function openAuthDialog(row: any) {
+  authOutlet.value = row
+  authForm.checkedTypes = (row.businessTypes || []).map((bt: any) => bt.id)
+  authDialogVisible.value = true
+}
+async function onAuthSubmit() {
+  if (authSubmitting.value) return
+  authSubmitting.value = true
+  try {
+    const res: any = await setOutletBusinessTypesAPI(authOutlet.value.id, authForm.checkedTypes)
+    // 更新表格行数据
+    const idx = tableData.value.findIndex(r => r.id === authOutlet.value.id)
+    if (idx >= 0) {
+      tableData.value[idx] = { ...tableData.value[idx], businessTypes: res.businessTypes }
+    }
+    ElMessage.success('授权成功')
+    authDialogVisible.value = false
+  } catch (err: any) {
+    ElMessage.error(err?.response?.data?.message || '授权失败')
+  } finally {
+    authSubmitting.value = false
+  }
+}
 function previewDocs(row: any, type: string) {
   previewList.value = type === 'biz'
     ? (row.businessLicense ? [row.businessLicense] : [])
@@ -699,7 +754,6 @@ function openEditDialog(row: any) {
     status: row.status,
   })
   permitFiles.value = parsePermits(row.specialPermits).map(url => ({ url, name: url.split('/').pop() || '证件' }))
-  form.businessTypeIds = (row.businessTypes || []).map((bt: any) => bt.code)
   currentOutlet.value = row
   dialogVisible.value = true
 }
@@ -721,12 +775,8 @@ async function onSubmit() {
       status: form.status,
       business_license: form.businessLicense,
       special_permits: permitFiles.value
-        .filter(f => f.response?.url || f.url)
-        .map(f => f.response?.url || f.url),
-      businessTypeIds: form.businessTypeIds,
-      special_permits: permitFiles.value
-        .filter(f => f.response?.url || f.url)
-        .map(f => f.response?.url || f.url),
+        .filter(f => f.url || f.response?.url)
+        .map(f => f.url || f.response?.url),
     }
     if (isEdit.value) {
       await updateOutletAPI(currentOutlet.value.id, payload)
@@ -802,7 +852,7 @@ async function loadData(page?: number) {
 onMounted(loadData)
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .Outlet-list {
   padding: 24px;
 }
@@ -850,75 +900,53 @@ onMounted(loadData)
 
 /* 统计卡片 */
 .stats-cards {
-  display: flex;
-  gap: 12px;
-  margin: 16px 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 0 0 12px 0;
 }
 .stat-card {
-  flex: 1;
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 24px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px 20px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.35);
+  gap: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); }
 }
 .stat-card .stat-icon {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 12px;
   font-size: 24px;
+  flex-shrink: 0;
 }
 .stat-info {
   flex: 1;
 }
 .stat-value {
-  font-size: 26px;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1.2;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
 }
 .stat-label {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
+  color: #888;
   margin-top: 4px;
 }
-.stat-card.stat-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-.stat-card.stat-success {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-  box-shadow: 0 4px 12px rgba(17, 153, 142, 0.25);
-}
-.stat-card.stat-success:hover {
-  box-shadow: 0 6px 16px rgba(17, 153, 142, 0.35);
-}
-.stat-card.stat-danger {
-  background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-  box-shadow: 0 4px 12px rgba(235, 51, 73, 0.25);
-}
-.stat-card.stat-danger:hover {
-  box-shadow: 0 6px 16px rgba(235, 51, 73, 0.35);
-}
-.stat-card.stat-info {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.25);
-}
-.stat-card.stat-info:hover {
-  box-shadow: 0 6px 16px rgba(79, 172, 254, 0.35);
-}
-.stat-card.stat-info .stat-icon {
-  background: rgba(255, 255, 255, 0.3);
-}
+
+// 服务商总数 — 紫蓝
+.stat-total { background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%); border: 1px solid rgba(91, 111, 232, 0.15); .stat-icon { background: rgba(91, 111, 232, 0.12); } .stat-value { color: #3d4fc4; } }
+// 营业中 — 清新绿
+.stat-active { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); border: 1px solid rgba(82, 196, 26, 0.15); .stat-icon { background: rgba(82, 196, 26, 0.12); } .stat-value { color: #389e0d; } }
+// 非营业 — 警示红
+.stat-inactive { background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%); border: 1px solid rgba(245, 34, 45, 0.15); .stat-icon { background: rgba(245, 34, 45, 0.12); } .stat-value { color: #cf1322; } }
+// 累计订单 — 活力橙
+.stat-orders { background: linear-gradient(135deg, #fff7e6 0%, #ffe8c2 100%); border: 1px solid rgba(250, 140, 22, 0.15); .stat-icon { background: rgba(250, 140, 22, 0.12); } .stat-value { color: #c87619; } }
 </style>
 

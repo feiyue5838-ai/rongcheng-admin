@@ -24,7 +24,7 @@ const router = createRouter({
       redirect: '/Outlet/workspace',
       meta: { requiresOutletAuth: true },
       children: [
-        { path: 'workspace', name: 'OutletWorkspace', component: () => import('@/views/outlet/Workspace.vue'), meta: { title: '网点工作台' } },
+        { path: 'workspace', name: 'OutletWorkspace', component: () => import('@/views/outlet/Workspace.vue'), meta: { title: '网点工作台', requiresOutletAuth: true } },
       ],
     },
     {
@@ -102,6 +102,7 @@ router.beforeEach((to, from, next) => {
 
   // 网点端鉴权
   if (to.meta.requiresOutletAuth && !outletStore.token) {
+    console.warn('ROUTER GUARD: requireOutletAuth redirect, token=', !!outletStore.token, 'path=', to.path);
     next('/Outlet-login')
     return
   }

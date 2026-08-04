@@ -55,8 +55,36 @@ function fixSealsChunkPlugin() {
   }
 }
 
+// SPA fallback: serve index.html for all non-file, non-API paths
+function spaFallbackPlugin() {
+  return {
+    name: 'spa-fallback',
+    configureServer(server) {
+      const fs = require('fs')
+      const indexPath = path.join(__dirname, 'index.html')
+      server.middlewares.use((req: any, res: any, next: Function) => {
+        const url = req.url || ''
+        if (
+          !url.startsWith('/api') &&
+          !url.startsWith('/@') &&
+          !url.startsWith('/node_modules') &&
+          !url.startsWith('/uploads') &&
+          !url.includes('.') &&
+          fs.existsSync(indexPath)
+        ) {
+          res.setHeader('Content-Type', 'text/html')
+          res.end(fs.readFileSync(indexPath))
+          return
+        }
+        next()
+      })
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
+    spaFallbackPlugin(),
     vue(),
     AutoImport({
       imports: ['vue', 'vue-router', 'pinia'],
@@ -80,10 +108,11 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5184,
+    port: 5185,
     proxy: {
       '/api': { target: 'http://localhost:3001', changeOrigin: true },
       '/uploads': { target: 'http://localhost:3001', changeOrigin: true },
     },
   },
+
 })

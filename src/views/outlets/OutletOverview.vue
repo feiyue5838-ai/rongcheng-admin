@@ -17,10 +17,8 @@
     <template v-else-if="overview">
       <!-- 顶部 5 张主指标卡 -->
       <div class="summary-grid">
-        <div class="summary-card">
-          <div class="card-icon" style="background: linear-gradient(135deg, #5B6FE8, #7B8FF8);">
-            <el-icon><OfficeBuilding /></el-icon>
-          </div>
+        <div class="summary-card summary-total">
+          <div class="card-icon"><el-icon><OfficeBuilding /></el-icon></div>
           <div class="card-body">
             <div class="sum-value">{{ overview.summary.totalOutlets }}</div>
             <div class="sum-label">网点总数</div>
@@ -28,10 +26,8 @@
           </div>
         </div>
 
-        <div class="summary-card">
-          <div class="card-icon" style="background: linear-gradient(135deg, #52c41a, #73d13d);">
-            <el-icon><CircleCheck /></el-icon>
-          </div>
+        <div class="summary-card summary-active">
+          <div class="card-icon"><el-icon><CircleCheck /></el-icon></div>
           <div class="card-body">
             <div class="sum-value">{{ overview.summary.activeOutlets }}</div>
             <div class="sum-label">启用网点</div>
@@ -39,10 +35,8 @@
           </div>
         </div>
 
-        <div class="summary-card">
-          <div class="card-icon" style="background: linear-gradient(135deg, #fa8c16, #ffa940);">
-            <el-icon><Document /></el-icon>
-          </div>
+        <div class="summary-card summary-orders">
+          <div class="card-icon"><el-icon><Document /></el-icon></div>
           <div class="card-body">
             <div class="sum-value">{{ overview.summary.totalOrders }}</div>
             <div class="sum-label">累计订单</div>
@@ -50,10 +44,8 @@
           </div>
         </div>
 
-        <div class="summary-card">
-          <div class="card-icon" style="background: linear-gradient(135deg, #f5222d, #ff4d4f);">
-            <el-icon><Bell /></el-icon>
-          </div>
+        <div class="summary-card summary-pending">
+          <div class="card-icon"><el-icon><Bell /></el-icon></div>
           <div class="card-body">
             <div class="sum-value">{{ overview.summary.totalPending }}</div>
             <div class="sum-label">待接单</div>
@@ -61,10 +53,8 @@
           </div>
         </div>
 
-        <div class="summary-card">
-          <div class="card-icon" style="background: linear-gradient(135deg, #13c2c2, #36cfc9);">
-            <el-icon><TrendCharts /></el-icon>
-          </div>
+        <div class="summary-card summary-today">
+          <div class="card-icon"><el-icon><TrendCharts /></el-icon></div>
           <div class="card-body">
             <div class="sum-value">{{ overview.summary.todayTotal }}</div>
             <div class="sum-label">今日新增</div>
@@ -75,32 +65,32 @@
 
       <!-- 第二行 4 张效率指标 -->
       <div class="kpi-grid">
-        <div class="kpi-item">
-          <div class="kpi-icon" style="color:#5B6FE8"><el-icon><DataAnalysis /></el-icon></div>
+        <div class="kpi-item kpi-accept">
+          <div class="kpi-icon"><el-icon><DataAnalysis /></el-icon></div>
           <div>
             <div class="kpi-label">接单率</div>
             <div class="kpi-value">{{ acceptRatio }}%</div>
             <div class="kpi-foot">已接 {{ overview.summary.totalOrders - overview.summary.totalPending }} / {{ overview.summary.totalOrders }}</div>
           </div>
         </div>
-        <div class="kpi-item">
-          <div class="kpi-icon" style="color:#f5222d"><el-icon><Warning /></el-icon></div>
+        <div class="kpi-item kpi-pending">
+          <div class="kpi-icon"><el-icon><Warning /></el-icon></div>
           <div>
             <div class="kpi-label">待接占比</div>
             <div class="kpi-value">{{ pendingRatio }}%</div>
             <div class="kpi-foot">{{ overview.summary.totalPending }} 单待处理</div>
           </div>
         </div>
-        <div class="kpi-item">
-          <div class="kpi-icon" style="color:#52c41a"><el-icon><CircleCheckFilled /></el-icon></div>
+        <div class="kpi-item kpi-done">
+          <div class="kpi-icon"><el-icon><CircleCheckFilled /></el-icon></div>
           <div>
             <div class="kpi-label">完成率</div>
             <div class="kpi-value">{{ doneRatio }}%</div>
             <div class="kpi-foot">已完成 {{ overview.summary.totalCompleted }} 单</div>
           </div>
         </div>
-        <div class="kpi-item">
-          <div class="kpi-icon" style="color:#fa8c16"><el-icon><Histogram /></el-icon></div>
+        <div class="kpi-item kpi-orders">
+          <div class="kpi-icon"><el-icon><Histogram /></el-icon></div>
           <div>
             <div class="kpi-label">平均单店</div>
             <div class="kpi-value">{{ avgPerOutlet }}</div>
@@ -304,11 +294,14 @@ function initChart() {
     legend: { data: ['订单量', '网点数'], top: 8 },
     grid: { left: '3%', right: '4%', bottom: '3%', top: 50, containLabel: true },
     xAxis: { type: 'category', data: regions.map((r: any) => r.region) },
-    yAxis: { type: 'value' },
+    yAxis: { type: 'value', min: 0, max: (value: any) => Math.max(value.max * 1.25, 4) },
     series: [
       {
         name: '订单量',
         type: 'bar',
+        barMaxWidth: 48,
+        barGap: '30%',
+        barCategoryGap: '50%',
         data: regions.map((r: any) => r.totalOrders),
         itemStyle: { color: '#5B6FE8', borderRadius: [4, 4, 0, 0] },
         label: { show: true, position: 'top', fontSize: 11, color: '#5B6FE8' },
@@ -316,6 +309,9 @@ function initChart() {
       {
         name: '网点数',
         type: 'bar',
+        barMaxWidth: 48,
+        barGap: '30%',
+        barCategoryGap: '50%',
         data: regions.map((r: any) => r.outletCount),
         itemStyle: { color: '#52c41a', borderRadius: [4, 4, 0, 0] },
         label: { show: true, position: 'top', fontSize: 11, color: '#52c41a' },
@@ -328,26 +324,74 @@ function initChart() {
 onMounted(loadData)
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .overview-page { }
 .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
 .page-header h2 { margin: 0 0 4px 0; font-size: 22px; font-weight: 600; line-height: 1.4; padding-bottom: 4px; }
 .update-time { font-size: 12px; color: #999; }
-.summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 16px; }
-.summary-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px; transition: transform .15s, box-shadow .15s; }
-.summary-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-.card-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; flex-shrink: 0; }
-.card-body { flex: 1; min-width: 0; }
-.sum-value { font-size: 26px; font-weight: 700; color: #333; line-height: 1.1; }
-.sum-label { font-size: 13px; color: #666; margin-top: 4px; }
-.sum-sub { font-size: 11px; color: #999; margin-top: 2px; }
+.summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 20px; }
+.summary-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); }
+  .card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+  .card-body { flex: 1; min-width: 0; }
+  .sum-value { font-size: 30px; font-weight: 800; line-height: 1; }
+  .sum-label { font-size: 13px; color: #888; margin-top: 4px; }
+  .sum-sub { font-size: 11px; color: #bbb; margin-top: 2px; }
+}
 
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
-.kpi-item { background: #fff; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-.kpi-icon { font-size: 24px; }
+// 网点总数 — 紫蓝
+.summary-total { background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%); border: 1px solid rgba(91, 111, 232, 0.15); .card-icon { background: rgba(91, 111, 232, 0.12); color: #5B6FE8; } .sum-value { color: #3d4fc4; } }
+// 启用网点 — 清新绿
+.summary-active { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); border: 1px solid rgba(82, 196, 26, 0.15); .card-icon { background: rgba(82, 196, 26, 0.12); color: #52c41a; } .sum-value { color: #389e0d; } }
+// 累计订单 — 活力橙
+.summary-orders { background: linear-gradient(135deg, #fff7e6 0%, #ffe8c2 100%); border: 1px solid rgba(250, 140, 22, 0.15); .card-icon { background: rgba(250, 140, 22, 0.12); color: #fa8c16; } .sum-value { color: #c87619; } }
+// 待接单 — 警示红
+.summary-pending { background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%); border: 1px solid rgba(245, 34, 45, 0.15); .card-icon { background: rgba(245, 34, 45, 0.12); color: #f5222d; } .sum-value { color: #cf1322; } }
+// 今日新增 — 清爽青
+.summary-today { background: linear-gradient(135deg, #e6fffb 0%, #b5f5ec 100%); border: 1px solid rgba(19, 194, 194, 0.15); .card-icon { background: rgba(19, 194, 194, 0.12); color: #13c2c2; } .sum-value { color: #08979c; } }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.kpi-item {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); }
+}
+.kpi-icon { font-size: 26px; }
 .kpi-label { font-size: 12px; color: #999; }
 .kpi-value { font-size: 22px; font-weight: 700; color: #333; line-height: 1.2; }
-.kpi-foot { font-size: 11px; color: #999; margin-top: 2px; }
+.kpi-foot { font-size: 11px; color: #bbb; margin-top: 2px; }
+
+// 接单率 — 紫蓝
+.kpi-accept { background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%); border: 1px solid rgba(91, 111, 232, 0.15); .kpi-icon { color: #5B6FE8; } }
+// 待接占比 — 警示红
+.kpi-pending { background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%); border: 1px solid rgba(245, 34, 45, 0.15); .kpi-icon { color: #f5222d; } }
+// 完成率 — 清新绿
+.kpi-done { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); border: 1px solid rgba(82, 196, 26, 0.15); .kpi-icon { color: #52c41a; } }
+// 平均单店 — 活力橙
+.kpi-orders { background: linear-gradient(135deg, #fff7e6 0%, #ffe8c2 100%); border: 1px solid rgba(250, 140, 22, 0.15); .kpi-icon { color: #fa8c16; } }
 
 .block { border-radius: 12px; margin-bottom: 16px; }
 .card-header { display: flex; justify-content: space-between; align-items: center; }

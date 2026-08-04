@@ -75,10 +75,12 @@ async function handleLogin() {
   try {
     const res = await outletStore.loginAction(form.phone, form.password)
     console.log('Login response:', res)
-    if (res && res.Outlet) {
+    // 后端实际返回 outlet（小写），兼容旧 store 字段 Outle（首字母大写）
+    if (res && (res.outlet || res.Outlet)) {
       ElMessage.success('登录成功')
       router.push('/Outlet/workspace')
     } else {
+      console.error('登录响应缺少 outlet 字段:', res)
       ElMessage.error('登录响应格式错误')
     }
   } catch (err) {
