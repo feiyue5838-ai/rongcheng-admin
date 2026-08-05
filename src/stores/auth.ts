@@ -2,12 +2,24 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login, getAdminInfo } from '@/api'
 import router from '@/router'
+import { ADMIN_ROLES, ROLE_LABELS, hasAccess } from '@/constants/roles'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('admin_token') || '')
   const adminInfo = ref<any>(null)
 
+  /** 当前管理员角色，如 superadmin / order_admin 等 */
+  const role = computed(() => adminInfo.value?.role || 'guest')
+
+  /** 角色展示名 */
+  const roleLabel = computed(() => ROLE_LABELS[role.value] || role.value)
+
   const isLoggedIn = computed(() => !!token.value)
+
+  /** 检查当前角色是否有权访问指定路径 */
+  function canAccess(path: string): boolean {
+    return hasAccess(role.value, path)
+  }
 
   async function loginAction(username: string, password: string) {
     const res: any = await login(username, password)
@@ -32,5 +44,5 @@ export const useAuthStore = defineStore('auth', () => {
     router.push('/login')
   }
 
-  return { token, adminInfo, isLoggedIn, loginAction, fetchAdminInfo, logoutAction }
+  return { token, adminInfo, isLoggedIn, role, roleLabel, loginAction, fetchAdminInfo, logoutAction, canAccess }
 })

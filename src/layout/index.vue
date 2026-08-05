@@ -14,64 +14,68 @@
         active-text-color="#5B6FE8"
         :router="true"
       >
-        <el-menu-item index="/dashboard">
+        <el-menu-item v-if="canAccess('/dashboard')" index="/dashboard">
           <el-icon><DataAnalysis /></el-icon>
           <span>工作台</span>
         </el-menu-item>
 
-        <el-sub-menu index="storeMgmt">
+        <!-- 网点管理 sub-menu: 子项任一有权限则显示父菜单 -->
+        <el-sub-menu v-if="showStoreMgmt" index="storeMgmt">
           <template #title><el-icon><Shop /></el-icon><span>网点管理</span></template>
-          <el-menu-item index="/outlets/overview">全网点总览</el-menu-item>
-          <el-menu-item index="/outlets">服务商列表</el-menu-item>
-          <el-menu-item index="/outlets/dashboard">网点看板</el-menu-item>
-          <el-menu-item index="/outlets/assign">订单分配</el-menu-item>
-          <el-menu-item index="/outlets/receipts">交付回执</el-menu-item>
+          <el-menu-item v-if="canAccess('/outlets/overview')" index="/outlets/overview">全网点总览</el-menu-item>
+          <el-menu-item v-if="canAccess('/outlets')" index="/outlets">服务商列表</el-menu-item>
+          <el-menu-item v-if="canAccess('/outlets/dashboard')" index="/outlets/dashboard">网点看板</el-menu-item>
+          <el-menu-item v-if="canAccess('/outlets/assign')" index="/outlets/assign">订单分配</el-menu-item>
+          <el-menu-item v-if="canAccess('/outlets/receipts')" index="/outlets/receipts">交付回执</el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="orders">
+        <!-- 订单管理 sub-menu -->
+        <el-sub-menu v-if="showOrders" index="orders">
           <template #title><el-icon><Document /></el-icon><span>订单管理</span></template>
-          <el-menu-item index="/orders/seal">刻章订单</el-menu-item>
-          <el-menu-item index="/orders/newspaper">登报订单</el-menu-item>
-          <el-menu-item index="/orders/bookkeeping">代理记账订单</el-menu-item>
-          <el-menu-item index="/after-sales/orders">售后订单</el-menu-item>
-          <el-menu-item index="/after-sales/refund-records">退款记录</el-menu-item>
+          <el-menu-item v-if="canAccess('/orders/seal')" index="/orders/seal">刻章订单</el-menu-item>
+          <el-menu-item v-if="canAccess('/orders/newspaper')" index="/orders/newspaper">登报订单</el-menu-item>
+          <el-menu-item v-if="canAccess('/orders/bookkeeping')" index="/orders/bookkeeping">代理记账订单</el-menu-item>
+          <el-menu-item v-if="canAccess('/after-sales/orders')" index="/after-sales/orders">售后订单</el-menu-item>
+          <el-menu-item v-if="canAccess('/after-sales/refund-records')" index="/after-sales/refund-records">退款记录</el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="products">
+        <!-- 产品管理 sub-menu -->
+        <el-sub-menu v-if="showProducts" index="products">
           <template #title><el-icon><Goods /></el-icon><span>产品管理</span></template>
-          <el-sub-menu index="sealMgmt">
+          <el-sub-menu v-if="showSealMgmt" index="sealMgmt">
             <template #title><span>印章管理</span></template>
-            <el-menu-item index="/products/seals/enterprise">企业刻章</el-menu-item>
-            <el-menu-item index="/products/seals/personal">个人印章</el-menu-item>
-            <el-menu-item index="/products/seals/electronic">电子印章</el-menu-item>
-            <el-menu-item index="/products/record-queries">刻章备案查询</el-menu-item>
-
+            <el-menu-item v-if="canAccess('/products/seals/enterprise')" index="/products/seals/enterprise">企业刻章</el-menu-item>
+            <el-menu-item v-if="canAccess('/products/seals/personal')" index="/products/seals/personal">个人印章</el-menu-item>
+            <el-menu-item v-if="canAccess('/products/seals/electronic')" index="/products/seals/electronic">电子印章</el-menu-item>
+            <el-menu-item v-if="canAccess('/products/record-queries')" index="/products/record-queries">刻章备案查询</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu index="newspaperMgmt">
+          <el-sub-menu v-if="showNewspaperMgmt" index="newspaperMgmt">
             <template #title><span>登报管理</span></template>
-            <el-menu-item index="/products/newspapers">报纸仓库</el-menu-item>
-            <el-menu-item index="/products/newspaper-templates">公告模板</el-menu-item>
+            <el-menu-item v-if="canAccess('/products/newspapers')" index="/products/newspapers">报纸仓库</el-menu-item>
+            <el-menu-item v-if="canAccess('/products/newspaper-templates')" index="/products/newspaper-templates">公告模板</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu index="bookkeepingMgmt">
+          <el-sub-menu v-if="showBookkeepingMgmt" index="bookkeepingMgmt">
             <template #title><span>代理记账管理</span></template>
-            <el-menu-item index="/products/bookkeeping-packages">套餐配置</el-menu-item>
+            <el-menu-item v-if="canAccess('/products/bookkeeping-packages')" index="/products/bookkeeping-packages">套餐配置</el-menu-item>
           </el-sub-menu>
         </el-sub-menu>
 
-        <el-sub-menu index="userCenter">
+        <!-- 用户与内容 sub-menu -->
+        <el-sub-menu v-if="showUserCenter" index="userCenter">
           <template #title><el-icon><User /></el-icon><span>用户与内容</span></template>
-          <el-menu-item index="/users">用户管理</el-menu-item>
-          <el-menu-item index="/reviews">评价管理</el-menu-item>
-          <el-menu-item index="/questions">问答管理</el-menu-item>
-          <el-menu-item index="/content">内容管理</el-menu-item>
+          <el-menu-item v-if="canAccess('/users')" index="/users">用户管理</el-menu-item>
+          <el-menu-item v-if="canAccess('/reviews')" index="/reviews">评价管理</el-menu-item>
+          <el-menu-item v-if="canAccess('/questions')" index="/questions">问答管理</el-menu-item>
+          <el-menu-item v-if="canAccess('/content')" index="/content">内容管理</el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="system">
+        <!-- 系统管理 sub-menu: 仅 superadmin -->
+        <el-sub-menu v-if="showSystem" index="system">
           <template #title><el-icon><Setting /></el-icon><span>系统管理</span></template>
-          <el-menu-item index="/system/admins">管理员</el-menu-item>
-          <el-menu-item index="/system/logs">操作日志</el-menu-item>
-          <el-menu-item index="/system/configs">系统配置</el-menu-item>
-          <el-menu-item index="/system/dispatch-rules">派单规则</el-menu-item>
+          <el-menu-item v-if="canAccess('/system/admins')" index="/system/admins">管理员</el-menu-item>
+          <el-menu-item v-if="canAccess('/system/logs')" index="/system/logs">操作日志</el-menu-item>
+          <el-menu-item v-if="canAccess('/system/configs')" index="/system/configs">系统配置</el-menu-item>
+          <el-menu-item v-if="canAccess('/system/dispatch-rules')" index="/system/dispatch-rules">派单规则</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
@@ -123,6 +127,40 @@ const authStore = useAuthStore()
 
 const activeMenu = computed(() => route.path)
 const currentRoute = computed(() => route.meta.title as string || '')
+
+// 权限判断
+const canAccess = (path: string) => authStore.canAccess(path)
+
+// 各子菜单是否显示（任一子项有权限则父菜单显示）
+const showStoreMgmt = computed(() =>
+  canAccess('/outlets/overview') || canAccess('/outlets') || canAccess('/outlets/dashboard') ||
+  canAccess('/outlets/assign') || canAccess('/outlets/receipts'),
+)
+const showOrders = computed(() =>
+  canAccess('/orders/seal') || canAccess('/orders/newspaper') || canAccess('/orders/bookkeeping') ||
+  canAccess('/after-sales/orders') || canAccess('/after-sales/refund-records'),
+)
+const showProducts = computed(() =>
+  canAccess('/products/seals/enterprise') || canAccess('/products/scenes') ||
+  canAccess('/products/newspapers') || canAccess('/products/bookkeeping-packages'),
+)
+const showSealMgmt = computed(() =>
+  canAccess('/products/seals/enterprise') || canAccess('/products/seals/personal') ||
+  canAccess('/products/seals/electronic') || canAccess('/products/record-queries'),
+)
+const showNewspaperMgmt = computed(() =>
+  canAccess('/products/newspapers') || canAccess('/products/newspaper-templates'),
+)
+const showBookkeepingMgmt = computed(() =>
+  canAccess('/products/bookkeeping-packages'),
+)
+const showUserCenter = computed(() =>
+  canAccess('/users') || canAccess('/reviews') || canAccess('/questions') || canAccess('/content'),
+)
+const showSystem = computed(() =>
+  canAccess('/system/admins') || canAccess('/system/logs') ||
+  canAccess('/system/configs') || canAccess('/system/dispatch-rules'),
+)
 
 function handleCommand(command: string) {
   if (command === 'logout') {

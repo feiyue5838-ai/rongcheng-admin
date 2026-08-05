@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useOutletStore } from '@/stores/outlet'
+import { hasAccess } from '@/constants/roles'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -81,6 +82,8 @@ const router = createRouter({
         { path: 'system/logs', name: 'Logs', component: () => import('@/views/system/logs.vue'), meta: { title: '操作日志' } },
         { path: 'system/configs', name: 'Configs', component: () => import('@/views/system/configs.vue'), meta: { title: '系统配置' } },
         { path: 'system/dispatch-rules', name: 'DispatchRules', component: () => import('@/views/system/dispatch-rules.vue'), meta: { title: '派单规则' } },
+        // 403 无权访问
+        { path: '/403', name: 'Forbidden', component: () => import('@/views/error/403.vue'), meta: { title: '无权访问' } },
         // 404 兜底：未匹配路由重定向到工作台（防止删路由/旧书签导致白屏）
         { path: ':pathMatch(.*)*', redirect: '/dashboard' },
       ],
@@ -111,10 +114,25 @@ router.beforeEach((to, from, next) => {
   if (
     !to.path.startsWith('/Outlet') &&
     to.path !== '/login' &&
+    to.path !== '/403' &&
     !authStore.token
   ) {
     next('/login')
     return
+  }
+
+  // 角色权限检查（排除登录/网点端/403 页面）
+  if (
+    !to.path.startsWith('/Outlet') &&
+    to.path !== '/login' &&
+    to.path !== '/403' &&
+    authStore.token
+  ) {
+    const role = authStore.role
+    if (!hasAccess(role, to.path)) {
+      next('/403')
+      return
+    }
   }
 
   next()
