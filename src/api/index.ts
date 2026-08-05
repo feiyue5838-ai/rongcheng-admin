@@ -223,3 +223,10 @@ export const addForcedRegion = (data: { province: string; city?: string; remark?
 export const removeForcedRegion = (id: string) => request.delete(`/dispatch/forced-regions/${id}`)
 export const getAvailableOutlets = (params?: { addressJson?: string; businessType?: string }) =>
   request.get('/dispatch/outlets/available', { params })
+
+// 菜单权限配置
+export const getMenuRoleConfigs = () => request.get('/menu-roles')
+export const createMenuRoleConfig = (data: any) => request.post('/menu-roles', data)
+export const updateMenuRoleConfig = (id: string, data: any) => request.put(`/menu-roles/${id}`, data)
+export const deleteMenuRoleConfig = (id: string) => request.delete(`/menu-roles/${id}`)
+export const resetMenuRoleConfigs = () => request.post('/menu-roles/reset')

@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { login, getAdminInfo } from '@/api'
+import { login, getAdminInfo, getMenuRoleConfigs } from '@/api'
 import router from '@/router'
-import { ADMIN_ROLES, ROLE_LABELS, hasAccess } from '@/constants/roles'
+import { ADMIN_ROLES, ROLE_LABELS, hasAccess, setMenuConfigs, type MenuRoleItem } from '@/constants/roles'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('admin_token') || '')
@@ -27,6 +27,8 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = data.token
     adminInfo.value = data.admin
     localStorage.setItem('admin_token', data.token)
+    // 登录后立即加载菜单权限配置
+    await loadMenuConfigs()
     router.push('/dashboard')
     return res
   }
@@ -37,6 +39,17 @@ export const useAuthStore = defineStore('auth', () => {
     adminInfo.value = res.data ?? res
   }
 
+  /** 从后端加载菜单权限配置并缓存 */
+  async function loadMenuConfigs() {
+    try {
+      const res: any = await getMenuRoleConfigs()
+      const configs: MenuRoleItem[] = res.data ?? res
+      setMenuConfigs(configs)
+    } catch (e) {
+      console.warn('[menu-configs] load failed, will use defaults', e)
+    }
+  }
+
   function logoutAction() {
     token.value = ''
     adminInfo.value = null
@@ -44,5 +57,5 @@ export const useAuthStore = defineStore('auth', () => {
     router.push('/login')
   }
 
-  return { token, adminInfo, isLoggedIn, role, roleLabel, loginAction, fetchAdminInfo, logoutAction, canAccess }
+  return { token, adminInfo, isLoggedIn, role, roleLabel, loginAction, fetchAdminInfo, logoutAction, canAccess, loadMenuConfigs }
 })

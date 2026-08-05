@@ -76,6 +76,7 @@
           <el-menu-item v-if="canAccess('/system/logs')" index="/system/logs">操作日志</el-menu-item>
           <el-menu-item v-if="canAccess('/system/configs')" index="/system/configs">系统配置</el-menu-item>
           <el-menu-item v-if="canAccess('/system/dispatch-rules')" index="/system/dispatch-rules">派单规则</el-menu-item>
+          <el-menu-item v-if="canAccess('/system/menu-roles')" index="/system/menu-roles">菜单权限</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
