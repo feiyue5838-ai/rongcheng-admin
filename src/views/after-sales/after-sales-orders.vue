@@ -1,5 +1,39 @@
 <template>
   <div class="page-container">
+    <div class="stats-grid" v-if="!statsError">
+      <div class="stat-card stat-primary">
+        <div class="stat-icon"><el-icon><FolderOpened /></el-icon></div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.afterSalesTotal }}</div>
+          <div class="stat-label">售后订单总数</div>
+        </div>
+      </div>
+      <div class="stat-card stat-orange">
+        <div class="stat-icon"><el-icon><Clock /></el-icon></div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.afterSalesPending }}</div>
+          <div class="stat-label">待处理</div>
+        </div>
+      </div>
+      <div class="stat-card stat-blue">
+        <div class="stat-icon"><el-icon><Tools /></el-icon></div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.afterSalesRefunding }}</div>
+          <div class="stat-label">退款中</div>
+        </div>
+      </div>
+      <div class="stat-card stat-green">
+        <div class="stat-icon"><el-icon><Calendar /></el-icon></div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.afterSalesToday }}</div>
+          <div class="stat-label">今日新增</div>
+        </div>
+      </div>
+    </div>
+    <div v-if="statsError" class="stats-error">
+      <span>统计加载失败</span>
+      <el-button size="small" @click="loadStats">重试</el-button>
+    </div>
     <!-- 筛选区 -->
     <el-card shadow="never" class="filter-card">
       <el-form :inline="true" :model="query">
@@ -107,11 +141,26 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getAfterSalesOrders, confirmAfterSalesRefund, rejectAfterSales } from '@/api'
+import { FolderOpened, Clock, Tools, Calendar } from '@element-plus/icons-vue'
+import { getAfterSalesOrders, confirmAfterSalesRefund, rejectAfterSales, getOrderStatistics } from '@/api'
 
 const loading = ref(false)
 const orders = ref<any[]>([])
 const total = ref(0)
+const statsError = ref(false)
+const stats = reactive({ afterSalesTotal: 0, afterSalesPending: 0, afterSalesRefunding: 0, afterSalesToday: 0 })
+const loadStats = async () => {
+  try {
+    statsError.value = false
+    const res = await getOrderStatistics()
+    stats.afterSalesTotal = res.afterSalesTotal || 0
+    stats.afterSalesPending = res.afterSalesPending || 0
+    stats.afterSalesRefunding = res.afterSalesRefunding || 0
+    stats.afterSalesToday = res.afterSalesToday || 0
+  } catch (e) {
+    statsError.value = true
+  }
+}
 
 const query = reactive({ module: '', page: 1, pageSize: 20 })
 
@@ -206,11 +255,31 @@ function getOrderContent(row: any) {
   return row.title || row.productName || row.remark || '-'
 }
 
-onMounted(() => fetchOrders())
+onMounted(() => { loadStats(); fetchOrders() })
 </script>
 
 <style scoped>
 .page-container { padding: 20px; }
 .filter-card { margin-bottom: 16px; }
 .refund-box p { margin: 6px 0; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
+.stat-card { background: #fff; border-radius: 16px; padding: 20px 20px 18px; display: flex; align-items: center; gap: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); transition: transform .2s, box-shadow .2s; cursor: default; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
+.stat-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+.stat-info { flex: 1; }
+.stat-value { font-size: 28px; font-weight: 700; line-height: 1.1; margin-bottom: 4px; }
+.stat-label { font-size: 13px; color: #666; }
+.stat-primary { background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%); border: 1px solid rgba(91,111,232,.15); }
+.stat-primary .stat-icon { background: linear-gradient(135deg, #5B6FE8, #7B8FF8); color: #fff; }
+.stat-primary .stat-value { color: #3d4fc4; }
+.stat-orange { background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%); border: 1px solid rgba(245,34,45,.15); }
+.stat-orange .stat-icon { background: linear-gradient(135deg, #f5222d, #ff4d4f); color: #fff; }
+.stat-orange .stat-value { color: #cf1322; }
+.stat-blue { background: linear-gradient(135deg, #e6f7ff 0%, #bae0ff 100%); border: 1px solid rgba(24,144,255,.15); }
+.stat-blue .stat-icon { background: linear-gradient(135deg, #1890ff, #69c0ff); color: #fff; }
+.stat-blue .stat-value { color: #0958d9; }
+.stat-green { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); border: 1px solid rgba(82,196,26,.15); }
+.stat-green .stat-icon { background: linear-gradient(135deg, #52c41a, #73d13d); color: #fff; }
+.stat-green .stat-value { color: #389e0d; }
+.stats-error { display: flex; align-items: center; gap: 10px; color: #f5222d; font-size: 13px; margin-bottom: 10px; }
 </style>

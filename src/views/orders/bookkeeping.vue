@@ -7,6 +7,40 @@
       </div>
     </div>
     <div class="page-card">
+      <div class="stats-grid" v-if="!statsError || stats.bookkeeping > 0 || stats.making > 0 || stats.todayBookkeeping > 0 || stats.assigned > 0">
+        <div class="stat-card stat-primary">
+          <div class="stat-icon"><el-icon><FolderOpened /></el-icon></div>
+          <div class="stat-info">
+            <div class="stat-value">{{ stats.bookkeeping }}</div>
+            <div class="stat-label">代理记账订单总数</div>
+          </div>
+        </div>
+        <div class="stat-card stat-orange">
+          <div class="stat-icon"><el-icon><Clock /></el-icon></div>
+          <div class="stat-info">
+            <div class="stat-value">{{ stats.assigned }}</div>
+            <div class="stat-label">已分配待接单</div>
+          </div>
+        </div>
+        <div class="stat-card stat-blue">
+          <div class="stat-icon"><el-icon><Tools /></el-icon></div>
+          <div class="stat-info">
+            <div class="stat-value">{{ stats.making }}</div>
+            <div class="stat-label">进行中</div>
+          </div>
+        </div>
+        <div class="stat-card stat-green">
+          <div class="stat-icon"><el-icon><Calendar /></el-icon></div>
+          <div class="stat-info">
+            <div class="stat-value">{{ stats.todayBookkeeping }}</div>
+            <div class="stat-label">今日新增</div>
+          </div>
+        </div>
+      </div>
+      <div v-if="statsError" class="stats-error">
+        <span>统计加载失败</span>
+        <el-button size="small" @click="loadStats">重试</el-button>
+      </div>
       <!-- 搜索 -->
       <el-form inline :model="query" class="search-form">
         <el-form-item label="关键词">
@@ -134,9 +168,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { assignOrderAPI, getOutletsAPI } from '@/api'
+import { assignOrderAPI, getOutletsAPI, getOrderStatistics } from '@/api'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
+import { FolderOpened, Clock, Tools, Calendar } from '@element-plus/icons-vue'
 
 const statusOptions = [
   { value: 1, label: '待支付' }, { value: 2, label: '已支付' },
@@ -147,6 +182,20 @@ const statusOptions = [
 
 const loading = ref(false)
 const list = ref<any[]>([])
+const statsError = ref(false)
+const stats = reactive({ bookkeeping: 0, making: 0, todayBookkeeping: 0, assigned: 0 })
+const loadStats = async () => {
+  try {
+    statsError.value = false
+    const res = await getOrderStatistics()
+    stats.bookkeeping = res.bookkeeping || 0
+    stats.assigned = res.assignedOrders || 0
+    stats.making = res.making || 0
+    stats.todayBookkeeping = res.todayBookkeeping || 0
+  } catch (e) {
+    statsError.value = true
+  }
+}
 const query = reactive({ page: 1, pageSize: 20, keyword: '', status: '', taxpayerType: '' })
 const dateRange = ref<string[]>([])
 const total = ref(0)
@@ -296,7 +345,7 @@ function reset() {
   search()
 }
 
-onMounted(fetchOrders)
+onMounted(() => { loadStats(); fetchOrders() })
 </script>
 
 <style scoped>
@@ -306,4 +355,24 @@ onMounted(fetchOrders)
 .search-form { margin-bottom: 16px; }
 .text-muted { color: #999; font-size: 12px; }
 ::v-deep .current-row td { background-color: #EBF5FF !important; color: #5B6FE8; font-weight: 600; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+.stat-card { background: #fff; border-radius: 16px; padding: 20px 20px 18px; display: flex; align-items: center; gap: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); transition: transform .2s, box-shadow .2s; cursor: default; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
+.stat-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+.stat-info { flex: 1; }
+.stat-value { font-size: 28px; font-weight: 700; line-height: 1.1; margin-bottom: 4px; }
+.stat-label { font-size: 13px; color: #666; }
+.stat-primary { background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%); border: 1px solid rgba(91,111,232,.15); }
+.stat-primary .stat-icon { background: linear-gradient(135deg, #5B6FE8, #7B8FF8); color: #fff; }
+.stat-primary .stat-value { color: #3d4fc4; }
+.stat-orange { background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%); border: 1px solid rgba(245,34,45,.15); }
+.stat-orange .stat-icon { background: linear-gradient(135deg, #f5222d, #ff4d4f); color: #fff; }
+.stat-orange .stat-value { color: #cf1322; }
+.stat-blue { background: linear-gradient(135deg, #e6f7ff 0%, #bae0ff 100%); border: 1px solid rgba(24,144,255,.15); }
+.stat-blue .stat-icon { background: linear-gradient(135deg, #1890ff, #69c0ff); color: #fff; }
+.stat-blue .stat-value { color: #0958d9; }
+.stat-green { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); border: 1px solid rgba(82,196,26,.15); }
+.stat-green .stat-icon { background: linear-gradient(135deg, #52c41a, #73d13d); color: #fff; }
+.stat-green .stat-value { color: #389e0d; }
+.stats-error { display: flex; align-items: center; gap: 10px; color: #f5222d; font-size: 13px; margin-bottom: 10px; }
 </style>
