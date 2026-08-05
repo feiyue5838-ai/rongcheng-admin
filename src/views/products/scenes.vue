@@ -17,7 +17,7 @@
           <span class="dot" :class="{ off: s.status !== 1 }"></span>
           {{ s.name }}
         </div>
-        <div class="scene-item-meta">印章 {{ s._count.sealSceneSeals }} · 套餐 {{ s._count.sealScenePackages }}</div>
+        <div class="scene-item-meta">印章 {{ s._count?.sealSceneSeals ?? 0 }} · 套餐 {{ s._count?.sealScenePackages ?? 0 }}</div>
       </div>
     </div>
 
