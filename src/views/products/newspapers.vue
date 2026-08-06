@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="newspapers-page">
     <!-- 页面头部 -->
     <div class="page-header">
@@ -677,7 +677,7 @@ async function fetchNewspapers() {
   try {
     // 一次性拉全量，前端过滤 + 统计
     const res: any = await getAllNewspapers()
-    allNewspapers.value = res.list || []
+    allNewspapers.value = (res as any).list || []
   } finally {
     loading.value = false
   }
@@ -913,7 +913,7 @@ async function handleExpandChange(row: any) {
   if (sections.value.find(s => s._newspaperId === row.id)) return
   try {
     const res: any = await getNewspaperSections(row.id)
-    const list = res.list || res.data?.list || []
+    const list = (res as any).list || []
     list.forEach((s: any) => { s._newspaperId = row.id })
     sections.value = [...sections.value.filter(s => s._newspaperId !== row.id), ...list]
   } catch (e: any) {
@@ -966,7 +966,7 @@ async function saveSection() {
     sectionDialogVisible.value = false
     const rowId = currentNewspaperId.value
     const res: any = await getNewspaperSections(rowId)
-    const list = res.list || res.data?.list || []
+    const list = (res as any).list || []
     list.forEach((s: any) => { s._newspaperId = rowId })
     sections.value = [...sections.value.filter(s => s._newspaperId !== rowId), ...list]
   } catch (e: any) {
@@ -989,7 +989,7 @@ async function deleteSection(row: any, section: any) {
 
 onMounted(async () => {
   const res: any = await getNewspaperCategories()
-  categories.value = res.value || res.data?.list || res.list || res || []
+    categories.value = Array.isArray(res) ? res : ((res as any).list || (res as any).data?.list || [])
   fetchNewspapers()
 })
 </script>

@@ -167,7 +167,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getOutletsAPI, getOutletAPI, getOutletOrdersAPI } from '@/api'
@@ -175,16 +175,16 @@ import { formatDate } from '@/utils/format'
 import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding } from '@element-plus/icons-vue'
 
 const loading = ref(false)
-const outlets = ref([])
+const outlets = ref<any[]>([])
 const selectedOutlet = ref('')
-const currentOutlet = ref(null)
-const stats = ref({ pending: 0, processing: 0, completed: 0, todayTotal: 0 })
-const recentOrders = ref([])
-const currentOrder = ref(null)
+const currentOutlet = ref<any>(null)
+const stats = ref<any>({ pending: 0, processing: 0, completed: 0, todayTotal: 0 })
+const recentOrders = ref<any[]>([])
+const currentOrder = ref<any>(null)
 const acceptDialogVisible = ref(false)
 const completeDialogVisible = ref(false)
 const actionLoading = ref(false)
-const completeFormRef = ref(null)
+const completeFormRef = ref<any>(null)
 
 const completeForm = reactive({ expressCompany: '', expressNo: '', remark: '' })
 const completeRules = {
@@ -192,16 +192,16 @@ const completeRules = {
   expressNo: [{ required: true, message: '请输入快递单号', trigger: 'blur' }],
 }
 
-function getStatusTag(status) {
-  const map = { 1: 'warning', 2: '', 3: 'success' }
+function getStatusTag(status: any) {
+  const map: Record<number,string> = { 1: 'warning', 2: '', 3: 'success' }
   return map[status] || 'info'
 }
 
 async function loadOutlets() {
   loading.value = true
   try {
-    const res = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
-    outlets.value = res.list
+    const res: any = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
+    outlets.value = (res as any).data?.list ?? (res as any).list ?? []
     if (outlets.value.length > 0 && !selectedOutlet.value) {
       selectedOutlet.value = outlets.value[0].id
       await loadData()
@@ -215,26 +215,26 @@ async function loadData() {
   if (!selectedOutlet.value) return
   loading.value = true
   try {
-    const [outletRes, ordersRes] = await Promise.all([
+    const [outletRes, ordersRes]: any[] = await Promise.all([
       getOutletAPI(selectedOutlet.value),
       getOutletOrdersAPI(selectedOutlet.value, { page: 1, pageSize: 100 }),
     ])
-    currentOutlet.value = outletRes
-    recentOrders.value = ordersRes.list.slice(0, 10)
+    currentOutlet.value = (outletRes as any)
+    recentOrders.value = ((ordersRes as any).data?.list ?? (ordersRes as any).list ?? []).slice(0, 10)
     // 从全部订单计算统计数据（取 100 条近似）
-    const allOrders = ordersRes.list
+    const allOrders = (ordersRes as any).data?.list ?? (ordersRes as any).list ?? []
     stats.value = {
-      pending: allOrders.filter(o => o.status === 1).length,
-      processing: allOrders.filter(o => o.status === 2).length,
-      completed: allOrders.filter(o => o.status === 3).length,
+      pending: allOrders.filter((o: any) => (o as any).status === 1).length,
+      processing: allOrders.filter((o: any) => (o as any).status === 2).length,
+      completed: allOrders.filter((o: any) => (o as any).status === 3).length,
       todayTotal: allOrders.length,
     }
-  } catch { /* ignore */ } finally {
+  } catch (err: any) { /* ignore */ } finally {
     loading.value = false
   }
 }
 
-function onAccept(order) {
+function onAccept(order: any) {
   currentOrder.value = order
   acceptDialogVisible.value = true
 }
@@ -242,7 +242,7 @@ function onAccept(order) {
 async function onConfirmAccept() {
   actionLoading.value = true
   try {
-    const res = await fetch(`/api/orders/${currentOrder.value.orderId}/accept`, {
+    const res = await fetch(`/api/orders/${(currentOrder.value as any)?.orderId}/accept`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
@@ -257,25 +257,25 @@ async function onConfirmAccept() {
     ElMessage.success('接单成功')
     acceptDialogVisible.value = false
     loadData()
-  } catch (err) {
-    ElMessage.error(err.message || '接单失败')
+  } catch (err: any) {
+    ElMessage.error(err?.message || '接单失败')
   } finally {
     actionLoading.value = false
   }
 }
 
-function onComplete(order) {
+function onComplete(order: any) {
   currentOrder.value = order
   Object.assign(completeForm, { expressCompany: '', expressNo: '', remark: '' })
   completeDialogVisible.value = true
 }
 
 async function onConfirmComplete() {
-  const valid = await completeFormRef.value.validate().catch(() => false)
+  const valid = await completeFormRef.value?.validate().catch(() => false)
   if (!valid) return
   actionLoading.value = true
   try {
-    const res = await fetch(`/api/orders/${currentOrder.value.orderId}/deliver`, {
+    const res = await fetch(`/api/orders/${(currentOrder.value as any)?.orderId}/deliver`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
@@ -286,7 +286,7 @@ async function onConfirmComplete() {
         expressNo: completeForm.expressNo,
         remark: completeForm.remark,
         receipts: [],
-        outletId: selectedOutlet.value,
+        outletId: selectedOutlet.value ?? '',
       }),
     })
     if (!res.ok) {
@@ -296,8 +296,8 @@ async function onConfirmComplete() {
     ElMessage.success('交货成功')
     completeDialogVisible.value = false
     loadData()
-  } catch (err) {
-    ElMessage.error(err.message || '交货失败')
+  } catch (err: any) {
+    ElMessage.error(err?.message || '交货失败')
   } finally {
     actionLoading.value = false
   }

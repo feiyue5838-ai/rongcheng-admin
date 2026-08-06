@@ -10,6 +10,7 @@
           <el-dropdown-menu>
             <el-dropdown-item command="seal">添加印章</el-dropdown-item>
             <el-dropdown-item command="package">添加套餐</el-dropdown-item>
+            <el-dropdown-item v-if="routeType === 'enterprise'" command="scene" divided>管理场景</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -419,6 +420,61 @@
         <el-button type="primary" @click="savePkg" :loading="pkgSaving">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 场景管理弹窗 -->
+    <el-dialog v-model="sceneDialogVisible" title="管理场景" width="720px">
+      <div class="scene-manage-header">
+        <el-button type="primary" size="small" @click="showSceneEditDialog()">+ 新增场景</el-button>
+      </div>
+      <el-table :data="businessCategories" style="margin-top: 12px" size="small">
+        <el-table-column prop="name" label="场景名称" min-width="140" />
+        <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="sort" label="排序" width="70" align="center" />
+        <el-table-column label="状态" width="80" align="center">
+          <template #default="{ row }">
+            <el-switch
+              v-model="row.status"
+              :active-value="1"
+              :inactive-value="0"
+              size="small"
+              @change="(val: number) => toggleSceneStatus(row, val)"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="showSceneEditDialog(row)">编辑</el-button>
+            <el-button type="danger" link size="small" @click="handleSceneDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
+
+    <!-- 新增/编辑场景弹窗 -->
+    <el-dialog v-model="sceneEditVisible" :title="sceneEditForm.id ? '编辑场景' : '新增场景'" width="500px">
+      <el-form :model="sceneEditForm" label-width="90px">
+        <el-form-item label="场景名称" required>
+          <el-input v-model="sceneEditForm.name" placeholder="如：新办企业全套章" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="sceneEditForm.description" type="textarea" rows="2" placeholder="场景说明（可选）" />
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="sceneEditForm.sort" :min="0" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-switch
+            v-model="sceneEditForm.status"
+            :active-value="1"
+            :inactive-value="0"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="sceneEditVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveScene" :loading="sceneSaving">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -428,7 +484,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { provinceToCities, cityToDistricts } from '@/data/region-data'
 import { Box, Postcard } from '@element-plus/icons-vue'
-import { getSealCategories, getSealSceneProducts, createSeal, updateSeal, deleteSeal, uploadImage, updatePackage, deletePackage, getAdminScenes, getSeals, getSealPackages, createPackage } from '@/api'
+import { getSealCategories, getSealSceneProducts, createSeal, updateSeal, deleteSeal, uploadImage, updatePackage, deletePackage, getAdminScenes, getSeals, getSealPackages, createPackage, createScene, updateScene, deleteScene } from '@/api'
 const route = useRoute()
 
 // 路由逻辑分类 key（不依赖数据，初始化即可确定）
@@ -568,6 +624,64 @@ const pkgDialogVisible = ref(false)
 const pkgSaving = ref(false)
 const pkgIsEdit = ref(false)
 const pkgForm = reactive<any>({ id: '', sceneId: '', name: '', price: 0, description: '', sort: 0, images: [], region_prices: {}, sealIds: [] })
+
+// 场景管理弹窗状态
+const sceneDialogVisible = ref(false)
+const sceneEditVisible = ref(false)
+const sceneSaving = ref(false)
+const sceneEditForm = reactive<any>({ id: '', name: '', description: '', sort: 0, status: 1 })
+
+function openSceneDialog() {
+  sceneDialogVisible.value = true
+}
+
+function showSceneEditDialog(row?: any) {
+  if (row) {
+    Object.assign(sceneEditForm, { ...row })
+  } else {
+    Object.assign(sceneEditForm, { id: '', name: '', description: '', sort: 0, status: 1 })
+  }
+  sceneEditVisible.value = true
+}
+
+async function saveScene() {
+  if (!sceneEditForm.name) { ElMessage.warning('请填写场景名称'); return }
+  sceneSaving.value = true
+  try {
+    const payload = {
+      name: sceneEditForm.name,
+      description: sceneEditForm.description,
+      sort: sceneEditForm.sort,
+      status: sceneEditForm.status,
+    }
+    if (sceneEditForm.id) {
+      await updateScene(sceneEditForm.id, payload)
+    } else {
+      await createScene(payload)
+    }
+    ElMessage.success(sceneEditForm.id ? '保存成功' : '创建成功')
+    sceneEditVisible.value = false
+    await fetchAllCategories()
+  } finally {
+    sceneSaving.value = false
+  }
+}
+
+async function toggleSceneStatus(row: any, val: number) {
+  try {
+    await updateScene(row.id, { status: val })
+    ElMessage.success('状态已更新')
+  } catch {
+    row.status = val === 1 ? 0 : 1
+  }
+}
+
+async function handleSceneDelete(row: any) {
+  await ElMessageBox.confirm(`确定删除场景「${row.name}」？`, '提示', { type: 'warning' })
+  await deleteScene(row.id)
+  ElMessage.success('删除成功')
+  await fetchAllCategories()
+}
 
 // 套餐弹窗：可选印章列表（按所选场景加载，非企业路由回退全量）
 const pkgSealOptions = ref<any[]>([])
@@ -746,9 +860,10 @@ async function fetchCategoryPackages(catId: string, catName: string): Promise<an
   }
 }
 
-function handleAddCommand(cmd: 'seal' | 'package') {
+function handleAddCommand(cmd: 'seal' | 'package' | 'scene') {
   if (cmd === 'seal') showDialog('add')
-  else openPkgDialog()
+  else if (cmd === 'package') openPkgDialog()
+  else openSceneDialog()
 }
 
 function showDialog(type: string, row?: any) {
@@ -1365,6 +1480,13 @@ watch(activeSceneId, async (newId, oldId) => {
   background: #e6e8eb;
   padding: 1px 8px;
   border-radius: 10px;
+}
+
+/* ===== 场景管理弹窗 ===== */
+.scene-manage-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
 }
 </style>
 

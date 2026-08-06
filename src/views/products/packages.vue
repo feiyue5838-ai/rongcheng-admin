@@ -54,8 +54,8 @@ const loading = ref(false), saving = ref(false), packages = ref<any[]>([]), allS
 const dialogVisible = ref(false), isEdit = ref(false)
 const form = reactive<any>({ name: '', badge: '', price: 0, sealIds: [], description: '', sort: 0 })
 
-async function fetchPackages() { loading.value = true; try { packages.value = (await getSealPackages()) ?? [] } finally { loading.value = false } }
-async function fetchSeals() { allSeals.value = (await getSeals()).data ?? [] }
+async function fetchPackages() { loading.value = true; try { packages.value = ((await getSealPackages()) as any) ?? [] } finally { loading.value = false } }
+async function fetchSeals() { allSeals.value = ((await getSeals()) as any) ?? [] }
 function showDialog(type: string, row?: any) {
   isEdit.value = type === 'edit'
   if (row) { Object.assign(form, { ...row }) } else { Object.assign(form, { name: '', badge: '', price: 0, sealIds: [], description: '', sort: 0 }) }

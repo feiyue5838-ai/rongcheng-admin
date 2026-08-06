@@ -6,7 +6,10 @@ import { ADMIN_ROLES, ROLE_LABELS, hasAccess, setMenuConfigs, type MenuRoleItem 
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('admin_token') || '')
-  const adminInfo = ref<any>(null)
+  // 从 localStorage 恢复 adminInfo，确保刷新后 role 不丢
+  const adminInfo = ref<any>(localStorage.getItem('admin_info')
+    ? JSON.parse(localStorage.getItem('admin_info') || 'null')
+    : null)
 
   /** 当前管理员角色，如 superadmin / order_admin 等 */
   const role = computed(() => adminInfo.value?.role || 'guest')
@@ -27,6 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = data.token
     adminInfo.value = data.admin
     localStorage.setItem('admin_token', data.token)
+    localStorage.setItem('admin_info', JSON.stringify(data.admin))
     // 登录后立即加载菜单权限配置
     await loadMenuConfigs()
     router.push('/dashboard')
@@ -54,6 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = ''
     adminInfo.value = null
     localStorage.removeItem('admin_token')
+    localStorage.removeItem('admin_info')
     router.push('/login')
   }
 

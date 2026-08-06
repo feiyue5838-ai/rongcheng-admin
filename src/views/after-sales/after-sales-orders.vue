@@ -152,7 +152,7 @@ const stats = reactive({ afterSalesTotal: 0, afterSalesPending: 0, afterSalesRef
 const loadStats = async () => {
   try {
     statsError.value = false
-    const res = await getOrderStatistics()
+    const res = await getOrderStatistics() as any
     stats.afterSalesTotal = res.afterSalesTotal || 0
     stats.afterSalesPending = res.afterSalesPending || 0
     stats.afterSalesRefunding = res.afterSalesRefunding || 0
@@ -224,7 +224,7 @@ async function fetchOrders() {
     const params: any = { page: query.page, pageSize: query.pageSize }
     if (query.module) params.module = query.module
     const res: any = await getAfterSalesOrders(params)
-    orders.value = res.list || res.rows || []
+    orders.value = (res as any).data?.rows || (res as any).rows || []
     total.value = res.total || 0
   } catch (e: any) {
     ElMessage.error(e?.message || '加载失败')

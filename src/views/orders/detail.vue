@@ -458,7 +458,7 @@ async function showAssignDialog() {
   assignVisible.value = true
   try {
     const res: any = await getOutletsAPI({ page: 1, pageSize: 100 })
-    outletList.value = res.list || []
+    outletList.value = (res as any).data?.list || []
   } catch { /* ignore */ }
 }
 

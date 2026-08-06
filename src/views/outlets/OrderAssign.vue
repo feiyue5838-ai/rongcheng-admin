@@ -220,7 +220,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getUnassignedOrdersAPI, getAssignedOrdersAPI, assignOrderAPI, getOutletsAPI, getOrderStatistics } from '@/api'
@@ -228,7 +228,7 @@ import { formatDate } from '@/utils/format'
 
 const activeTab = ref('pending')
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<any[]>([])
 const pendingCount = ref(0)
 const assignedCount = ref(0)
 const pendingSealCount = ref(0)
@@ -244,35 +244,35 @@ const module = ref('')
 
 const assignDialogVisible = ref(false)
 const submitting = ref(false)
-const outlets = ref([])
-const currentOrder = ref(null)
+const outlets = ref<any[]>([])
+const currentOrder = ref<any>(null)
 const outletKeyword = ref('')
 
 const assignForm = reactive({ outletId: '', remark: '' })
 const currentOutletName = ref('')
 
-function tableRowClassName({ row }) {
-  return row.id === assignForm.outletId ? 'current-row' : ''
+function tableRowClassName({ row }: { row: any }) {
+  return row?.id === assignForm.outletId ? 'current-row' : ''
 }
 
 
-function getAssignmentText(status) {
-  const map = { 0: '未分配', 1: '已分配', 2: '制作中', 3: '已完成' }
-  return map[status] || '未知'
+function getAssignmentText(status: any) {
+  const map: Record<number,string> = { 0: '未分配', 1: '已分配', 2: '制作中', 3: '已完成' }
+  return map[Number(status)] || '未知'
 }
-function getAssignmentTagType(status) {
-  const map = { 0: 'info', 1: 'primary', 2: 'warning', 3: 'success' }
-  return map[status] || 'info'
+function getAssignmentTagType(status: any) {
+  const map: Record<number,string> = { 0: 'info', 1: 'primary', 2: 'warning', 3: 'success' }
+  return map[Number(status)] || 'info'
 }
-function getModuleLabel(m) {
-  const map = { seal: '刻章', newspaper: '登报', bookkeeping: '代理记账' }
-  return map[m] || m
+function getModuleLabel(m: any) {
+  const map: Record<string,string> = { seal: '刻章', newspaper: '登报', bookkeeping: '代理记账' }
+  return map[String(m)] || String(m)
 }
-function getModuleTagType(m) {
-  const map = { seal: '', newspaper: 'success', bookkeeping: 'warning' }
-  return map[m] || 'info'
+function getModuleTagType(m: any) {
+  const map: Record<string,string> = { seal: '', newspaper: 'success', bookkeeping: 'warning' }
+  return map[String(m)] || 'info'
 }
-function formatAddress(addressJson) {
+function formatAddress(addressJson: any) {
   if (!addressJson) return '-'
   try {
     const addr = typeof addressJson === 'string' ? JSON.parse(addressJson) : addressJson
@@ -294,13 +294,13 @@ async function loadData() {
         getUnassignedOrdersAPI({ page: 1, pageSize: 1, keyword: keyword.value }),
         getUnassignedOrdersAPI({ page: page.value, pageSize: pageSize.value, keyword: keyword.value, module: module.value }),
       ])
-      pendingCount.value = resAll.pagination.total
-      tableData.value = resFiltered.list
-      total.value = resFiltered.pagination.total
+      pendingCount.value = (resAll as any).data?.pagination?.total ?? (resAll as any).pagination?.total ?? 0
+      tableData.value = (resFiltered as any).data?.list ?? (resFiltered as any).list ?? []
+      total.value = (resFiltered as any).data?.pagination?.total ?? (resFiltered as any).pagination?.total ?? 0
     } else {
       const res = await getAssignedOrdersAPI({ page: page.value, pageSize: pageSize.value, keyword: keyword.value, module: module.value })
-      tableData.value = res.list
-      total.value = res.pagination.total
+      tableData.value = (res as any).data?.list ?? (res as any).list ?? []
+      total.value = (res as any).data?.pagination?.total ?? (res as any).pagination?.total ?? 0
     }
   } catch (err) {
     tableData.value = []
@@ -315,14 +315,14 @@ async function loadData() {
 async function loadStats() {
   statsLoading.value = true
   try {
-    const stats = await getOrderStatistics()
-    pendingCount.value = stats.pending ?? stats.pendingOrders ?? pendingCount.value
-    assignedCount.value = stats.assigned ?? stats.assignedOrders ?? 0
-    pendingSealCount.value = stats.pendingSeal ?? 0
-    pendingNewspaperCount.value = stats.pendingNewspaper ?? 0
-    pendingBookkeepingCount.value = stats.pendingBookkeeping ?? 0
+    const stats: any = await getOrderStatistics()
+    pendingCount.value = stats?.pending ?? stats?.pendingOrders ?? pendingCount.value
+    assignedCount.value = stats?.assigned ?? stats?.assignedOrders ?? 0
+    pendingSealCount.value = stats?.pendingSeal ?? 0
+    pendingNewspaperCount.value = stats?.pendingNewspaper ?? 0
+    pendingBookkeepingCount.value = stats?.pendingBookkeeping ?? 0
     statsError.value = false
-  } catch (e) {
+  } catch (e: any) {
     statsError.value = true
     console.warn('[stats] load failed:', e?.message || e)
   } finally {
@@ -330,18 +330,18 @@ async function loadStats() {
   }
 }
 
-async function openAssignDialog(order) {
+async function openAssignDialog(order: any) {
   currentOrder.value = order
   assignForm.outletId = ''
   assignForm.remark = ''
   currentOutletName.value = ''
   try {
-    const res = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
-    const all = res.list || []
-    const recommendedIds = new Set((order.recommendedOutlets || []).map((o) => o.id))
-    const recommended = all.filter((o) => recommendedIds.has(o.id))
-    const others = all.filter((o) => !recommendedIds.has(o.id))
-    outlets.value = [...recommended, ...others]
+    const res: any = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
+    const all = (res as any).data?.list ?? (res as any).list ?? []
+    const recommendedIds = new Set((order.recommendedOutlets || []).map((o: any) => o.id))
+    const recommended = all.filter((o: any) => recommendedIds.has(o.id))
+    const others = all.filter((o: any) => !recommendedIds.has(o.id))
+    outlets.value = [...(recommended as any[]), ...(others as any[])] as any[]
     outletKeyword.value = ''
   } catch {
     ElMessage.error('加载网点列表失败')
@@ -352,7 +352,7 @@ async function openAssignDialog(order) {
 const filteredOutlets = computed(() => {
   const kw = outletKeyword.value.trim().toLowerCase()
   if (!kw) return outlets.value
-  return outlets.value.filter((o) => {
+  return outlets.value.filter((o: any) => {
     const name = (o.name || '').toLowerCase()
     const city = (o.city || '').toLowerCase()
     const phone = (o.phone || '').toLowerCase()
@@ -360,7 +360,7 @@ const filteredOutlets = computed(() => {
   })
 })
 
-function highlight(val) {
+function highlight(val: any) {
   const text = val == null ? '' : String(val)
   const kw = outletKeyword.value.trim()
   if (!kw) return escapeHtml(text)
@@ -372,11 +372,11 @@ function highlight(val) {
   return `${escapeHtml(before)}<mark style="background:#FFF3A0;color:inherit;padding:0 2px;border-radius:2px">${escapeHtml(hit)}</mark>${escapeHtml(after)}`
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+function escapeHtml(s: any) {
+  return String(s).replace(/[&<>"']/g, (c: string) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string))
 }
 
-function onOutletRowClick(row) {
+function onOutletRowClick(row: any) {
   assignForm.outletId = row.id
   currentOutletName.value = row.name || ''
 }
@@ -389,8 +389,8 @@ async function onConfirmAssign() {
     ElMessage.success('分配成功')
     assignDialogVisible.value = false
     loadData()
-  } catch (err) {
-    ElMessage.error(err.response?.data?.message || '分配失败')
+  } catch (err: any) {
+    ElMessage.error(err?.response?.data?.message || err?.message || '分配失败')
   } finally {
     submitting.value = false
   }

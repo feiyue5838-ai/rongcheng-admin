@@ -219,7 +219,7 @@ async function saveConfig() {
 async function loadPriorities() {
   loading.value = true
   try {
-    priorities.value = await getDispatchPriorities()
+    priorities.value = (await getDispatchPriorities()) as any
   } catch { /* ignore */ } finally {
     loading.value = false
   }
@@ -260,7 +260,7 @@ async function batchSetPriority() {
 async function loadForcedRegions() {
   loading.value = true
   try {
-    forcedRegions.value = await getForcedRegions()
+    forcedRegions.value = (await getForcedRegions()) as any
   } catch { /* ignore */ } finally {
     loading.value = false
   }

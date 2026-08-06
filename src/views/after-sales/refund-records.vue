@@ -112,7 +112,7 @@ async function fetchRecords() {
     if (query.startDate) params.startDate = query.startDate
     if (query.endDate) params.endDate = query.endDate
     const res: any = await getRefundRecords(params)
-    records.value = res.list || res.rows || []
+    records.value = (res as any).data?.rows || (res as any).rows || []
     total.value = res.total || 0
   } catch (e: any) {
     ElMessage.error(e?.message || '加载失败')

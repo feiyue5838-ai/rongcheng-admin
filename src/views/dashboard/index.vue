@@ -52,7 +52,7 @@
                   </linearGradient>
                 </defs>
                 <polyline
-                  points="0,60 53,55 107,50 160,42 213,35 267,28 320,20"
+                  points="{{ sparklinePoints.poly }}"
                   fill="none"
                   stroke="rgba(255,255,255,0.9)"
                   stroke-width="2"
@@ -60,7 +60,7 @@
                   stroke-linejoin="round"
                 />
                 <polygon
-                  points="0,60 53,55 107,50 160,42 213,35 267,28 320,20 320,80 0,80"
+                  points="{{ sparklinePoints.fill }}"
                   fill="url(#sparkFill)"
                 />
               </svg>
@@ -171,14 +171,14 @@ type StatConfig = {
 }
 
 const stats = reactive({
-  totalUsers:     { label: '用户总数',   value: 0, icon: 'User',         accent: '#64748b' },
-  todayUsers:     { label: '今日新增',   value: 0, icon: 'UserFilled',   accent: '#64748b' },
-  completedOrders:{ label: '已完成订单', value: 0, icon: 'CircleCheck',  accent: '#10b981' },
-  pendingReviews: { label: '待回复评价', value: 0, icon: 'ChatDotRound', accent: '#ef4444' },
-  totalOrders:    { label: '订单总数',   value: 0, icon: 'Document',     accent: '#3b82f6' },
-  pendingOrders:  { label: '待处理订单', value: 0, icon: 'Clock',        accent: '#f59e0b' },
-  totalRevenue:   { label: '总营收(元)', value: 0, icon: 'Money',        accent: '#10b981' },
-  todayOrders:    { label: '今日订单',   value: 0, icon: 'TrendCharts',  accent: '#8b5cf6' },
+  totalUsers:     { label: '用户总数',   value: 0, icon: 'User',         accent: '#5B6FE8' },
+  todayUsers:     { label: '今日新增',   value: 0, icon: 'UserFilled',   accent: '#13c2c2' },
+  completedOrders:{ label: '已完成订单', value: 0, icon: 'CircleCheck',  accent: '#52c41a' },
+  pendingReviews: { label: '待回复评价', value: 0, icon: 'ChatDotRound', accent: '#f5222d' },
+  totalOrders:    { label: '订单总数',   value: 0, icon: 'Document',     accent: '#5B6FE8' },
+  pendingOrders:  { label: '待处理订单', value: 0, icon: 'Clock',        accent: '#f5222d' },
+  totalRevenue:   { label: '总营收(元)', value: 0, icon: 'Money',        accent: '#5B6FE8' },
+  todayOrders:    { label: '今日订单',   value: 0, icon: 'TrendCharts',  accent: '#13c2c2' },
 } as Record<string, StatConfig>)
 
 const revenueBreakdown = reactive({ sealRevenue: 0, newspaperRevenue: 0, bookkeepingRevenue: 0 })
@@ -233,6 +233,24 @@ const trendData = reactive({
   seal: [] as number[],
   newspaper: [] as number[],
   bookkeeping: [] as number[],
+})
+
+// 动态生成 hero sparkline SVG points（基于后端 /dashboard/trend 返回的 trendData.seal）
+const sparklinePoints = computed(() => {
+  const raw = trendData.seal
+  if (!raw || raw.length === 0) {
+    const flat = '0,40 53,40 107,40 160,40 213,40 267,40 320,40'
+    return { poly: flat, fill: flat + ' 320,80 0,80' }
+  }
+  const max = Math.max(...raw, 1)
+  const W = 320, H = 60, n = raw.length
+  const pts = raw.map((v, i) => {
+    const x = (i * W / Math.max(n - 1, 1)).toFixed(1)
+    const y = (H - (v / max) * H).toFixed(1)
+    return x + ',' + y
+  })
+  const poly = pts.join(' ')
+  return { poly: poly, fill: poly + ' ' + W + ',' + H + ' 0,' + H }
 })
 
 async function fetchData() {
@@ -317,9 +335,9 @@ function updateChart() {
       },
     },
     series: [
-      { name: '刻章订单', type: 'bar', data: trendData.seal.length ? trendData.seal : [0,0,0,0,0,0,0], itemStyle: { color: '#3b82f6', borderRadius: [6, 6, 0, 0] }, barWidth: 14 },
-      { name: '登报订单', type: 'bar', data: trendData.newspaper.length ? trendData.newspaper : [0,0,0,0,0,0,0], itemStyle: { color: '#8b5cf6', borderRadius: [6, 6, 0, 0] }, barWidth: 14 },
-      { name: '代理记账', type: 'bar', data: trendData.bookkeeping.length ? trendData.bookkeeping : [0,0,0,0,0,0,0], itemStyle: { color: '#f59e0b', borderRadius: [6, 6, 0, 0] }, barWidth: 14 },
+      { name: '刻章订单', type: 'bar', data: trendData.seal.length ? trendData.seal : [0,0,0,0,0,0,0], itemStyle: { color: '#5B6FE8', borderRadius: [6, 6, 0, 0] }, barWidth: 14 },
+      { name: '登报订单', type: 'bar', data: trendData.newspaper.length ? trendData.newspaper : [0,0,0,0,0,0,0], itemStyle: { color: '#52c41a', borderRadius: [6, 6, 0, 0] }, barWidth: 14 },
+      { name: '代理记账', type: 'bar', data: trendData.bookkeeping.length ? trendData.bookkeeping : [0,0,0,0,0,0,0], itemStyle: { color: '#fa8c16', borderRadius: [6, 6, 0, 0] }, barWidth: 14 },
     ],
   }
   chart.setOption(option, true)
@@ -347,7 +365,7 @@ onMounted(() => {
   overflow: hidden;
   border-radius: 16px;
   padding: 28px 32px;
-  background: linear-gradient(135deg, #409eff 0%, #66b1ff 50%, #a0cfff 100%);
+  background: linear-gradient(135deg, #5B6FE8 0%, #7986f5 50%, #a0adff 100%);
   color: #fff;
   box-shadow: 0 4px 20px rgba(30, 41, 59, 0.15);
   transition: transform 0.3s, box-shadow 0.3s;
@@ -399,16 +417,16 @@ onMounted(() => {
   border-radius: 999px;
   cursor: help;
   &.normal {
-    background: rgba(134, 239, 172, 0.15);
-    color: #86efac;
+    background: rgba(82, 196, 26, 0.15);
+    color: #52c41a;
   }
   &.low {
-    background: rgba(251, 191, 36, 0.15);
-    color: #fbbf24;
+    background: rgba(245, 34, 45, 0.15);
+    color: #f5222d;
   }
   &.neutral {
-    background: rgba(148, 163, 184, 0.2);
-    color: #cbd5e1;
+    background: rgba(19, 194, 194, 0.15);
+    color: #13c2c2;
   }
 }
 .hero-chart {
@@ -425,9 +443,9 @@ onMounted(() => {
   &-delta {
     opacity: 1;
     font-weight: 500;
-    &.normal { color: #86efac; }
-    &.low { color: #fbbf24; }
-    &.neutral { color: #cbd5e1; }
+    &.normal { color: #52c41a; }
+    &.low { color: #f5222d; }
+    &.neutral { color: #13c2c2; }
   }
 }
 .hero-spark {
@@ -467,11 +485,11 @@ onMounted(() => {
     padding: 20px 22px;
   }
   &:hover {
-    .stack-arrow { color: #3b82f6; transform: translateX(2px); }
+    .stack-arrow { color: #5B6FE8; transform: translateX(2px); }
   }
   .stack-head { display: flex; justify-content: space-between; align-items: center; }
   .stack-label { font-size: 13px; color: #64748b; }
-  .stack-arrow { color: #cbd5e1; transition: all 0.2s; }
+  .stack-arrow { color: #7986f5; transition: all 0.2s; }
   .stack-value {
     font-size: 38px;
     font-weight: 700;
@@ -493,7 +511,7 @@ onMounted(() => {
     height: 100%;
     border-radius: 2px;
     transition: width 1.1s ease-out;
-    &.warning { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+    &.warning { background: linear-gradient(90deg, #f5222d, #cf1322); }
     &.danger  { background: linear-gradient(90deg, #f87171, #ef4444); }
     &.idle    { background: #e2e8f0; }
   }
@@ -512,7 +530,7 @@ onMounted(() => {
   gap: 10px;
   overflow: hidden;
   transition: all 0.2s;
-  &:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+  &:hover { border-color: #7986f5; box-shadow: 0 4px 12px rgba(91,111,232,0.12); }
   .aux-bar {
     position: absolute;
     left: 0; top: 0; bottom: 0;

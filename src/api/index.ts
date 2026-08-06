@@ -28,7 +28,14 @@ request.interceptors.request.use((config) => {
 
 // 响应拦截器
 request.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    const d = response.data
+    // 新统一包装 {code:0, data}：自动提取 data（兼容旧 {data} 和无包装结构）
+    if (d && typeof d === 'object' && d.code === 0 && 'data' in d) {
+      return d.data
+    }
+    return d
+  },
   (error) => {
     if (error.response?.status === 401) {
       // 网点端专属接口 → 跳网点登录；其余（管理端接口）→ 跳管理登录
@@ -230,3 +237,67 @@ export const createMenuRoleConfig = (data: any) => request.post('/menu-roles', d
 export const updateMenuRoleConfig = (id: string, data: any) => request.put(`/menu-roles/${id}`, data)
 export const deleteMenuRoleConfig = (id: string) => request.delete(`/menu-roles/${id}`)
 export const resetMenuRoleConfigs = () => request.post('/menu-roles/reset')
+
+// ==================== 结算管理 API ====================
+export const getSettlementRules = () => request.get('/settlement/rules')
+export const getSettlementDefaultRule = () => request.get('/settlement/rules/default')
+export const createSettlementRule = (data: any) => request.post('/settlement/rules', data)
+export const updateSettlementRule = (id: string, data: any) => request.put(`/settlement/rules/${id}`, data)
+export const deleteSettlementRule = (id: string) => request.delete(`/settlement/rules/${id}`)
+export const getOutletPendingSummary = () => request.get('/settlement/outlets/pending')
+export const getSettlementRecords = (params?: object) => request.get('/settlement/records', { params })
+export const getSettlementRecord = (id: string) => request.get(`/settlement/records/${id}`)
+export const generateSettlementRecord = (data: { outletId: string; periodStart: string; periodEnd: string }) =>
+  request.post('/settlement/records', data)
+export const autoGenerateSettlementRecords = (data: { periodStart: string; periodEnd: string }) =>
+  request.post('/settlement/records/auto-generate', data)
+export const updateSettlementStatus = (id: string, data: { status: number; remark?: string }) =>
+  request.put(`/settlement/records/${id}/status`, data)
+export const deleteSettlementRecord = (id: string) => request.delete(`/settlement/records/${id}`)
+export const getSettlementOutletSummary = () => request.get('/settlement/outlets/summary')
+
+// ==================== 交易流水 API ====================
+export const getTransactionStats = (params?: { startDate?: string; endDate?: string }) =>
+  request.get('/transaction/stats', { params })
+export const getTransactionStatsByModule = (params?: { startDate?: string; endDate?: string }) =>
+  request.get('/transaction/stats/by-module', { params })
+export const getTransactionFlows = (params?: {
+  page?: number; pageSize?: number; module?: string; tradeType?: string; outletId?: string
+  status?: string; startDate?: string; endDate?: string; keyword?: string
+}) => request.get('/transaction/flows', { params })
+export const getTransactionFlowDetail = (id: string) =>
+  request.get(`/transaction/flows/${id}`)
+export const exportTransactionFlows = (params?: any) =>
+  request.get('/transaction/export', { params })
+
+export const exportSettlementRecords = (params?: any) =>
+  request.get('/settlement/records/export', { params })
+
+// ===== 财务总览 =====
+export const getFinanceOverview = (params?: any) =>
+  request({ url: '/finance/overview', method: 'get', params });
+
+// ===== 退款管理 =====
+export const getRefundList = (params?: any) => request.get('/refund/list', { params });
+export const applyRefund = (data: { orderId: string; amount?: number; reason?: string }) => request.post('/refund/apply', data);
+export const reviewRefund = (id: string, data: { status: 2 | 4; reviewNote?: string }) => request.post(`/refund/${id}/review`, data);
+export const executeRefund = (id: string) => request.post(`/refund/${id}/execute`);
+
+// ===== 交易流水服务商筛选 =====
+export const getOutletsWithFlows = () => request.get('/transaction/outlets-with-flows');
+
+
+// 合作价格管理
+export const getOutletPricingList = (params?: { outletId?: string; businessType?: string; status?: number }) =>
+  request.get('/outlet-pricing/list', { params });
+
+export const getOutletPricingByOutlet = (outletId: string) =>
+  request.get('/outlet-pricing/outlet/' + outletId);
+
+export const upsertOutletPricing = (data: {
+  outletId: string; businessType: string; unit: string;
+  priceType: 'fixed' | 'percent'; priceValue: number; status?: number; remark?: string;
+}) => request.post('/outlet-pricing/upsert', data);
+
+export const deleteOutletPricing = (id: string) =>
+  request.delete('/outlet-pricing/' + id);

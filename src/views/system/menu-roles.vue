@@ -90,7 +90,7 @@ const form = ref({
 
 async function loadData() {
   const res: any = await getMenuRoleConfigs()
-  tableData.value = res.data ?? res
+  tableData.value = Array.isArray(res) ? res : (res.data ?? res)
 }
 
 function handleAdd() {

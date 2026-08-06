@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="receipt-list-page">
     <!-- 页面标题 -->
     <div class="page-header">
@@ -113,7 +113,7 @@
       <el-table
         v-loading="loading"
         :data="tableData"
-        :row-key="r => r.id"
+        :row-key="getRowKey"
         @selection-change="selected = $event"
         stripe
         height="calc(100vh - 320px)"
@@ -243,7 +243,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getDeliveryReceiptsAPI, getOutletsAPI, getDeliveryReceiptStatsAPI } from '@/api'
@@ -260,12 +260,12 @@ const stats = reactive({ total: 0, sealCount: 0, certificateCount: 0, todayCount
 const loadStats = async () => {
   try {
     statsError.value = false
-    const res = await getDeliveryReceiptStatsAPI()
-    stats.total = res.total ?? 0
-    stats.sealCount = res.sealCount ?? 0
-    stats.certificateCount = res.certificateCount ?? 0
-    stats.todayCount = res.todayCount ?? 0
-  } catch {
+    const res: any = await getDeliveryReceiptStatsAPI()
+    stats.total = res?.total ?? 0
+    stats.sealCount = res?.sealCount ?? 0
+    stats.certificateCount = res?.certificateCount ?? 0
+    stats.todayCount = res?.todayCount ?? 0
+  } catch (e: any) {
     statsError.value = true
   }
 }
@@ -293,7 +293,7 @@ const filters = reactive({
 const dateRange = ref([])
 
 // ---------- 下拉选项 ----------
-const outlets = ref([])
+const outlets = ref<any[]>([])
 const regionOptions = ['华北', '东北', '华东', '华中', '华南', '西南', '西北', '港澳台']
 const provinceOptions = computed(() => {
   if (!filters.region) return []
@@ -306,7 +306,7 @@ const provinceOptions = computed(() => {
     '西南': ['重庆市', '四川省', '贵州省', '云南省', '西藏自治区'],
     '西北': ['陕西省', '甘肃省', '青海省', '宁夏回族自治区', '新疆维吾尔自治区'],
   }
-  return map[filters.region] || []
+  return (map as any)[filters.region] || []
 })
 
 function onRegionChange() {
@@ -317,8 +317,8 @@ function onRegionChange() {
 // ---------- 加载网点列表 ----------
 async function loadOutlets() {
   try {
-    const res = await getOutletsAPI({ page: 1, pageSize: 200 })
-    outlets.value = res.list || res.data?.list || []
+    const res: any = await getOutletsAPI({ page: 1, pageSize: 200 })
+    outlets.value = (res as any).data?.list ?? (res as any).list ?? []
   } catch { /* ignore */ }
 }
 
@@ -326,7 +326,7 @@ async function loadOutlets() {
 async function loadData() {
   loading.value = true
   try {
-    const params = {
+    const params: any = {
       page: page.value,
       pageSize: pageSize.value,
     }
@@ -340,15 +340,15 @@ async function loadData() {
       params.endDate = dateRange.value[1]
     }
 
-    const res = await getDeliveryReceiptsAPI(params)
-    const list = res.list || res.data?.list || []
-    const total = res.pagination?.total ?? res.total ?? 0
+    const res: any = await getDeliveryReceiptsAPI(params)
+    const list = (res as any).data?.list ?? (res as any).list ?? []
+    const total = (res as any).pagination?.total ?? (res as any).total ?? 0
 
     tableData.value = list
     pagination.total = total
     pagination.page = res.pagination?.page || page.value
     pagination.pageSize = res.pagination?.pageSize || pageSize.value
-  } catch (err) {
+  } catch (err: any) {
     ElMessage.error('加载失败: ' + (err.message || ''))
   } finally {
     loading.value = false
@@ -375,8 +375,7 @@ function resetFilters() {
 }
 
 function handleBatchDownload() {
-  if (!selected.value.length) return
-  selected.value.forEach(r => {
+  selected.value.forEach((r: any) => {
     if (r.url) {
       const a = document.createElement('a')
       a.href = r.url
@@ -388,27 +387,29 @@ function handleBatchDownload() {
   ElMessage.success(`已触发 ${selected.value.length} 个文件下载`)
 }
 
+function getRowKey(row: any) { return (row as any)?.id }
+
 // ---------- 工具函数 ----------
-function isImage(row) {
+function isImage(row: any) {
   // 优先按后端 type 字段判断（image/photo/seal/certificate 都视为图片）
-  if (row && row.type && ['image', 'photo', 'seal', 'certificate'].includes(row.type)) return true
+  if ((row as any) && (row as any).type && ['image', 'photo', 'seal', 'certificate'].includes((row as any).type)) return true
   // 兜底：URL 后缀判断
-  if (!row?.url) return false
-  return /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)(\?|$)/i.test(row.url)
+  if (!(row as any)?.url) return false
+  return /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)(\?|$)/i.test((row as any).url)
 }
 
-function typeTagType(type) {
+function typeTagType(type: any) {
   const t = (type || '').toLowerCase()
-  const map = { seal: 'primary', certificate: 'success', document: 'warning', image: 'info', photo: 'info' }
+  const map: Record<string, string> = { seal: 'primary', certificate: 'success', document: 'warning', image: 'info', photo: 'info' }
   return map[t] || 'info'
 }
-function typeTagText(type) {
+function typeTagText(type: any) {
   const t = (type || '').toLowerCase()
-  const map = { seal: '印章', certificate: '凭证', document: '文档', image: '图片', photo: '图片' }
+  const map: Record<string, string> = { seal: '印章', certificate: '凭证', document: '文档', image: '图片', photo: '图片' }
   return map[t] || type || '图片'
 }
 
-function previewImage(row) {
+function previewImage(row: any) {
   if (isImage(row)) {
     previewUrl.value = row.url
     previewVisible.value = true

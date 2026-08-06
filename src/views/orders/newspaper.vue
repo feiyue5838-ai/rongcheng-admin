@@ -130,8 +130,8 @@
         :data="outletList"
         border
         highlight-current-row
-        @row-click="(row) => assignForm.outletId = row.id"
-        :row-class-name="(row) => assignForm.outletId === row.id ? 'selected-row' : ''"
+        @row-click="(row: any) => assignForm.outletId = row.id"
+        :row-class-name="(row: any) => assignForm.outletId === row.id ? 'selected-row' : ''"
         v-loading="assignLoading"
         style="margin: 12px 0"
       >
@@ -201,7 +201,7 @@ const stats = reactive({ newspaper: 0, making: 0, todayNewspaper: 0, assigned: 0
 const loadStats = async () => {
   try {
     statsError.value = false
-    const res = await getOrderStatistics()
+    const res = await getOrderStatistics() as any
     stats.newspaper = res.newspaper || 0
     stats.assigned = res.assignedOrders || 0
     stats.making = res.making || 0
@@ -257,8 +257,8 @@ async function fetchOrders() {
     query.startDate = dateRange.value?.[0] || ''
     query.endDate = dateRange.value?.[1] || ''
     const res: any = await getNewspaperOrders(query)
-    list.value = res.list
-    pagination.value = res.pagination
+    list.value = (res as any).data?.list ?? []
+    pagination.value = (res as any).data?.pagination ?? { page: 1, pageSize: 20, total: 0 }
   } finally { loading.value = false }
 }
 
@@ -298,7 +298,7 @@ async function showAssignDialog(order: any) {
     const bizType = order.type?.includes('刻章') ? 'seal' : order.type?.includes('登报') ? 'newspaper' : 'accounting'
     if (bizType) params.businessType = bizType
     const res: any = await getAvailableOutlets(params)
-    outletList.value = res || []
+    outletList.value = (res as any).data ?? res ?? []
   } catch {
     outletList.value = []
   } finally {

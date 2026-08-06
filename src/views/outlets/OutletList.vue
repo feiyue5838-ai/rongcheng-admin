@@ -695,6 +695,7 @@ const form = reactive({
   phone: '',
   province: '',
   city: '',
+  district: '',
   address: '',
   businessLicense: '',
   status: 1,
