@@ -2,7 +2,7 @@
   <div class="transaction-container">
     <!-- 页面标题 -->
     <div class="page-header">
-      <h2>💰 全部交易流水</h2>
+      <h2><el-icon><Coin /></el-icon> 全部交易流水</h2>
     </div>
 
     <!-- 统计卡片 -->
@@ -113,7 +113,7 @@
         <el-form-item>
           <el-button type="primary" @click="onFilterChange">查询</el-button>
           <el-button @click="onReset">重置</el-button>
-          <el-button type="success" @click="onExport">📥 导出</el-button>
+          <el-button type="success" @click="onExport"><el-icon><Download /></el-icon> 导出</el-button>
         </el-form-item>
       </el-form>
     </el-card>

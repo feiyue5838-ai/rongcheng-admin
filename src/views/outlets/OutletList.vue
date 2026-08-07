@@ -11,28 +11,28 @@
     <!-- 统计卡片 -->
     <div class="stats-cards" style="margin-bottom: 12px;">
       <div class="stat-card stat-total">
-        <div class="stat-icon">📍</div>
+        <div class="stat-icon"><el-icon><LocationFilled /></el-icon></div>
         <div class="stat-info">
           <div class="stat-value">{{ total }}</div>
           <div class="stat-label">服务商总数</div>
         </div>
       </div>
       <div class="stat-card stat-active">
-        <div class="stat-icon">✅</div>
+        <div class="stat-icon"><el-icon><CircleCheckFilled /></el-icon></div>
         <div class="stat-info">
           <div class="stat-value">{{ statusCountMap[1] || 0 }}</div>
           <div class="stat-label">营业中</div>
         </div>
       </div>
       <div class="stat-card stat-inactive">
-        <div class="stat-icon">⏸️</div>
+        <div class="stat-icon"><el-icon><VideoPause /></el-icon>️</div>
         <div class="stat-info">
           <div class="stat-value">{{ (statusCountMap[0] || 0) + (statusCountMap[2] || 0) + (statusCountMap[4] || 0) + (statusCountMap[5] || 0) }}</div>
           <div class="stat-label">非营业</div>
         </div>
       </div>
       <div class="stat-card stat-orders">
-        <div class="stat-icon">📦</div>
+        <div class="stat-icon"><el-icon><Box /></el-icon></div>
         <div class="stat-info">
           <div class="stat-value">{{ totalOrders }}</div>
           <div class="stat-label">累计订单</div>

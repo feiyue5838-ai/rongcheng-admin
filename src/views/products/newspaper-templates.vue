@@ -2,7 +2,7 @@
   <div class="page-wrapper">
     <!-- 页面标题 -->
     <div class="page-header">
-      <h2>📋 公告模板管理</h2>
+      <h2><el-icon><List /></el-icon> 公告模板管理</h2>
     </div>
 
     <div class="page-card">
@@ -10,21 +10,21 @@
       <!-- 统计卡片 -->
       <div class="stats-row">
         <div class="stat-card stat-blue">
-          <div class="stat-icon">📋</div>
+          <div class="stat-icon"><el-icon><List /></el-icon></div>
           <div class="stat-info">
             <span class="stat-label">模板总数</span>
             <span class="stat-num">{{ statTotal }}</span>
           </div>
         </div>
         <div class="stat-card stat-green">
-          <div class="stat-icon">✓</div>
+          <div class="stat-icon"><el-icon><Select /></el-icon></div>
           <div class="stat-info">
             <span class="stat-label">启用中</span>
             <span class="stat-num">{{ statOn }}</span>
           </div>
         </div>
         <div class="stat-card stat-orange">
-          <div class="stat-icon">⏸</div>
+          <div class="stat-icon"><el-icon><VideoPause /></el-icon></div>
           <div class="stat-info">
             <span class="stat-label">已停用</span>
             <span class="stat-num">{{ statOff }}</span>
@@ -89,19 +89,19 @@
         <!-- + 添加下拉 -->
         <el-dropdown trigger="click" @command="handleAddCommand">
           <el-button type="primary">
-            ➕ 添加 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            <el-icon><Plus /></el-icon> 添加 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="template">
-                <span>📄</span> 添加模板
+                <span><el-icon><Document /></el-icon></span> 添加模板
               </el-dropdown-item>
               <el-dropdown-item command="divider" divided disabled />
               <el-dropdown-item command="cat">
-                <span>🏷️</span> 添加分类
+                <span><el-icon><PriceTag /></el-icon>️</span> 添加分类
               </el-dropdown-item>
               <el-dropdown-item command="subs">
-                <span>📁</span> 管理子分类
+                <span><el-icon><FolderOpened /></el-icon></span> 管理子分类
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -113,8 +113,8 @@
       <div class="selection-bar" v-show="selectedRows.length > 0">
         <span>已选 <strong>{{ selectedRows.length }}</strong> 条</span>
         <el-divider direction="vertical" />
-        <el-button size="small" @click="openBatchCatModal">🏷️ 改分类</el-button>
-        <el-button size="small" type="danger" @click="batchDelete">🗑 删除</el-button>
+        <el-button size="small" @click="openBatchCatModal"><el-icon><PriceTag /></el-icon>️ 改分类</el-button>
+        <el-button size="small" type="danger" @click="batchDelete"><el-icon><Delete /></el-icon> 删除</el-button>
         <el-button size="small" text type="info" style="margin-left:auto;" @click="selectedRows = []">取消选择</el-button>
       </div>
 
@@ -311,7 +311,7 @@
         @click="switchUnifiedType('cat')"
       >
         <input type="radio" name="unifiedType" value="cat" v-model="unifiedType" style="display:none">
-        🏷️ 分类
+        <el-icon><PriceTag /></el-icon>️ 分类
       </label>
       <label
         class="type-btn"
@@ -319,7 +319,7 @@
         @click="switchUnifiedType('sub')"
       >
         <input type="radio" name="unifiedType" value="sub" v-model="unifiedType" style="display:none">
-        📁 子分类
+        <el-icon><FolderOpened /></el-icon> 子分类
       </label>
     </div>
 
@@ -386,7 +386,7 @@
   <!-- ===== 子分类管理弹窗 ===== -->
   <el-dialog
     v-model="subsDialogVisible"
-    title="📁 子分类管理"
+    title="<el-icon><FolderOpened /></el-icon> 子分类管理"
     width="760px"
     :close-on-click-modal="false"
   >

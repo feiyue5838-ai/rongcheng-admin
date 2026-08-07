@@ -149,7 +149,7 @@
               <span class="qa-icon">▤</span><span class="qa-label">登报订单</span>
             </button>
             <button class="quick-btn qa-review" @click="$router.push('/reviews')">
-              <span class="qa-icon">★</span><span class="qa-label">评价管理</span>
+              <span class="qa-icon"><el-icon><StarFilled /></el-icon></span><span class="qa-label">评价管理</span>
             </button>
           </div>
         </el-card>

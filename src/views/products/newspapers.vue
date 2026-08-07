@@ -12,28 +12,28 @@
     <!-- 统计卡片 -->
     <div class="stats-row">
       <div class="stat-card blue">
-        <div class="stat-icon">📰</div>
+        <div class="stat-icon"><el-icon><Document /></el-icon></div>
         <div class="stat-info">
           <div class="stat-num">{{ stats.total }}</div>
           <div class="stat-label">报纸总数</div>
         </div>
       </div>
       <div class="stat-card green">
-        <div class="stat-icon">✅</div>
+        <div class="stat-icon"><el-icon><CircleCheckFilled /></el-icon></div>
         <div class="stat-info">
           <div class="stat-num">{{ stats.active }}</div>
           <div class="stat-label">正常合作</div>
         </div>
       </div>
       <div class="stat-card gray">
-        <div class="stat-icon">⏸️</div>
+        <div class="stat-icon"><el-icon><VideoPause /></el-icon>️</div>
         <div class="stat-info">
           <div class="stat-num">{{ stats.inactive }}</div>
           <div class="stat-label">已停用</div>
         </div>
       </div>
       <div class="stat-card cyan">
-        <div class="stat-icon">📊</div>
+        <div class="stat-icon"><el-icon><DataLine /></el-icon></div>
         <div class="stat-info">
           <div class="stat-num">{{ stats.avgPrice }}</div>
           <div class="stat-label">平均单价</div>

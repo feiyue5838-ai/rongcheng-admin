@@ -19,35 +19,35 @@
       <!-- 统计行（渐变背景） -->
       <div class="stats-row">
         <div class="stat-card stat-orange">
-          <div class="stat-icon">📋</div>
+          <div class="stat-icon"><el-icon><List /></el-icon></div>
           <div class="stat-info">
             <span class="stat-num">{{ pendingCount }}</span>
             <span class="stat-label">待分配订单</span>
           </div>
         </div>
         <div class="stat-card stat-green">
-          <div class="stat-icon">✓</div>
+          <div class="stat-icon"><el-icon><Select /></el-icon></div>
           <div class="stat-info">
             <span class="stat-num">{{ assignedCount }}</span>
             <span class="stat-label">已分配订单</span>
           </div>
         </div>
         <div class="stat-card stat-blue-seal">
-          <div class="stat-icon">🔏</div>
+          <div class="stat-icon"><el-icon><Lock /></el-icon></div>
           <div class="stat-info">
             <span class="stat-num">{{ pendingSealCount }}</span>
             <span class="stat-label">待分配刻章</span>
           </div>
         </div>
         <div class="stat-card stat-blue">
-          <div class="stat-icon">📰</div>
+          <div class="stat-icon"><el-icon><Document /></el-icon></div>
           <div class="stat-info">
             <span class="stat-num">{{ pendingNewspaperCount }}</span>
             <span class="stat-label">待分配登报</span>
           </div>
         </div>
         <div class="stat-card stat-blue">
-          <div class="stat-icon">📊</div>
+          <div class="stat-icon"><el-icon><DataLine /></el-icon></div>
           <div class="stat-info">
             <span class="stat-num">{{ pendingBookkeepingCount }}</span>
             <span class="stat-label">待分配代理记账</span>
@@ -178,7 +178,7 @@
       </div>
       <div style="margin-bottom:8px">
         <el-input v-model="outletKeyword" placeholder="搜索网点名称/城市/电话" clearable size="small" autofocus>
-          <template #prefix><span style="color:#909399">🔍</span></template>
+          <template #prefix><span style="color:#909399"><el-icon><Search /></el-icon></span></template>
         </el-input>
       </div>
       <el-table

@@ -85,7 +85,7 @@
               <div class="todo-info"><div class="todo-num">¥{{ fmt(item.pendingAmount) }}</div><div class="todo-label">{{ item.outletName }} 待结算</div></div>
             </div>
             <div v-if="overview.pendingOutlet === 0 && overview.pendingCount === 0 && outletPending.length === 0" class="todo-empty">
-              <span style="font-size:40px">🎉</span>
+              <span style="font-size:40px"><el-icon><Promotion /></el-icon></span>
               <div style="margin-top:8px;color:#909399">暂无待办事项，所有业务已处理完毕</div>
             </div>
           </div>
@@ -166,8 +166,8 @@
         <div class="trans-stat income"><div class="ts-icon">💰</div><div class="ts-body"><div class="ts-label">今日收入</div><div class="ts-value">¥{{ fmt(transStats.today?.income || 0) }}</div><div class="ts-sub" :class="parseFloat(transStats.today?.incomeTrend)>=0?'up':'down'">{{ parseFloat(transStats.today?.incomeTrend)>=0?'↑':'↓' }}{{ Math.abs(parseFloat(transStats.today?.incomeTrend||0)).toFixed(1) }}% 较昨日</div></div></div>
         <div class="trans-stat refund"><div class="ts-icon">↩️</div><div class="ts-body"><div class="ts-label">今日退款</div><div class="ts-value">¥{{ fmt(transStats.today?.refund || 0) }}</div><div class="ts-sub">{{ parseFloat(transStats.today?.refundTrend)>=0?'↑':'↓' }}{{ Math.abs(parseFloat(transStats.today?.refundTrend||0)).toFixed(1) }}% 较昨日</div></div></div>
         <div class="trans-stat net"><div class="ts-icon">📈</div><div class="ts-body"><div class="ts-label">今日净收</div><div class="ts-value">¥{{ fmt(transStats.today?.net || 0) }}</div><div class="ts-sub">平台实收</div></div></div>
-        <div class="trans-stat count"><div class="ts-icon">🧾</div><div class="ts-body"><div class="ts-label">今日笔数</div><div class="ts-value">{{ transStats.today?.count || 0 }}</div><div class="ts-sub">交易笔数</div></div></div>
-        <div class="trans-stat month"><div class="ts-icon">🗓️</div><div class="ts-body"><div class="ts-label">本月累计</div><div class="ts-value">¥{{ fmt(transStats.month?.income || 0) }}</div><div class="ts-sub">{{ transStats.month?.count || 0 }} 笔</div></div></div>
+        <div class="trans-stat count"><div class="ts-icon"><el-icon><DocumentChecked /></el-icon></div><div class="ts-body"><div class="ts-label">今日笔数</div><div class="ts-value">{{ transStats.today?.count || 0 }}</div><div class="ts-sub">交易笔数</div></div></div>
+        <div class="trans-stat month"><div class="ts-icon"><el-icon><Calendar /></el-icon>️</div><div class="ts-body"><div class="ts-label">本月累计</div><div class="ts-value">¥{{ fmt(transStats.month?.income || 0) }}</div><div class="ts-sub">{{ transStats.month?.count || 0 }} 笔</div></div></div>
       </div>
 
       <!-- 筛选 -->
@@ -193,7 +193,7 @@
             <el-date-picker v-model="dateRange2" type="daterange" range-separator="至" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:240px" @change="onDateRangeChange" />
             <el-button type="primary" @click="loadData">查询</el-button>
             <el-button @click="onReset">重置</el-button>
-            <el-button @click="onExport">📥 导出</el-button>
+            <el-button @click="onExport"><el-icon><Download /></el-icon> 导出</el-button>
           </div>
         </div>
       </el-card>
