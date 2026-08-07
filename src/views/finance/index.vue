@@ -7,7 +7,7 @@
     <!-- 财务统计卡 - 始终固定 -->
     <div class="stat-cards">
       <div class="stat-card income">
-        <div class="stat-icon">💰</div>
+        <div class="stat-icon"><el-icon><Coin /></el-icon></div>
         <div class="stat-body">
           <div class="stat-label">收入</div>
           <div class="stat-value">¥{{ fmt(overview.income) }}</div>
@@ -15,7 +15,7 @@
         </div>
       </div>
       <div class="stat-card fee">
-        <div class="stat-icon">⚙️</div>
+        <div class="stat-icon"><el-icon><Setting /></el-icon></div>
         <div class="stat-body">
           <div class="stat-label">手续费</div>
           <div class="stat-value">¥{{ fmt(overview.incomeFee) }}</div>
@@ -23,7 +23,7 @@
         </div>
       </div>
       <div class="stat-card refund-stat">
-        <div class="stat-icon">↩️</div>
+        <div class="stat-icon"><el-icon><CloseBold /></el-icon></div>
         <div class="stat-body">
           <div class="stat-label">退款</div>
           <div class="stat-value">¥{{ fmt(overview.refund) }}</div>
@@ -31,7 +31,7 @@
         </div>
       </div>
       <div class="stat-card settle">
-        <div class="stat-icon">🏪</div>
+        <div class="stat-icon"><el-icon><Shop /></el-icon></div>
         <div class="stat-body">
           <div class="stat-label">网点分成</div>
           <div class="stat-value">¥{{ fmt(overview.outletSettle) }}</div>
@@ -39,7 +39,7 @@
         </div>
       </div>
       <div class="stat-card net">
-        <div class="stat-icon">📈</div>
+        <div class="stat-icon"><el-icon><TrendCharts /></el-icon></div>
         <div class="stat-body">
           <div class="stat-label">平台净利</div>
           <div class="stat-value">¥{{ fmt(overview.platformNet) }}</div>
@@ -412,6 +412,7 @@ import { useRoute, useRouter } from 'vue-router'
 import TrendChart from '@/components/TrendChart.vue'
 import ModuleDonut from '@/components/ModuleDonut.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Coin, Setting, CloseBold, Shop, TrendCharts } from '@element-plus/icons-vue'
 import {
   getFinanceOverview,
   getSettlementRules, createSettlementRule, updateSettlementRule, deleteSettlementRule,
@@ -939,7 +940,7 @@ onMounted(function() {
 .stat-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 16px; }
 .stat-card { border-radius: 16px; padding: 20px 18px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.06); transition: transform .2s, box-shadow .2s; }
 .stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
-.stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; color: #fff; }
+.stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; color: #fff; }
 .stat-body { flex: 1; min-width: 0; }
 .stat-label { font-size: 13px; color: #666; margin-bottom: 4px; }
 .stat-value { font-size: 20px; font-weight: 700; color: #303133; line-height: 1.2; }
