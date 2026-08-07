@@ -135,28 +135,22 @@
     </el-row>
 
     <el-row :gutter="20" style="margin-top: 20px">
-      <el-col :span="16">
-        <el-card shadow="hover" class="chart-card">
-          <template #header>
-            <div class="card-header">
-              <span>订单趋势（近7天）</span>
-              <el-radio-group v-model="chartType" size="small">
-                <el-radio-button value="order">订单量</el-radio-button>
-                <el-radio-button value="amount">金额</el-radio-button>
-              </el-radio-group>
-            </div>
-          </template>
-          <div ref="chartRef" style="height: 300px"></div>
-        </el-card>
-      </el-col>
-      <el-col :span="8" style="align-self: flex-start">
-        <el-card shadow="hover">
+      <el-col :span="8">
+        <el-card shadow="hover" class="quick-card">
           <template #header><span>快捷操作</span></template>
           <div class="quick-actions">
-            <button class="quick-btn" @click="$router.push('/products/seals')">添加印章</button>
-            <button class="quick-btn" @click="$router.push('/orders/seal')">刻章订单</button>
-            <button class="quick-btn" @click="$router.push('/orders/newspaper')">登报订单</button>
-            <button class="quick-btn" @click="$router.push('/reviews')">评价管理</button>
+            <button class="quick-btn qa-seal" @click="$router.push('/products/seals')">
+              <span class="qa-icon">+</span><span class="qa-label">添加印章</span>
+            </button>
+            <button class="quick-btn qa-order" @click="$router.push('/orders/seal')">
+              <span class="qa-icon">▤</span><span class="qa-label">刻章订单</span>
+            </button>
+            <button class="quick-btn qa-news" @click="$router.push('/orders/newspaper')">
+              <span class="qa-icon">▤</span><span class="qa-label">登报订单</span>
+            </button>
+            <button class="quick-btn qa-review" @click="$router.push('/reviews')">
+              <span class="qa-icon">★</span><span class="qa-label">评价管理</span>
+            </button>
           </div>
         </el-card>
       </el-col>
@@ -626,4 +620,24 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
 }
+
+</style>
+<style scoped lang="css">
+.quick-card { border-radius: 16px; border: 1px solid var(--app-split); }
+.quick-card :deep(.el-card__header) { padding: 14px 18px; border-bottom: 1px solid var(--app-split); }
+.quick-card :deep(.el-card__header span) { font-weight: 600; color: #1f2937; }
+.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px 4px 4px; }
+.quick-btn {
+  display: flex; align-items: center; gap: 10px; padding: 14px 16px; border: none; cursor: pointer;
+  border-radius: 12px; color: #fff; font-size: 14px; font-weight: 500; letter-spacing: .3px;
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+.quick-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15,23,42,.12); filter: brightness(1.05); }
+.quick-btn:active { transform: translateY(0); }
+.quick-btn .qa-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: rgba(255,255,255,.22); border-radius: 8px; font-size: 16px; font-weight: 600; }
+.quick-btn .qa-label { line-height: 1; }
+.qa-seal   { background: linear-gradient(135deg, #5B6FE8 0%, #7B8FF8 100%); }
+.qa-order  { background: linear-gradient(135deg, #13c2c2 0%, #36cfc9 100%); }
+.qa-news   { background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%); }
+.qa-review { background: linear-gradient(135deg, #fa8c16 0%, #ffa940 100%); }
 </style>
