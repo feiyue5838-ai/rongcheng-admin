@@ -155,6 +155,23 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <el-row :gutter="20" style="margin-top: 20px">
+      <el-col :span="24">
+        <el-card shadow="hover" class="chart-card">
+          <template #header>
+            <div class="chart-header">
+              <span class="chart-title">近 7 天趋势</span>
+              <el-radio-group v-model="chartType" size="small">
+                <el-radio-button value="order">订单量</el-radio-button>
+                <el-radio-button value="amount">营收</el-radio-button>
+              </el-radio-group>
+            </div>
+          </template>
+          <div ref="chartRef" class="chart-container"></div>
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
@@ -640,4 +657,9 @@ onMounted(() => {
 .qa-order  { background: linear-gradient(135deg, #13c2c2 0%, #36cfc9 100%); }
 .qa-news   { background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%); }
 .qa-review { background: linear-gradient(135deg, #fa8c16 0%, #ffa940 100%); }
+
+.chart-card { border-radius: 16px; }
+.chart-header { display: flex; justify-content: space-between; align-items: center; }
+.chart-title { font-weight: 600; font-size: 15px; color: #1f2937; }
+.chart-container { height: 280px; }
 </style>
