@@ -8,8 +8,20 @@
       </el-button>
     </div>
 
-    <el-row :gutter="20" class="hero-row">
-      <el-col :xs="24" :md="16">
+    <!-- 待办条 -->
+    <div class="todo-strip">
+      <div class="ts-icon"><el-icon><Lightning /></el-icon></div>
+      <div class="ts-label">待办</div>
+      <div class="ts-chips">
+        <span class="chip orange">📋 待处理 <b>{{ stats.pendingOrders.value }}</b></span>
+        <span class="chip green">💰 待结算 <b>{{ pendingSettleCount }}</b></span>
+        <span class="chip purple">💬 待回复 <b>{{ stats.pendingReviews.value }}</b></span>
+      </div>
+      <div class="ts-total">共 {{ todoTotal }} 件</div>
+    </div>
+
+    <el-row :gutter="14" class="row1">
+      <el-col :xs="24" :lg="16">
         <div class="hero-card">
           <div class="hero-grid">
             <div class="hero-text">
@@ -86,7 +98,133 @@
           </div>
         </div>
       </el-col>
-      <el-col :xs="24" :md="8">
+      <el-col :xs="24" :lg="8">
+        <el-card shadow="hover" class="today-card-panel">
+          <template #header><span>今日要事</span></template>
+          <div class="today-grid">
+            <div class="today-cell orange" @click="$router.push('/orders/seal')">
+              <div class="tc-label">待处理</div>
+              <div class="tc-val tv-o">{{ stats.pendingOrders.value }}</div>
+              <div class="tc-sub">待分配订单</div>
+            </div>
+            <div class="today-cell green" @click="$router.push('/finance?tab=settlement')">
+              <div class="tc-label">待结算</div>
+              <div class="tc-val tv-g">{{ pendingSettleCount }}</div>
+              <div class="tc-sub">¥{{ formatMoney(pendingSettleAmount) }}</div>
+            </div>
+            <div class="today-cell purple" @click="$router.push('/reviews')">
+              <div class="tc-label">待回复</div>
+              <div class="tc-val tv-p">{{ stats.pendingReviews.value }}</div>
+              <div class="tc-sub">待回复评价</div>
+            </div>
+            <div class="today-cell blue" @click="$router.push('/orders/seal')">
+              <div class="tc-label">今日订单</div>
+              <div class="tc-val tv-b">{{ stats.todayOrders.value }}</div>
+              <div class="tc-sub">今日新增</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- Row2: 服务商状态 + 服务商排行 + 快捷操作 -->
+    <el-row :gutter="12" class="row2">
+      <!-- 服务商状态 -->
+      <el-col :xs="24" :lg="8">
+        <el-card shadow="hover" class="outlet-panel">
+          <template #header>
+            <div class="panel-head">
+              <span>服务商状态</span>
+              <span v-if="outletAlertCount" class="head-badge">{{ outletAlertCount }}</span>
+              <span class="head-more" @click="$router.push('/outlets/list')">全部 ›</span>
+            </div>
+          </template>
+          <div class="outlet-list">
+            <div
+              v-for="o in outletsWithAlert"
+              :key="o.id"
+              class="outlet-row has-alert"
+              @click="$router.push('/finance?tab=settlement')"
+            >
+              <div class="outlet-row-top">
+                <div class="outlet-avatar">{{ o.avatarText }}</div>
+                <div class="outlet-name">{{ o.name }}</div>
+                <div class="outlet-status" :class="o.status === 1 ? 'on' : 'off'">{{ o.status === 1 ? '●营业' : '○休息' }}</div>
+              </div>
+              <div class="outlet-meta">
+                <span class="outlet-bt" v-for="(b, i) in o.bizList" :key="i">{{ bizLabel(b) }}</span>
+              </div>
+              <div class="outlet-stats">
+                <div class="os">
+                  <div class="os-lbl">订单</div>
+                  <div class="os-val ok">{{ o.totalOrders }}</div>
+                </div>
+                <div class="os">
+                  <div class="os-lbl">待结算</div>
+                  <div class="os-val alert">¥{{ formatMoney(o.pendingAmount) }}</div>
+                </div>
+              </div>
+              <div class="outlet-alert">
+                <el-icon><WarningFilled /></el-icon>
+                待确认结算
+              </div>
+            </div>
+            <div v-if="!outletsWithAlert.length" class="outlet-empty">暂无待办网点</div>
+          </div>
+        </el-card>
+      </el-col>
+
+      <!-- 服务商订单排行 -->
+      <el-col :xs="24" :lg="8">
+        <el-card shadow="hover" class="rank-panel">
+          <template #header>
+            <div class="panel-head">
+              <span>服务商排行</span>
+              <span class="head-more" @click="$router.push('/outlets/list')">本月 ›</span>
+            </div>
+          </template>
+          <div class="rank-list">
+            <div v-for="(r, i) in outletRanking" :key="r.id" class="rank-item">
+              <div class="rank-num" :class="i < 3 ? 'rank-' + (i + 1) : 'rank-default'">{{ i + 1 }}</div>
+              <div class="rank-info">
+                <div class="rank-name">{{ r.name }}</div>
+                <div class="rank-meta">{{ r.bizText }}</div>
+              </div>
+              <div class="rank-value">
+                <div class="rank-orders">{{ r.totalOrders }}</div>
+                <div class="rank-label">订单</div>
+              </div>
+            </div>
+            <div v-if="!outletRanking.length" class="outlet-empty">暂无网点数据</div>
+          </div>
+        </el-card>
+      </el-col>
+
+      <!-- 快捷操作 -->
+      <el-col :xs="24" :lg="8">
+        <el-card shadow="hover" class="quick-card">
+          <template #header><span>快捷操作</span></template>
+          <div class="quick-actions">
+            <button class="quick-btn qa-seal" @click="$router.push('/finance?tab=settlement')">
+              <span class="qa-icon"><el-icon><Money /></el-icon></span><span class="qa-label">确认结算</span>
+            </button>
+            <button class="quick-btn qa-order" @click="$router.push('/products/seals')">
+              <span class="qa-icon">+</span><span class="qa-label">添加印章</span>
+            </button>
+            <button class="quick-btn qa-news" @click="$router.push('/orders/seal')">
+              <span class="qa-icon">▤</span><span class="qa-label">刻章订单</span>
+            </button>
+            <button class="quick-btn qa-review" @click="$router.push('/orders/newspaper')">
+              <span class="qa-icon">▤</span><span class="qa-label">登报订单</span>
+            </button>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- Row3: Stack卡 + Aux卡 -->
+    <el-row :gutter="12" class="row3">
+      <el-col :xs="24" :lg="8">
         <div class="stack-card" @click="$router.push('/orders/seal')">
           <div class="stack-icon">
             <el-icon><Clock /></el-icon>
@@ -116,47 +254,27 @@
           <el-icon class="stack-arrow"><ArrowRight /></el-icon>
         </div>
       </el-col>
-    </el-row>
-
-    <el-row :gutter="16" class="aux-cards">
-      <el-col :xs="12" :sm="6" v-for="k in auxKeys" :key="k">
-        <div class="aux-card" :style="{ background: 'linear-gradient(135deg, ' + stats[k].bgLight + ' 0%, ' + stats[k].bgDark + ' 100%)', border: '1px solid ' + stats[k].bgBorder }">
-          <div class="aux-icon" :style="{ background: 'linear-gradient(135deg, ' + stats[k].accent + ', ' + stats[k].accentEnd + ')' }">
-            <el-icon :size="16" color="#fff">
-              <component :is="stats[k].icon" />
-            </el-icon>
-          </div>
-          <div class="aux-info">
-            <div class="aux-value">{{ stats[k].value }}</div>
-            <div class="aux-label">{{ stats[k].label }}</div>
-          </div>
-        </div>
-      </el-col>
-    </el-row>
-
-    <el-row :gutter="20" style="margin-top: 20px">
-      <el-col :span="8">
-        <el-card shadow="hover" class="quick-card">
-          <template #header><span>快捷操作</span></template>
-          <div class="quick-actions">
-            <button class="quick-btn qa-seal" @click="$router.push('/products/seals')">
-              <span class="qa-icon">+</span><span class="qa-label">添加印章</span>
-            </button>
-            <button class="quick-btn qa-order" @click="$router.push('/orders/seal')">
-              <span class="qa-icon">▤</span><span class="qa-label">刻章订单</span>
-            </button>
-            <button class="quick-btn qa-news" @click="$router.push('/orders/newspaper')">
-              <span class="qa-icon">▤</span><span class="qa-label">登报订单</span>
-            </button>
-            <button class="quick-btn qa-review" @click="$router.push('/reviews')">
-              <span class="qa-icon"><el-icon><StarFilled /></el-icon></span><span class="qa-label">评价管理</span>
-            </button>
+      <el-col :xs="24" :lg="16">
+        <el-card shadow="hover" class="aux-panel">
+          <div class="aux-grid">
+            <div v-for="k in auxKeys" :key="k" class="aux-card" :style="{ background: 'linear-gradient(135deg, ' + stats[k].bgLight + ' 0%, ' + stats[k].bgDark + ' 100%)', border: '1px solid ' + stats[k].bgBorder }">
+              <div class="aux-icon" :style="{ background: 'linear-gradient(135deg, ' + stats[k].accent + ', ' + stats[k].accentEnd + ')' }">
+                <el-icon :size="16" color="#fff">
+                  <component :is="stats[k].icon" />
+                </el-icon>
+              </div>
+              <div class="aux-info">
+                <div class="aux-value">{{ stats[k].value }}</div>
+                <div class="aux-label">{{ stats[k].label }}</div>
+              </div>
+            </div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-row :gutter="20" style="margin-top: 20px">
+    <!-- Row4: 趋势图 -->
+    <el-row class="row4">
       <el-col :span="24">
         <el-card shadow="hover" class="chart-card">
           <template #header>
@@ -177,9 +295,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue'
-import { getDashboard, getDashboardTrend } from '@/api'
+import { getDashboard, getDashboardTrend, getOutletsAPI, getSettlementRecords } from '@/api'
 import * as echarts from 'echarts'
-import { Refresh, ArrowRight, User, UserFilled, CircleCheck, ChatDotRound, Clock, Money, Document } from '@element-plus/icons-vue'
+import { Refresh, ArrowRight, User, UserFilled, CircleCheck, ChatDotRound, Clock, Money, Document, Lightning, WarningFilled } from '@element-plus/icons-vue'
 
 type StatConfig = {
   label: string
@@ -247,6 +365,53 @@ const trendData = reactive({
   bookkeeping: [] as number[],
 })
 
+// ── 服务商监控（网点 + 待结算） ──
+const outletList = ref<any[]>([])
+const pendingSettlements = ref<any[]>([])
+
+const pendingSettleCount = computed(() => pendingSettlements.value.length)
+const pendingSettleAmount = computed(() =>
+  pendingSettlements.value.reduce((s: number, r: any) => s + (Number(r.outletAmount ?? r.outlet_amount ?? 0)), 0)
+)
+const outletsWithAlert = computed(() => {
+  const ids = new Set(pendingSettlements.value.map((r: any) => r.outletId))
+  return outletList.value
+    .filter((o: any) => ids.has(o.id))
+    .map((o: any) => ({
+      id: o.id,
+      name: o.name,
+      avatarText: (o.name || '').replace('蓉城刻章', '').slice(0, 1) || '店',
+      status: o.status,
+      totalOrders: o.totalOrders || 0,
+      pendingAmount: pendingSettlements.value
+        .filter((r: any) => r.outletId === o.id)
+        .reduce((s: number, r: any) => s + (Number(r.outletAmount ?? r.outlet_amount ?? 0)), 0),
+      bizList: o.businessTypes || [],
+    }))
+})
+const outletAlertCount = computed(() => outletsWithAlert.value.length)
+const outletRanking = computed(() => {
+  return [...outletList.value]
+    .sort((a: any, b: any) => (b.totalOrders || 0) - (a.totalOrders || 0))
+    .slice(0, 3)
+    .map((o: any) => ({
+      id: o.id,
+      name: o.name,
+      totalOrders: o.totalOrders || 0,
+      bizText: (o.businessTypes || []).map((b: string) => bizLabel(b)).join('·'),
+    }))
+})
+const todoTotal = computed(
+  () => stats.pendingOrders.value + pendingSettleCount.value + stats.pendingReviews.value
+)
+
+function bizLabel(b: any) {
+  const map: Record<string, string> = { seal: '刻章', newspaper: '登报', bookkeeping: '记账' }
+  if (typeof b === 'string') return map[b] || b
+  if (b && typeof b === 'object') return b.name || map[b.code] || b.code || '业务'
+  return '业务'
+}
+
 // 动态生成 hero sparkline SVG points（基于后端 /dashboard/trend 返回的 trendData.seal）
 const sparklinePoints = computed(() => {
   const raw = trendData.seal
@@ -297,10 +462,24 @@ async function fetchData() {
     revenueBreakdown.sealRevenue = data._detail?.sealRevenue ?? 0
     revenueBreakdown.newspaperRevenue = data._detail?.newspaperRevenue ?? 0
     revenueBreakdown.bookkeepingRevenue = data._detail?.bookkeepingRevenue ?? 0
+    await loadOutlets()
   } catch (e) {
     console.error('获取统计数据失败', e)
   } finally {
     setTimeout(() => { loading.value = false }, 300)
+  }
+}
+
+async function loadOutlets() {
+  try {
+    const oRes: any = await getOutletsAPI({ page: 1, pageSize: 100 })
+    const oData = oRes.data ?? oRes
+    outletList.value = oData.list || []
+    const sRes: any = await getSettlementRecords({ status: 1, pageSize: 100 })
+    const sData = sRes.data ?? sRes
+    pendingSettlements.value = sData.items || []
+  } catch (e) {
+    console.error('获取网点/结算数据失败', e)
   }
 }
 
@@ -637,6 +816,115 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
 }
+
+
+/* 待办条 */
+.todo-strip {
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 16px;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.ts-icon {
+  width: 30px; height: 30px; background: #fff; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08);
+}
+.ts-label { font-size: 13px; font-weight: 600; color: #92400e; flex-shrink: 0; }
+.ts-chips { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 16px;
+  font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid transparent;
+  transition: filter .15s, transform .15s;
+}
+.chip:hover { filter: brightness(.96); transform: translateY(-1px); }
+.chip b { font-weight: 700; }
+.chip.orange { background: #fff7ed; color: #ea580c; border-color: #fed7aa; }
+.chip.green { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+.chip.purple { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+.ts-total { font-size: 12px; color: #92400e; font-weight: 600; flex-shrink: 0; }
+
+/* 行间距 */
+.row1, .row2, .row3 { margin-bottom: 14px; }
+.row4 { margin-top: 0; }
+
+/* 今日要事 */
+.today-card-panel { border-radius: 16px; }
+.today-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 4px 4px; }
+.today-cell {
+  background: #f8fafc; border: 1px solid #eef2f7; border-radius: 12px; padding: 16px;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: transform .18s, box-shadow .18s;
+}
+.today-cell:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(15,23,42,.1); }
+.today-cell::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.today-cell.orange::before { background: #ea580c; }
+.today-cell.green::before { background: #16a34a; }
+.today-cell.purple::before { background: #7c3aed; }
+.today-cell.blue::before { background: #2563eb; }
+.tc-label { font-size: 12px; color: #64748b; font-weight: 500; }
+.tc-val { font-size: 30px; font-weight: 800; line-height: 1; margin-top: 6px; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.tv-o { color: #ea580c; } .tv-g { color: #16a34a; } .tv-p { color: #7c3aed; } .tv-b { color: #2563eb; }
+.tc-sub { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+
+/* 面板头 */
+.panel-head { display: flex; align-items: center; gap: 8px; width: 100%; }
+.head-badge {
+  display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 10px;
+  font-size: 10.5px; font-weight: 600; background: #fff1f0; color: #dc2626; border: 1px solid #fecaca;
+}
+.head-more { margin-left: auto; font-size: 12px; color: #2563eb; cursor: pointer; }
+.head-more:hover { text-decoration: underline; }
+
+/* 服务商状态 */
+.outlet-panel, .rank-panel, .aux-panel { border-radius: 16px; }
+.outlet-list { display: flex; flex-direction: column; gap: 8px; padding: 12px 4px 4px; }
+.outlet-row {
+  display: flex; flex-direction: column; gap: 6px; padding: 10px 12px;
+  background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; cursor: pointer; transition: all .15s;
+}
+.outlet-row:hover { border-color: #2563eb; background: #eff6ff; }
+.outlet-row.has-alert { border-color: #fecaca; background: #fff8f8; }
+.outlet-row.has-alert:hover { border-color: #dc2626; background: #fff5f5; }
+.outlet-row-top { display: flex; align-items: center; gap: 8px; }
+.outlet-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; font-weight: 700; flex-shrink: 0;
+}
+.outlet-name { font-size: 13px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.outlet-status { font-size: 11px; flex-shrink: 0; }
+.outlet-status.on { color: #16a34a; } .outlet-status.off { color: #9ca3af; }
+.outlet-meta { display: flex; gap: 4px; flex-wrap: wrap; }
+.outlet-bt { padding: 1px 6px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 10px; color: #64748b; }
+.outlet-stats { display: flex; gap: 12px; margin-top: 2px; }
+.os { text-align: center; flex: 1; }
+.os-lbl { font-size: 10px; color: #9ca3af; }
+.os-val { font-size: 14px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.os-val.alert { color: #dc2626; } .os-val.ok { color: #16a34a; }
+.outlet-alert {
+  display: flex; align-items: center; gap: 4px; padding: 3px 8px;
+  background: #fff1f0; border: 1px solid #fecaca; border-radius: 6px;
+  font-size: 11px; color: #dc2626; font-weight: 600;
+}
+.outlet-empty { text-align: center; color: #9ca3af; font-size: 12px; padding: 24px 0; }
+
+/* 服务商排行 */
+.rank-list { display: flex; flex-direction: column; gap: 8px; padding: 12px 4px 4px; }
+.rank-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; }
+.rank-num { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; color: #fff; }
+.rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+.rank-2 { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+.rank-3 { background: linear-gradient(135deg, #f97316, #ea580c); }
+.rank-default { background: #cbd5e1; }
+.rank-info { flex: 1; min-width: 0; }
+.rank-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rank-meta { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+.rank-value { text-align: right; flex-shrink: 0; }
+.rank-orders { font-size: 20px; font-weight: 800; color: #1f2937; line-height: 1; font-variant-numeric: tabular-nums; }
+.rank-label { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+
+/* Aux 网格 */
+.aux-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px; }
 
 </style>
 <style scoped lang="css">
