@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="dashboard">
     <div class="page-header">
       <h2 class="page-title">工作台</h2>
@@ -87,38 +87,45 @@
         </div>
       </el-col>
       <el-col :xs="24" :md="8">
-        <el-card shadow="hover" class="stack-card" @click="$router.push('/orders/seal')">
-          <div class="stack-head">
-            <span class="stack-label">待处理订单</span>
-            <el-icon class="stack-arrow"><ArrowRight /></el-icon>
+        <div class="stack-card" @click="$router.push('/orders/seal')">
+          <div class="stack-icon">
+            <el-icon><Clock /></el-icon>
           </div>
-          <div class="stack-value">{{ stats.pendingOrders.value }}</div>
-          <div class="stack-bar">
-            <div class="stack-bar-fill warning" :style="{ width: pendingPercent + '%' }"></div>
+          <div class="stack-body">
+            <div class="stack-label">待处理订单</div>
+            <div class="stack-value">{{ stats.pendingOrders.value }}</div>
+            <div class="stack-bar">
+              <div class="stack-bar-fill warning" :style="{ width: pendingPercent + '%' }"></div>
+            </div>
+            <div class="stack-foot">占总订单 {{ pendingPercent }}%</div>
           </div>
-          <div class="stack-foot">占总订单 {{ pendingPercent }}%</div>
-        </el-card>
-        <el-card shadow="hover" class="stack-card" style="margin-top: 12px" @click="$router.push('/reviews')">
-          <div class="stack-head">
-            <span class="stack-label">待回复评价</span>
-            <el-icon class="stack-arrow"><ArrowRight /></el-icon>
+          <el-icon class="stack-arrow"><ArrowRight /></el-icon>
+        </div>
+        <div class="stack-card" style="margin-top: 12px" @click="$router.push('/reviews')">
+          <div class="stack-icon danger">
+            <el-icon><ChatDotRound /></el-icon>
           </div>
-          <div class="stack-value">{{ stats.pendingReviews.value }}</div>
-          <div class="stack-bar">
-            <div class="stack-bar-fill" :class="stats.pendingReviews.value > 0 ? 'danger' : 'idle'" :style="{ width: reviewPercent + '%' }"></div>
+          <div class="stack-body">
+            <div class="stack-label">待回复评价</div>
+            <div class="stack-value">{{ stats.pendingReviews.value }}</div>
+            <div class="stack-bar">
+              <div class="stack-bar-fill" :class="stats.pendingReviews.value > 0 ? 'danger' : 'idle'" :style="{ width: reviewPercent + '%' }"></div>
+            </div>
+            <div class="stack-foot">{{ stats.pendingReviews.value > 0 ? '需要关注' : '暂无待回' }}</div>
           </div>
-          <div class="stack-foot">{{ stats.pendingReviews.value > 0 ? '需要关注' : '暂无待回' }}</div>
-        </el-card>
+          <el-icon class="stack-arrow"><ArrowRight /></el-icon>
+        </div>
       </el-col>
     </el-row>
 
     <el-row :gutter="16" class="aux-cards">
       <el-col :xs="12" :sm="6" v-for="k in auxKeys" :key="k">
-        <div class="aux-card">
-          <div class="aux-bar" :style="{ background: stats[k].accent }"></div>
-          <el-icon :size="18" :color="stats[k].accent">
-            <component :is="stats[k].icon" />
-          </el-icon>
+        <div class="aux-card" :style="{ background: 'linear-gradient(135deg, ' + stats[k].bgLight + ' 0%, ' + stats[k].bgDark + ' 100%)', border: '1px solid ' + stats[k].bgBorder }">
+          <div class="aux-icon" :style="{ background: 'linear-gradient(135deg, ' + stats[k].accent + ', ' + stats[k].accentEnd + ')' }">
+            <el-icon :size="16" color="#fff">
+              <component :is="stats[k].icon" />
+            </el-icon>
+          </div>
           <div class="aux-info">
             <div class="aux-value">{{ stats[k].value }}</div>
             <div class="aux-label">{{ stats[k].label }}</div>
@@ -161,68 +168,62 @@
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { getDashboard, getDashboardTrend } from '@/api'
 import * as echarts from 'echarts'
-import { Refresh, ArrowRight, User, UserFilled, CircleCheck, ChatDotRound } from '@element-plus/icons-vue'
+import { Refresh, ArrowRight, User, UserFilled, CircleCheck, ChatDotRound, Clock, Money, Document } from '@element-plus/icons-vue'
 
 type StatConfig = {
   label: string
   value: number
   icon: string
   accent: string
+  accentEnd: string
+  bgLight: string
+  bgDark: string
+  bgBorder: string
 }
-
 const stats = reactive({
-  totalUsers:     { label: '用户总数',   value: 0, icon: 'User',         accent: '#5B6FE8' },
-  todayUsers:     { label: '今日新增',   value: 0, icon: 'UserFilled',   accent: '#13c2c2' },
-  completedOrders:{ label: '已完成订单', value: 0, icon: 'CircleCheck',  accent: '#52c41a' },
-  pendingReviews: { label: '待回复评价', value: 0, icon: 'ChatDotRound', accent: '#f5222d' },
-  totalOrders:    { label: '订单总数',   value: 0, icon: 'Document',     accent: '#5B6FE8' },
-  pendingOrders:  { label: '待处理订单', value: 0, icon: 'Clock',        accent: '#f5222d' },
-  totalRevenue:   { label: '总营收(元)', value: 0, icon: 'Money',        accent: '#5B6FE8' },
-  todayOrders:    { label: '今日订单',   value: 0, icon: 'TrendCharts',  accent: '#13c2c2' },
-} as Record<string, StatConfig>)
+  totalUsers:     { label: '用户总数',   value: 0, icon: 'User',         accent: '#5B6FE8', accentEnd: '#7B8FF8', bgLight: '#eef2ff', bgDark: '#dde4ff', bgBorder: 'rgba(91,111,232,.15)' },
+  todayUsers:     { label: '今日新增',   value: 0, icon: 'UserFilled',   accent: '#13c2c2', accentEnd: '#36cfc9', bgLight: '#e6fffb', bgDark: '#b5f5ec', bgBorder: 'rgba(19,194,194,.15)' },
+  completedOrders:{ label: '已完成订单', value: 0, icon: 'CircleCheck',  accent: '#52c41a', accentEnd: '#73d13d', bgLight: '#f6ffed', bgDark: '#d9f7be', bgBorder: 'rgba(82,196,26,.15)' },
+  pendingReviews: { label: '待回复评价', value: 0, icon: 'ChatDotRound', accent: '#f5222d', accentEnd: '#ff4d4f', bgLight: '#fff1f0', bgDark: '#ffccc7', bgBorder: 'rgba(245,34,45,.15)' },
+  totalOrders:    { label: '订单总数',   value: 0, icon: 'Document',     accent: '#5B6FE8', accentEnd: '#7B8FF8', bgLight: '#eef2ff', bgDark: '#dde4ff', bgBorder: 'rgba(91,111,232,.15)' },
+  pendingOrders:  { label: '待处理订单', value: 0, icon: 'Clock',        accent: '#f5222d', accentEnd: '#ff4d4f', bgLight: '#fff1f0', bgDark: '#ffccc7', bgBorder: 'rgba(245,34,45,.15)' },
+  totalRevenue:   { label: '总营收(元)', value: 0, icon: 'Money',        accent: '#5B6FE8', accentEnd: '#7B8FF8', bgLight: '#eef2ff', bgDark: '#dde4ff', bgBorder: 'rgba(91,111,232,.15)' },
+  todayOrders:    { label: '今日订单',   value: 0, icon: 'Document',     accent: '#52c41a', accentEnd: '#73d13d', bgLight: '#f6ffed', bgDark: '#d9f7be', bgBorder: 'rgba(82,196,26,.15)' },
+})
+const revenueBreakdown = reactive({
+  sealRevenue: 0,
+  newspaperRevenue: 0,
+  bookkeepingRevenue: 0,
+})
 
-const revenueBreakdown = reactive({ sealRevenue: 0, newspaperRevenue: 0, bookkeepingRevenue: 0 })
-
-const auxKeys = ['totalUsers', 'todayUsers', 'completedOrders', 'pendingReviews']
+const auxKeys = ['totalUsers', 'todayUsers', 'completedOrders', 'pendingReviews'] as const
 
 const pendingPercent = computed(() => {
   const t = stats.totalOrders.value || 1
   return Math.min(100, Math.round((stats.pendingOrders.value / t) * 100))
 })
+
 const reviewPercent = computed(() => {
   if (stats.pendingReviews.value === 0) return 0
   return Math.min(100, stats.pendingReviews.value * 15)
 })
+
 const trendPercent = computed(() => {
   if (stats.totalOrders.value === 0) return 0
   return Math.round((stats.todayOrders.value / stats.totalOrders.value) * 100)
 })
+
 const trendClass = computed(() => {
   const p = trendPercent.value
   if (p === 0) return 'neutral'
   if (p < 5) return 'low'
   return 'normal'
 })
+
 const avgOrderValue = computed(() => {
   if (stats.totalOrders.value === 0) return '0.00'
   return formatMoney(stats.totalRevenue.value / stats.totalOrders.value)
 })
-
-function formatMoney(n: number) {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-function animateValue(key: string, target: number, duration = 1100) {
-  const start = performance.now()
-  const startVal = 0
-  function step(now: number) {
-    const t = Math.min(1, (now - start) / duration)
-    const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
-    stats[key].value = Math.round(startVal + (target - startVal) * eased)
-    if (t < 1) requestAnimationFrame(step)
-  }
-  requestAnimationFrame(step)
-}
 
 const loading = ref(false)
 const chartType = ref<'order' | 'amount'>('order')
@@ -252,6 +253,22 @@ const sparklinePoints = computed(() => {
   const poly = pts.join(' ')
   return { poly: poly, fill: poly + ' ' + W + ',' + H + ' 0,' + H }
 })
+
+function formatMoney(n: number) {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function animateValue(key: string, target: number, duration = 1100) {
+  const start = performance.now()
+  const startVal = 0
+  function step(now: number) {
+    const t = Math.min(1, (now - start) / duration)
+    const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+    ;(stats as any)[key].value = Math.round(startVal + (target - startVal) * eased)
+    if (t < 1) requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
+}
 
 async function fetchData() {
   loading.value = true
@@ -478,23 +495,41 @@ onMounted(() => {
 }
 
 .stack-card {
-  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.2s;
-  :deep(.el-card__body) {
-    padding: 20px 22px;
-  }
+  transition: transform .2s, box-shadow .2s;
+  background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%);
+  border: 1px solid rgba(245,34,45,.15);
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
   &:hover {
-    .stack-arrow { color: #5B6FE8; transform: translateX(2px); }
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,.1);
   }
-  .stack-head { display: flex; justify-content: space-between; align-items: center; }
-  .stack-label { font-size: 13px; color: #64748b; }
-  .stack-arrow { color: #7986f5; transition: all 0.2s; }
+  .stack-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f5222d, #ff4d4f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    :deep(.el-icon) { font-size: 20px; color: #fff; }
+  }
+  .stack-icon.danger {
+    background: linear-gradient(135deg, #f5222d, #ff4d4f);
+  }
+  .stack-body { flex: 1; min-width: 0; }
+  .stack-label { font-size: 13px; color: #666; }
   .stack-value {
-    font-size: 38px;
+    font-size: 32px;
     font-weight: 700;
-    color: #0f172a;
-    margin-top: 8px;
+    color: #303133;
+    margin-top: 4px;
     line-height: 1;
     letter-spacing: -1px;
     font-feature-settings: "tnum";
@@ -504,74 +539,56 @@ onMounted(() => {
     height: 4px;
     background: #f1f5f9;
     border-radius: 2px;
-    margin-top: 16px;
+    margin-top: 10px;
     overflow: hidden;
   }
   .stack-bar-fill {
     height: 100%;
     border-radius: 2px;
     transition: width 1.1s ease-out;
-    &.warning { background: linear-gradient(90deg, #f5222d, #cf1322); }
+    &.warning { background: linear-gradient(90deg, #f5222d, #ff4d4f); }
     &.danger  { background: linear-gradient(90deg, #f87171, #ef4444); }
     &.idle    { background: #e2e8f0; }
   }
-  .stack-foot { font-size: 12px; color: #94a3b8; margin-top: 8px; }
+  .stack-foot { font-size: 12px; color: #999; margin-top: 6px; }
+  .stack-arrow { color: #f5222d; transition: all .2s; flex-shrink: 0; }
+  &:hover .stack-arrow { transform: translateX(2px); }
 }
 
 .aux-cards { margin-bottom: 0; }
 .aux-card {
-  position: relative;
-  background: #fff;
-  border: 1px solid #f1f5f9;
-  border-radius: 10px;
-  padding: 14px 18px 14px 20px;
+  border-radius: 16px;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  transition: transform .2s, box-shadow .2s;
   overflow: hidden;
-  transition: all 0.2s;
-  &:hover { border-color: #7986f5; box-shadow: 0 4px 12px rgba(91,111,232,0.12); }
-  .aux-bar {
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,.1);
   }
+  .aux-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .aux-info { flex: 1; min-width: 0; }
   .aux-value {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
-    color: #0f172a;
+    color: #303133;
     line-height: 1.2;
     font-feature-settings: "tnum";
     font-variant-numeric: tabular-nums;
   }
-  .aux-label { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+  .aux-label { font-size: 12px; color: #666; margin-top: 2px; }
 }
-
-.chart-card .card-header { display: flex; justify-content: space-between; align-items: center; }
-
-.quick-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  .quick-btn {
-    width: 100%;
-    padding: 9px 12px;
-    background: #fff;
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-    color: #606266;
-    font-size: 14px;
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.2s;
-    &:hover {
-      color: #409eff;
-      border-color: #c6e2ff;
-      background: #ecf5ff;
-    }
-  }
-}
-
 .revenue-breakdown {
   margin-top: 12px;
   display: flex;

@@ -1,0 +1,40 @@
+[2m20:58:35[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/outlets?page=1&pageSize=100[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+[2m20:58:35[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/transaction/flows?page=1&pageSize=20&startDate=2026-08-05&endDate=2026-08-05[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+[2m20:58:35[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/transaction/stats[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+[2m20:58:37[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/finance/overview[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+[2m20:58:46[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/settlement/rules[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+[2m20:58:46[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/outlets?page=1&pageSize=100[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+[2m20:58:46[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/settlement/records?page=1&pageSize=10[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+[2m20:58:49[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/outlets?page=1&pageSize=100[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+[2m20:58:49[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/transaction/flows?page=1&pageSize=20&startDate=2026-08-05&endDate=2026-08-05[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+[2m20:58:49[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/transaction/stats[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)

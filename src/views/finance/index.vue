@@ -7,29 +7,44 @@
     <!-- 财务统计卡 - 始终固定 -->
     <div class="stat-cards">
       <div class="stat-card income">
-        <div class="stat-label">收入</div>
-        <div class="stat-value">¥{{ fmt(overview.income) }}</div>
-        <div class="stat-sub">{{ overview.incomeCount }} 笔交易</div>
+        <div class="stat-icon">💰</div>
+        <div class="stat-body">
+          <div class="stat-label">收入</div>
+          <div class="stat-value">¥{{ fmt(overview.income) }}</div>
+          <div class="stat-sub">{{ overview.incomeCount }} 笔交易</div>
+        </div>
       </div>
       <div class="stat-card fee">
-        <div class="stat-label">手续费</div>
-        <div class="stat-value">¥{{ fmt(overview.incomeFee) }}</div>
-        <div class="stat-sub">费率 0.6%</div>
+        <div class="stat-icon">⚙️</div>
+        <div class="stat-body">
+          <div class="stat-label">手续费</div>
+          <div class="stat-value">¥{{ fmt(overview.incomeFee) }}</div>
+          <div class="stat-sub">费率 0.6%</div>
+        </div>
       </div>
       <div class="stat-card refund-stat">
-        <div class="stat-label">退款</div>
-        <div class="stat-value">¥{{ fmt(overview.refund) }}</div>
-        <div class="stat-sub">{{ overview.refundCount }} 笔退款</div>
+        <div class="stat-icon">↩️</div>
+        <div class="stat-body">
+          <div class="stat-label">退款</div>
+          <div class="stat-value">¥{{ fmt(overview.refund) }}</div>
+          <div class="stat-sub">{{ overview.refundCount }} 笔退款</div>
+        </div>
       </div>
       <div class="stat-card settle">
-        <div class="stat-label">网点分成</div>
-        <div class="stat-value">¥{{ fmt(overview.outletSettle) }}</div>
-        <div class="stat-sub">待确认 ¥{{ fmt(overview.pendingOutlet) }}</div>
+        <div class="stat-icon">🏪</div>
+        <div class="stat-body">
+          <div class="stat-label">网点分成</div>
+          <div class="stat-value">¥{{ fmt(overview.outletSettle) }}</div>
+          <div class="stat-sub">待确认 ¥{{ fmt(overview.pendingOutlet) }}</div>
+        </div>
       </div>
       <div class="stat-card net">
-        <div class="stat-label">平台净利</div>
-        <div class="stat-value">¥{{ fmt(overview.platformNet) }}</div>
-        <div class="stat-sub">收入-手续费-退款-分成</div>
+        <div class="stat-icon">📈</div>
+        <div class="stat-body">
+          <div class="stat-label">平台净利</div>
+          <div class="stat-value">¥{{ fmt(overview.platformNet) }}</div>
+          <div class="stat-sub">收入-手续费-退款-分成</div>
+        </div>
       </div>
     </div>
 
@@ -148,11 +163,11 @@
     <div v-if="mainTab === 'transaction'" class="tab-panel">
       <!-- 统计卡 -->
       <div class="trans-stats">
-        <div class="trans-stat income"><div class="ts-label">今日收入</div><div class="ts-value">¥{{ fmt(transStats.today?.income || 0) }}</div><div class="ts-sub" :class="parseFloat(transStats.today?.incomeTrend)>=0?'up':'down'">{{ parseFloat(transStats.today?.incomeTrend)>=0?'↑':'↓' }}{{ Math.abs(parseFloat(transStats.today?.incomeTrend||0)).toFixed(1) }}% 较昨日</div></div>
-        <div class="trans-stat refund"><div class="ts-label">今日退款</div><div class="ts-value">¥{{ fmt(transStats.today?.refund || 0) }}</div><div class="ts-sub">{{ parseFloat(transStats.today?.refundTrend)>=0?'↑':'↓' }}{{ Math.abs(parseFloat(transStats.today?.refundTrend||0)).toFixed(1) }}% 较昨日</div></div>
-        <div class="trans-stat net"><div class="ts-label">今日净收</div><div class="ts-value">¥{{ fmt(transStats.today?.net || 0) }}</div><div class="ts-sub">平台实收</div></div>
-        <div class="trans-stat"><div class="ts-label">今日笔数</div><div class="ts-value">{{ transStats.today?.count || 0 }}</div><div class="ts-sub">交易笔数</div></div>
-        <div class="trans-stat"><div class="ts-label">本月累计</div><div class="ts-value">¥{{ fmt(transStats.month?.income || 0) }}</div><div class="ts-sub">{{ transStats.month?.count || 0 }} 笔</div></div>
+        <div class="trans-stat income"><div class="ts-icon">💰</div><div class="ts-body"><div class="ts-label">今日收入</div><div class="ts-value">¥{{ fmt(transStats.today?.income || 0) }}</div><div class="ts-sub" :class="parseFloat(transStats.today?.incomeTrend)>=0?'up':'down'">{{ parseFloat(transStats.today?.incomeTrend)>=0?'↑':'↓' }}{{ Math.abs(parseFloat(transStats.today?.incomeTrend||0)).toFixed(1) }}% 较昨日</div></div></div>
+        <div class="trans-stat refund"><div class="ts-icon">↩️</div><div class="ts-body"><div class="ts-label">今日退款</div><div class="ts-value">¥{{ fmt(transStats.today?.refund || 0) }}</div><div class="ts-sub">{{ parseFloat(transStats.today?.refundTrend)>=0?'↑':'↓' }}{{ Math.abs(parseFloat(transStats.today?.refundTrend||0)).toFixed(1) }}% 较昨日</div></div></div>
+        <div class="trans-stat net"><div class="ts-icon">📈</div><div class="ts-body"><div class="ts-label">今日净收</div><div class="ts-value">¥{{ fmt(transStats.today?.net || 0) }}</div><div class="ts-sub">平台实收</div></div></div>
+        <div class="trans-stat count"><div class="ts-icon">🧾</div><div class="ts-body"><div class="ts-label">今日笔数</div><div class="ts-value">{{ transStats.today?.count || 0 }}</div><div class="ts-sub">交易笔数</div></div></div>
+        <div class="trans-stat month"><div class="ts-icon">🗓️</div><div class="ts-body"><div class="ts-label">本月累计</div><div class="ts-value">¥{{ fmt(transStats.month?.income || 0) }}</div><div class="ts-sub">{{ transStats.month?.count || 0 }} 笔</div></div></div>
       </div>
 
       <!-- 筛选 -->
@@ -921,16 +936,24 @@ onMounted(function() {
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .page-header h2 { margin: 0; font-size: 18px; color: #303133; font-weight: 600; }
 
-.stat-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
-.stat-card { background: #fff; border-radius: 8px; padding: 16px; border-left: 4px solid #ddd; }
-.stat-card.income { border-left-color: #5B6FE8; }
-.stat-card.fee { border-left-color: #fa8c16; }
-.stat-card.refund-stat { border-left-color: #f5222d; }
-.stat-card.settle { border-left-color: #13c2c2; }
-.stat-card.net { border-left-color: #52c41a; }
-.stat-label { font-size: 13px; color: #909399; margin-bottom: 8px; }
-.stat-value { font-size: 22px; font-weight: bold; color: #303133; }
-.stat-sub { font-size: 12px; color: #c0c4cc; margin-top: 4px; }
+.stat-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 16px; }
+.stat-card { border-radius: 16px; padding: 20px 18px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.06); transition: transform .2s, box-shadow .2s; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
+.stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; color: #fff; }
+.stat-body { flex: 1; min-width: 0; }
+.stat-label { font-size: 13px; color: #666; margin-bottom: 4px; }
+.stat-value { font-size: 20px; font-weight: 700; color: #303133; line-height: 1.2; }
+.stat-sub { font-size: 12px; color: #999; margin-top: 2px; }
+.stat-card.income { background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%); border: 1px solid rgba(91,111,232,.15); }
+.stat-card.income .stat-icon { background: linear-gradient(135deg, #5B6FE8, #7B8FF8); }
+.stat-card.fee { background: linear-gradient(135deg, #fff7e6 0%, #ffe8c2 100%); border: 1px solid rgba(250,140,22,.15); }
+.stat-card.fee .stat-icon { background: linear-gradient(135deg, #fa8c16, #ffa940); }
+.stat-card.refund-stat { background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%); border: 1px solid rgba(245,34,45,.15); }
+.stat-card.refund-stat .stat-icon { background: linear-gradient(135deg, #f5222d, #ff4d4f); }
+.stat-card.settle { background: linear-gradient(135deg, #e6fffb 0%, #b5f5ec 100%); border: 1px solid rgba(19,194,194,.15); }
+.stat-card.settle .stat-icon { background: linear-gradient(135deg, #13c2c2, #36cfc9); }
+.stat-card.net { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); border: 1px solid rgba(82,196,26,.15); }
+.stat-card.net .stat-icon { background: linear-gradient(135deg, #52c41a, #73d13d); }
 
 .finance-tabs { background: #fff; border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
 .tab-bar { display: flex; border-bottom: 1px solid #ebeef5; }
@@ -997,16 +1020,26 @@ onMounted(function() {
 .quick-btn:hover { border-color: #5B6FE8; color: #5B6FE8; }
 .quick-btn.active { background: #ecf5ff; border-color: #5B6FE8; color: #5B6FE8; font-weight: 600; }
 
-.trans-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 0; }
-.trans-stat { background: #fff; border-radius: 8px; padding: 14px 16px; border-top: 3px solid #ddd; }
-.trans-stat.income { border-top-color: #52c41a; }
-.trans-stat.refund { border-top-color: #f5222d; }
-.trans-stat.net { border-top-color: #5B6FE8; }
-.ts-label { font-size: 12px; color: #909399; margin-bottom: 6px; }
-.ts-value { font-size: 20px; font-weight: bold; color: #303133; }
-.ts-sub { font-size: 11px; margin-top: 4px; }
+.trans-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 0; }
+.trans-stat { border-radius: 16px; padding: 18px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.06); transition: transform .2s, box-shadow .2s; }
+.trans-stat:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
+.ts-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; color: #fff; }
+.ts-body { flex: 1; min-width: 0; }
+.ts-label { font-size: 12px; color: #666; margin-bottom: 4px; }
+.ts-value { font-size: 18px; font-weight: 700; color: #303133; line-height: 1.2; }
+.ts-sub { font-size: 11px; margin-top: 2px; }
 .ts-sub.up { color: #52c41a; }
 .ts-sub.down { color: #f5222d; }
+.trans-stat.income { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); border: 1px solid rgba(82,196,26,.15); }
+.trans-stat.income .ts-icon { background: linear-gradient(135deg, #52c41a, #73d13d); }
+.trans-stat.refund { background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%); border: 1px solid rgba(245,34,45,.15); }
+.trans-stat.refund .ts-icon { background: linear-gradient(135deg, #f5222d, #ff4d4f); }
+.trans-stat.net { background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%); border: 1px solid rgba(91,111,232,.15); }
+.trans-stat.net .ts-icon { background: linear-gradient(135deg, #5B6FE8, #7B8FF8); }
+.trans-stat.count { background: linear-gradient(135deg, #e6fffb 0%, #b5f5ec 100%); border: 1px solid rgba(19,194,194,.15); }
+.trans-stat.count .ts-icon { background: linear-gradient(135deg, #13c2c2, #36cfc9); }
+.trans-stat.month { background: linear-gradient(135deg, #fff7e6 0%, #ffe8c2 100%); border: 1px solid rgba(250,140,22,.15); }
+.trans-stat.month .ts-icon { background: linear-gradient(135deg, #fa8c16, #ffa940); }
 
 .money { color: #303133; }
 .money.outlet { color: #5B6FE8; }
