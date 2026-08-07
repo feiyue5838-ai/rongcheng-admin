@@ -1109,7 +1109,11 @@ function triggerSealUpload() {
 }
 
 // 业务场景（8 大场景）：sceneType==='scene'
-const businessCategories = computed(() => categories.value.filter((c) => c.sceneType === 'scene'))
+const businessCategories = computed(() => {
+  const scenes = categories.value.filter((c) => c.sceneType === 'scene')
+  // 后端 getSealCategories 当前未返回 sceneType 字段，退化为全部业务分类以避免印章列表全空
+  return scenes.length ? scenes : categories.value
+})
 
 // seal_categories 全量（17 条），用于查找个人 / 电子分类的 id
 const sealCategories = ref<any[]>([])
@@ -1124,15 +1128,23 @@ onMounted(async () => {
   }
 })
 
-// 路由切换 / 分类数据加载完成：重新拉取对应场景数据
-watch(defaultCategory, async (newVal, oldVal) => {
+// 路由切换：重置 Tab 状态，watch(activeSceneId) 会统一处理数据加载
+watch(defaultCategory, (newVal, oldVal) => {
   if (newVal === oldVal) return
   activeSceneId.value = ''
   activeSingleTab.value = newVal
   activePersonalSubTab.value = '个人印章'
   activeSingleSubTab.value = '电子公章'
-  if (newVal) await fetchSealsByCategory(newVal)
 })
+
+// 分类数据加载完成：触发印章列表加载（解决 onMounted 时 categories 尚未就绪的竞态）
+watch(categories, async (newCats) => {
+  if (!newCats?.length) return
+  if (routeType.value !== 'enterprise') return
+  if (businessCategories.value.length) {
+    activeSceneId.value = businessCategories.value[0].id
+  }
+}, { immediate: false })
 
 // Tab 切换：enterprise 路由直接拉对应场景数据
 watch(activeSceneId, async (newId, oldId) => {

@@ -450,7 +450,7 @@ async function loadModuleMonth() {
     const startDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
     const endDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
     const res = await getFinanceOverview({ startDate, endDate })
-    moduleMonth.value = res?.byModule || []
+    moduleMonth.value = (res?.byModule || []).filter(m => m.tradeType === 'income')
   } catch (e) { console.error(e) }
 }
 
