@@ -203,6 +203,7 @@
 
     <!-- Row3: Stack卡 + Aux卡 -->
     <el-row :gutter="12" class="row3">
+      <!-- 待处理订单 -->
       <el-col :xs="24" :lg="8">
         <div class="stack-card" @click="$router.push('/orders/seal')">
           <div class="stack-icon">
@@ -233,10 +234,47 @@
           <el-icon class="stack-arrow"><ArrowRight /></el-icon>
         </div>
       </el-col>
-      <el-col :xs="24" :lg="16">
-        <el-card shadow="hover" class="aux-panel">
+
+      <!-- 客户状态 -->
+      <el-col :xs="24" :lg="8" style="display: flex; flex-direction: column;">
+        <el-card shadow="hover" style="flex: 1; display: flex; flex-direction: column;">
+          <template #header>
+            <div class="panel-head">
+              <span>客户状态</span>
+              <span class="head-more" @click="$router.push('/users')">全部 ›</span>
+            </div>
+          </template>
           <div class="aux-grid">
-            <div v-for="k in auxKeys" :key="k" class="aux-card" :style="{ background: 'linear-gradient(135deg, ' + stats[k].bgLight + ' 0%, ' + stats[k].bgDark + ' 100%)', border: '1px solid ' + stats[k].bgBorder }">
+            <div v-for="k in customerKeys" :key="k" class="aux-card"
+              :style="{ background: 'linear-gradient(135deg, ' + customerStats[k].bgLight + ' 0%, ' + customerStats[k].bgDark + ' 100%)', border: '1px solid ' + customerStats[k].bgBorder }">
+              <div class="aux-icon" :style="{ background: 'linear-gradient(135deg, ' + customerStats[k].accent + ', ' + customerStats[k].accentEnd + ')' }">
+                <el-icon :size="16" color="#fff">
+                  <component :is="customerStats[k].icon" />
+                </el-icon>
+              </div>
+              <div class="aux-info">
+                <div class="aux-value">{{ customerStats[k].value }}</div>
+                <div class="aux-label">{{ customerStats[k].label }}</div>
+                <div class="aux-trend" :class="customerStats[k].trend > 0 ? 'trend-up' : 'trend-down'">
+                  {{ customerStats[k].trend > 0 ? '↑' : '↓' }}{{ Math.abs(customerStats[k].trend) }}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+
+      <!-- 关键指标 -->
+      <el-col :xs="24" :lg="8" style="display: flex; flex-direction: column;">
+        <el-card shadow="hover" style="flex: 1; display: flex; flex-direction: column;">
+          <template #header>
+            <div class="panel-head">
+              <span>关键指标</span>
+            </div>
+          </template>
+          <div class="aux-grid">
+            <div v-for="k in kpiKeys" :key="k" class="aux-card"
+              :style="{ background: 'linear-gradient(135deg, ' + stats[k].bgLight + ' 0%, ' + stats[k].bgDark + ' 100%)', border: '1px solid ' + stats[k].bgBorder }">
               <div class="aux-icon" :style="{ background: 'linear-gradient(135deg, ' + stats[k].accent + ', ' + stats[k].accentEnd + ')' }">
                 <el-icon :size="16" color="#fff">
                   <component :is="stats[k].icon" />
@@ -276,7 +314,7 @@
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { getDashboard, getDashboardTrend, getOutletsAPI, getSettlementRecords } from '@/api'
 import * as echarts from 'echarts'
-import { Refresh, ArrowRight, User, UserFilled, CircleCheck, ChatDotRound, Clock, Document, Lightning, WarningFilled } from '@element-plus/icons-vue'
+import { Refresh, ArrowRight, User, UserFilled, CircleCheck, ChatDotRound, Clock, Document, Lightning, WarningFilled, Star } from '@element-plus/icons-vue'
 
 type StatConfig = {
   label: string
@@ -304,7 +342,14 @@ const revenueBreakdown = reactive({
   bookkeepingRevenue: 0,
 })
 
-const auxKeys = ['totalUsers', 'todayUsers', 'completedOrders', 'pendingReviews'] as const
+const customerStats = reactive({
+  totalCustomers: { label: '总客户',    value: 0, icon: 'User',           trend: 0, accent: '#5B6FE8', accentEnd: '#7B8FF8', bgLight: '#eef2ff', bgDark: '#dde4ff', bgBorder: 'rgba(91,111,232,.15)' },
+  activeCustomers:  { label: '活跃客户',  value: 0, icon: 'UserFilled',     trend: 0, accent: '#52c41a', accentEnd: '#73d13d', bgLight: '#f6ffed', bgDark: '#d9f7be', bgBorder: 'rgba(82,196,26,.15)' },
+  silentCustomers:  { label: '沉默客户',  value: 0, icon: 'Clock',          trend: 0, accent: '#fa8c16', accentEnd: '#ffc53d', bgLight: '#fffbe6', bgDark: '#fff1b8', bgBorder: 'rgba(250,140,22,.15)' },
+  vipCustomers:     { label: 'VIP客户',   value: 0, icon: 'Star',           trend: 0, accent: '#722ed1', accentEnd: '#9254de', bgLight: '#f9f0ff', bgDark: '#e8d5ff', bgBorder: 'rgba(114,46,209,.15)' },
+})
+const customerKeys = ['totalCustomers', 'activeCustomers', 'silentCustomers', 'vipCustomers'] as const
+const kpiKeys = ['totalUsers', 'todayUsers', 'completedOrders', 'pendingOrders'] as const
 
 const pendingPercent = computed(() => {
   const t = stats.totalOrders.value || 1
@@ -756,8 +801,13 @@ onMounted(() => {
     font-feature-settings: "tnum";
     font-variant-numeric: tabular-nums;
   }
-  .aux-label { font-size: 12px; color: #666; margin-top: 2px; }
 }
+.aux-label { font-size: 12px; color: #666; margin-top: 2px; }
+.aux-trend { font-size: 11px; margin-top: 2px; font-weight: 500; }
+.trend-up { color: #52c41a; }
+.trend-down { color: #f5222d; }
+
+
 .revenue-breakdown {
   margin-top: 12px;
   display: flex;
@@ -904,6 +954,9 @@ onMounted(() => {
 
 /* Aux 网格 */
 .aux-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px; }
+.aux-trend { font-size: 11px; margin-top: 2px; font-weight: 500; }
+.trend-up { color: #52c41a; }
+.trend-down { color: #f5222d; }
 
 </style>
 <style scoped lang="css">
