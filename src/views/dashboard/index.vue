@@ -953,7 +953,11 @@ onMounted(() => {
 .rank-label { font-size: 10px; color: #9ca3af; margin-top: 2px; }
 
 /* Aux 网格 */
-.aux-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px; }
+.aux-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 16px; }
+.aux-card { padding: 12px 10px; min-width: 0; }
+.aux-info { min-width: 0; }
+.aux-value { font-size: 18px; line-height: 1.1; }
+.aux-label { font-size: 11px; }
 .aux-trend { font-size: 11px; margin-top: 2px; font-weight: 500; }
 .trend-up { color: #52c41a; }
 .trend-down { color: #f5222d; }
