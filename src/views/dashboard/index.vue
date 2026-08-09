@@ -21,8 +21,8 @@
     </div>
 
     <el-row :gutter="14" class="row1">
-      <el-col :xs="24" :lg="16">
-        <div class="hero-card">
+      <el-col :xs="24" :lg="16" style="min-height: 320px; display: flex; flex-direction: column;">
+        <div class="hero-card" style="flex: 1;">
           <div class="hero-grid">
             <div class="hero-text">
               <div class="hero-label">总营收（元）</div>
@@ -98,8 +98,8 @@
           </div>
         </div>
       </el-col>
-      <el-col :xs="24" :lg="8">
-        <el-card shadow="hover" class="today-card-panel">
+      <el-col :xs="24" :lg="8" style="min-height: 320px; display: flex; flex-direction: column;">
+        <el-card shadow="hover" class="today-card-panel" style="flex: 1;">
           <template #header><span>今日要事</span></template>
           <div class="today-grid">
             <div class="today-cell orange" @click="$router.push('/orders/seal')">
