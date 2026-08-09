@@ -284,6 +284,7 @@ import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { getDashboard, getDashboardTrend, getOutletsAPI, getSettlementRecords } from '@/api'
 import * as echarts from 'echarts'
 import { Refresh, Promotion, Download, Service, User, UserFilled, CircleCheck, ChatDotRound, Clock, Document, Lightning, WarningFilled, Star } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 type StatConfig = {
   label: string
