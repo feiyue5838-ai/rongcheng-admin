@@ -237,7 +237,7 @@
 
       <!-- 客户状态 -->
       <el-col :xs="24" :lg="8" style="display: flex; flex-direction: column;">
-        <el-card shadow="hover" style="flex: 1; display: flex; flex-direction: column;">
+        <el-card class="panel-card" shadow="hover" style="flex: 1; display: flex; flex-direction: column;">
           <template #header>
             <div class="panel-head">
               <span>客户状态</span>
@@ -266,7 +266,7 @@
 
       <!-- 关键指标 -->
       <el-col :xs="24" :lg="8" style="display: flex; flex-direction: column;">
-        <el-card shadow="hover" style="flex: 1; display: flex; flex-direction: column;">
+        <el-card class="panel-card" shadow="hover" style="flex: 1; display: flex; flex-direction: column;">
           <template #header>
             <div class="panel-head">
               <span>关键指标</span>
@@ -951,6 +951,11 @@ onMounted(() => {
 .rank-value { text-align: right; flex-shrink: 0; }
 .rank-orders { font-size: 20px; font-weight: 800; color: #1f2937; line-height: 1; font-variant-numeric: tabular-nums; }
 .rank-label { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+
+/* 面板统一样式 */
+.panel-card { border-radius: 16px; }
+.panel-card :deep(.el-card__header) { padding: 14px 20px; }
+.panel-card :deep(.el-card__body) { padding: 0; flex: 1; }
 
 /* Aux 网格 */
 .aux-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 16px; }
