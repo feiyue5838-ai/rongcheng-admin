@@ -130,8 +130,8 @@
     <!-- Row2: 服务商状态 + 服务商排行 -->
     <el-row :gutter="12" class="row2">
       <!-- 服务商状态 -->
-      <el-col :xs="24" :lg="12">
-        <el-card shadow="hover" class="outlet-panel">
+      <el-col :xs="24" :lg="12" style="display: flex; flex-direction: column;">
+        <el-card shadow="hover" class="outlet-panel" style="flex: 1;">
           <template #header>
             <div class="panel-head">
               <span>服务商状态</span>
@@ -175,8 +175,8 @@
       </el-col>
 
       <!-- 服务商订单排行 -->
-      <el-col :xs="24" :lg="12">
-        <el-card shadow="hover" class="rank-panel">
+      <el-col :xs="24" :lg="12" style="display: flex; flex-direction: column;">
+        <el-card shadow="hover" class="rank-panel" style="flex: 1;">
           <template #header>
             <div class="panel-head">
               <span>服务商排行</span>
