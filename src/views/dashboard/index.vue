@@ -467,6 +467,11 @@ async function fetchData() {
     stats.totalUsers.value = data.totalUsers ?? 0
     stats.todayUsers.value = data.todayUsers ?? 0
     stats.pendingReviews.value = data.pendingReviews ?? 0
+    // 客户状态
+    customerStats.totalCustomers.value = data.totalCustomers ?? 0
+    customerStats.activeCustomers.value = data.activeCustomers ?? 0
+    customerStats.silentCustomers.value = data.silentCustomers ?? 0
+    customerStats.vipCustomers.value = data.vipCustomers ?? 0
     revenueBreakdown.sealRevenue = data._detail?.sealRevenue ?? 0
     revenueBreakdown.newspaperRevenue = data._detail?.newspaperRevenue ?? 0
     revenueBreakdown.bookkeepingRevenue = data._detail?.bookkeepingRevenue ?? 0
