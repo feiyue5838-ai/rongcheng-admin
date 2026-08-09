@@ -98,7 +98,7 @@
           </div>
         </div>
       </el-col>
-      <el-col :xs="24" :lg="12" style="min-height: 320px; display: flex; flex-direction: column;">
+      <el-col :xs="24" :lg="8" style="min-height: 320px; display: flex; flex-direction: column;">
         <el-card shadow="hover" class="today-card-panel" style="flex: 1;">
           <template #header><span>今日要事</span></template>
           <div class="today-grid">
