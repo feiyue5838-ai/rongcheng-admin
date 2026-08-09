@@ -127,10 +127,10 @@
       </el-col>
     </el-row>
 
-    <!-- Row2: 服务商状态 + 服务商排行 + 快捷操作 -->
+    <!-- Row2: 服务商状态 + 服务商排行 -->
     <el-row :gutter="12" class="row2">
       <!-- 服务商状态 -->
-      <el-col :xs="24" :lg="8">
+      <el-col :xs="24" :lg="12">
         <el-card shadow="hover" class="outlet-panel">
           <template #header>
             <div class="panel-head">
@@ -175,7 +175,7 @@
       </el-col>
 
       <!-- 服务商订单排行 -->
-      <el-col :xs="24" :lg="8">
+      <el-col :xs="24" :lg="12">
         <el-card shadow="hover" class="rank-panel">
           <template #header>
             <div class="panel-head">
@@ -196,27 +196,6 @@
               </div>
             </div>
             <div v-if="!outletRanking.length" class="outlet-empty">暂无网点数据</div>
-          </div>
-        </el-card>
-      </el-col>
-
-      <!-- 快捷操作 -->
-      <el-col :xs="24" :lg="8">
-        <el-card shadow="hover" class="quick-card">
-          <template #header><span>快捷操作</span></template>
-          <div class="quick-actions">
-            <button class="quick-btn qa-seal" @click="$router.push('/finance?tab=settlement')">
-              <span class="qa-icon"><el-icon><Money /></el-icon></span><span class="qa-label">确认结算</span>
-            </button>
-            <button class="quick-btn qa-order" @click="$router.push('/products/seals')">
-              <span class="qa-icon">+</span><span class="qa-label">添加印章</span>
-            </button>
-            <button class="quick-btn qa-news" @click="$router.push('/orders/seal')">
-              <span class="qa-icon">▤</span><span class="qa-label">刻章订单</span>
-            </button>
-            <button class="quick-btn qa-review" @click="$router.push('/orders/newspaper')">
-              <span class="qa-icon">▤</span><span class="qa-label">登报订单</span>
-            </button>
           </div>
         </el-card>
       </el-col>
@@ -297,7 +276,7 @@
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { getDashboard, getDashboardTrend, getOutletsAPI, getSettlementRecords } from '@/api'
 import * as echarts from 'echarts'
-import { Refresh, ArrowRight, User, UserFilled, CircleCheck, ChatDotRound, Clock, Money, Document, Lightning, WarningFilled } from '@element-plus/icons-vue'
+import { Refresh, ArrowRight, User, UserFilled, CircleCheck, ChatDotRound, Clock, Document, Lightning, WarningFilled } from '@element-plus/icons-vue'
 
 type StatConfig = {
   label: string
@@ -928,23 +907,7 @@ onMounted(() => {
 
 </style>
 <style scoped lang="css">
-.quick-card { border-radius: 16px; border: 1px solid var(--app-split); }
-.quick-card :deep(.el-card__header) { padding: 14px 18px; border-bottom: 1px solid var(--app-split); }
-.quick-card :deep(.el-card__header span) { font-weight: 600; color: #1f2937; }
-.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px 4px 4px; }
-.quick-btn {
-  display: flex; align-items: center; gap: 10px; padding: 14px 16px; border: none; cursor: pointer;
-  border-radius: 12px; color: #fff; font-size: 14px; font-weight: 500; letter-spacing: .3px;
-  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
-}
-.quick-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15,23,42,.12); filter: brightness(1.05); }
-.quick-btn:active { transform: translateY(0); }
-.quick-btn .qa-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: rgba(255,255,255,.22); border-radius: 8px; font-size: 16px; font-weight: 600; }
-.quick-btn .qa-label { line-height: 1; }
-.qa-seal   { background: linear-gradient(135deg, #5B6FE8 0%, #7B8FF8 100%); }
-.qa-order  { background: linear-gradient(135deg, #13c2c2 0%, #36cfc9 100%); }
-.qa-news   { background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%); }
-.qa-review { background: linear-gradient(135deg, #fa8c16 0%, #ffa940 100%); }
+
 
 .chart-card { border-radius: 16px; }
 .chart-header { display: flex; justify-content: space-between; align-items: center; }
