@@ -98,7 +98,7 @@
           </div>
         </div>
       </el-col>
-      <el-col :xs="24" :lg="8" style="min-height: 320px; display: flex; flex-direction: column;">
+      <el-col :xs="24" :lg="12" style="min-height: 320px; display: flex; flex-direction: column;">
         <el-card shadow="hover" class="today-card-panel" style="flex: 1;">
           <template #header><span>今日要事</span></template>
           <div class="today-grid">
@@ -201,42 +201,10 @@
       </el-col>
     </el-row>
 
-    <!-- Row3: Stack卡 + Aux卡 -->
+    <!-- Row3: 客户状态 + 关键指标 -->
     <el-row :gutter="12" class="row3">
-      <!-- 待处理订单 -->
-      <el-col :xs="24" :lg="8">
-        <div class="stack-card" @click="$router.push('/orders/seal')">
-          <div class="stack-icon">
-            <el-icon><Clock /></el-icon>
-          </div>
-          <div class="stack-body">
-            <div class="stack-label">待处理订单</div>
-            <div class="stack-value">{{ stats.pendingOrders.value }}</div>
-            <div class="stack-bar">
-              <div class="stack-bar-fill warning" :style="{ width: pendingPercent + '%' }"></div>
-            </div>
-            <div class="stack-foot">占总订单 {{ pendingPercent }}%</div>
-          </div>
-          <el-icon class="stack-arrow"><ArrowRight /></el-icon>
-        </div>
-        <div class="stack-card" style="margin-top: 12px" @click="$router.push('/reviews')">
-          <div class="stack-icon danger">
-            <el-icon><ChatDotRound /></el-icon>
-          </div>
-          <div class="stack-body">
-            <div class="stack-label">待回复评价</div>
-            <div class="stack-value">{{ stats.pendingReviews.value }}</div>
-            <div class="stack-bar">
-              <div class="stack-bar-fill" :class="stats.pendingReviews.value > 0 ? 'danger' : 'idle'" :style="{ width: reviewPercent + '%' }"></div>
-            </div>
-            <div class="stack-foot">{{ stats.pendingReviews.value > 0 ? '需要关注' : '暂无待回' }}</div>
-          </div>
-          <el-icon class="stack-arrow"><ArrowRight /></el-icon>
-        </div>
-      </el-col>
-
       <!-- 客户状态 -->
-      <el-col :xs="24" :lg="8" style="display: flex; flex-direction: column;">
+      <el-col :xs="24" :lg="12" style="display: flex; flex-direction: column;">
         <el-card class="panel-card" shadow="hover" style="flex: 1; display: flex; flex-direction: column;">
           <template #header>
             <div class="panel-head">
@@ -265,7 +233,7 @@
       </el-col>
 
       <!-- 关键指标 -->
-      <el-col :xs="24" :lg="8" style="display: flex; flex-direction: column;">
+      <el-col :xs="24" :lg="12" style="display: flex; flex-direction: column;">
         <el-card class="panel-card" shadow="hover" style="flex: 1; display: flex; flex-direction: column;">
           <template #header>
             <div class="panel-head">
