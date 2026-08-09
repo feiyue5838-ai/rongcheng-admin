@@ -282,7 +282,7 @@
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { getDashboard, getDashboardTrend, getOutletsAPI, getSettlementRecords } from '@/api'
 import * as echarts from 'echarts'
-import { Refresh, ArrowRight, User, UserFilled, CircleCheck, ChatDotRound, Clock, Document, Lightning, WarningFilled, Star } from '@element-plus/icons-vue'
+import { Refresh, User, UserFilled, CircleCheck, ChatDotRound, Clock, Document, Lightning, WarningFilled, Star } from '@element-plus/icons-vue'
 
 type StatConfig = {
   label: string
@@ -302,8 +302,7 @@ const stats = reactive({
   totalOrders:    { label: '订单总数',   value: 0, icon: 'Document',     accent: '#5B6FE8', accentEnd: '#7B8FF8', bgLight: '#eef2ff', bgDark: '#dde4ff', bgBorder: 'rgba(91,111,232,.15)' },
   pendingOrders:  { label: '待处理订单', value: 0, icon: 'Clock',        accent: '#f5222d', accentEnd: '#ff4d4f', bgLight: '#fff1f0', bgDark: '#ffccc7', bgBorder: 'rgba(245,34,45,.15)' },
   totalRevenue:   { label: '总营收(元)', value: 0, icon: 'Money',        accent: '#5B6FE8', accentEnd: '#7B8FF8', bgLight: '#eef2ff', bgDark: '#dde4ff', bgBorder: 'rgba(91,111,232,.15)' },
-  todayOrders:    { label: '今日订单',   value: 0, icon: 'Document',     accent: '#52c41a', accentEnd: '#73d13d', bgLight: '#f6ffed', bgDark: '#d9f7be', bgBorder: 'rgba(82,196,26,.15)' },
-})
+  todayOrders:    { label: '今日订单',   value: 0, icon: 'Document',     accent: '#52c41a', accentEnd: '#73d13d', bgLight: '#f6ffed', bgDark: '#d9f7be', bgBorder: 'rgba(82,196,26,.15)' } })
 const revenueBreakdown = reactive({
   sealRevenue: 0,
   newspaperRevenue: 0,
