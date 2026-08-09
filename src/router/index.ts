@@ -63,6 +63,7 @@ const router = createRouter({
         { path: 'reviews', name: 'Reviews', component: () => import('@/views/reviews/index.vue'), meta: { title: '评价管理' } },
         // 问答管理
         { path: 'questions', name: 'Questions', component: () => import('@/views/questions/index.vue'), meta: { title: '问答管理' } },
+        { path: 'faq', name: 'Faq', component: () => import('@/views/faq/index.vue'), meta: { title: '帮助中心' } },
         // 内容管理
         // 内容管理（Banner/公告/业务介绍 合并）
         { path: 'content', name: 'ContentManage', component: () => import('@/views/content/index.vue'), meta: { title: '内容管理' } },

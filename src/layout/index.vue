@@ -74,6 +74,7 @@
           <el-menu-item v-if="canAccess('/users')" index="/users">用户管理</el-menu-item>
           <el-menu-item v-if="canAccess('/reviews')" index="/reviews">评价管理</el-menu-item>
           <el-menu-item v-if="canAccess('/questions')" index="/questions">问答管理</el-menu-item>
+          <el-menu-item v-if="canAccess('/faq')" index="/faq">帮助中心</el-menu-item>
           <el-menu-item v-if="canAccess('/content')" index="/content">内容管理</el-menu-item>
         </el-sub-menu>
 

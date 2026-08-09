@@ -1,0 +1,2783 @@
+﻿
+> rongcheng-admin@1.0.0 build
+> vue-tsc && vite build
+
+src/api/index.ts(29,14): error TS1005: ';' expected.
+src/api/index.ts(35,3): error TS1128: Declaration or statement expected.
+src/api/index.ts(35,4): error TS1128: Declaration or statement expected.
+src/api/index.ts(46,47): error TS1002: Unterminated string literal.
+src/api/index.ts(47,7): error TS1005: ',' expected.
+src/api/index.ts(50,44): error TS1002: Unterminated string literal.
+src/api/index.ts(51,7): error TS1005: ',' expected.
+src/api/index.ts(57,1): error TS1128: Declaration or statement expected.
+src/api/outlet.ts(7,10): error TS1005: ';' expected.
+src/api/outlet.ts(8,1): error TS1109: Expression expected.
+src/api/outlet.ts(8,2): error TS1128: Declaration or statement expected.
+src/api/outlet.ts(25,42): error TS1002: Unterminated string literal.
+src/api/outlet.ts(26,7): error TS1005: ',' expected.
+src/api/outlet.ts(27,5): error TS1005: ',' expected.
+src/components/ModuleDonut.vue(48,1): error TS1128: Declaration or statement expected.
+src/components/ModuleDonut.vue(124,17): error TS1005: ';' expected.
+src/components/ModuleDonut.vue(124,26): error TS1434: Unexpected keyword or identifier.
+src/components/ModuleDonut.vue(124,32): error TS1109: Expression expected.
+src/components/ModuleDonut.vue(141,29): error TS1005: ';' expected.
+src/components/ModuleDonut.vue(141,36): error TS1127: Invalid character.
+src/components/ModuleDonut.vue(141,37): error TS1127: Invalid character.
+src/components/ModuleDonut.vue(141,38): error TS1434: Unexpected keyword or identifier.
+src/components/ModuleDonut.vue(141,44): error TS1005: ';' expected.
+src/components/ModuleDonut.vue(150,31): error TS1005: ';' expected.
+src/components/ModuleDonut.vue(150,38): error TS1127: Invalid character.
+src/components/ModuleDonut.vue(150,39): error TS1127: Invalid character.
+src/components/ModuleDonut.vue(150,40): error TS1434: Unexpected keyword or identifier.
+src/components/ModuleDonut.vue(150,46): error TS1005: ';' expected.
+src/components/ModuleDonut.vue(187,1): error TS1160: Unterminated template literal.
+src/components/TrendChart.vue(129,28): error TS1002: Unterminated string literal.
+src/components/TrendChart.vue(130,7): error TS1005: ',' expected.
+src/components/TrendChart.vue(130,12): error TS1005: ',' expected.
+src/components/TrendChart.vue(131,10): error TS1005: ',' expected.
+src/components/TrendChart.vue(132,16): error TS1005: ',' expected.
+src/components/TrendChart.vue(133,5): error TS1005: ',' expected.
+src/components/TrendChart.vue(166,21): error TS1002: Unterminated string literal.
+src/components/TrendChart.vue(167,9): error TS1005: ',' expected.
+src/constants/roles.ts(14,25): error TS1002: Unterminated string literal.
+src/constants/roles.ts(15,3): error TS1005: ',' expected.
+src/constants/roles.ts(15,27): error TS1002: Unterminated string literal.
+src/constants/roles.ts(16,3): error TS1005: ',' expected.
+src/constants/roles.ts(16,26): error TS1002: Unterminated string literal.
+src/constants/roles.ts(17,3): error TS1005: ',' expected.
+src/constants/roles.ts(17,28): error TS1002: Unterminated string literal.
+src/constants/roles.ts(18,3): error TS1005: ',' expected.
+src/constants/roles.ts(18,28): error TS1002: Unterminated string literal.
+src/constants/roles.ts(67,17): error TS1005: ';' expected.
+src/constants/roles.ts(68,24): error TS1005: ';' expected.
+src/constants/roles.ts(69,15): error TS1005: ';' expected.
+src/constants/roles.ts(70,25): error TS1005: ';' expected.
+src/constants/roles.ts(71,22): error TS1005: ';' expected.
+src/constants/roles.ts(72,24): error TS1005: ';' expected.
+src/constants/roles.ts(73,19): error TS1005: ';' expected.
+src/constants/roles.ts(74,24): error TS1005: ';' expected.
+src/constants/roles.ts(75,26): error TS1005: ';' expected.
+src/constants/roles.ts(76,14): error TS1005: ';' expected.
+src/constants/roles.ts(77,26): error TS1005: ';' expected.
+src/constants/roles.ts(78,34): error TS1005: ';' expected.
+src/constants/roles.ts(79,33): error TS1005: ';' expected.
+src/constants/roles.ts(80,31): error TS1005: ';' expected.
+src/constants/roles.ts(81,33): error TS1005: ';' expected.
+src/constants/roles.ts(82,31): error TS1005: ';' expected.
+src/constants/roles.ts(83,23): error TS1005: ';' expected.
+src/constants/roles.ts(84,25): error TS1005: ';' expected.
+src/constants/roles.ts(85,27): error TS1005: ';' expected.
+src/constants/roles.ts(86,36): error TS1005: ';' expected.
+src/constants/roles.ts(87,37): error TS1005: ';' expected.
+src/constants/roles.ts(88,13): error TS1005: ';' expected.
+src/constants/roles.ts(89,15): error TS1005: ';' expected.
+src/constants/roles.ts(90,17): error TS1005: ';' expected.
+src/constants/roles.ts(91,15): error TS1005: ';' expected.
+src/constants/roles.ts(92,21): error TS1005: ';' expected.
+src/constants/roles.ts(93,19): error TS1005: ';' expected.
+src/constants/roles.ts(94,22): error TS1005: ';' expected.
+src/constants/roles.ts(95,29): error TS1005: ';' expected.
+src/constants/roles.ts(96,3): error TS1109: Expression expected.
+src/constants/roles.ts(99,1): error TS1128: Declaration or statement expected.
+src/data/region-data.ts(4,13): error TS1005: ':' expected.
+src/data/region-data.ts(4,18): error TS1109: Expression expected.
+src/data/region-data.ts(4,19): error TS1136: Property assignment expected.
+src/data/region-data.ts(5,13): error TS1005: ':' expected.
+src/data/region-data.ts(5,14): error TS1127: Invalid character.
+src/data/region-data.ts(5,18): error TS1005: ',' expected.
+src/data/region-data.ts(5,19): error TS1136: Property assignment expected.
+src/data/region-data.ts(6,13): error TS1005: ':' expected.
+src/data/region-data.ts(6,15): error TS1127: Invalid character.
+src/data/region-data.ts(6,19): error TS1005: ',' expected.
+src/data/region-data.ts(6,23): error TS1005: ':' expected.
+src/data/region-data.ts(6,28): error TS1109: Expression expected.
+src/data/region-data.ts(6,38): error TS1005: ':' expected.
+src/data/region-data.ts(6,49): error TS1005: ':' expected.
+src/data/region-data.ts(6,50): error TS1127: Invalid character.
+src/data/region-data.ts(6,65): error TS1005: ':' expected.
+src/data/region-data.ts(6,67): error TS1127: Invalid character.
+src/data/region-data.ts(6,71): error TS1005: ',' expected.
+src/data/region-data.ts(6,75): error TS1005: ':' expected.
+src/data/region-data.ts(6,80): error TS1109: Expression expected.
+src/data/region-data.ts(6,91): error TS1005: ':' expected.
+src/data/region-data.ts(6,96): error TS1109: Expression expected.
+src/data/region-data.ts(6,106): error TS1002: Unterminated string literal.
+src/data/region-data.ts(7,3): error TS1005: ':' expected.
+src/data/region-data.ts(7,13): error TS1005: ',' expected.
+src/data/region-data.ts(7,14): error TS1127: Invalid character.
+src/data/region-data.ts(7,29): error TS1005: ':' expected.
+src/data/region-data.ts(7,34): error TS1109: Expression expected.
+src/data/region-data.ts(7,45): error TS1005: ':' expected.
+src/data/region-data.ts(7,50): error TS1109: Expression expected.
+src/data/region-data.ts(7,61): error TS1005: ':' expected.
+src/data/region-data.ts(7,66): error TS1109: Expression expected.
+src/data/region-data.ts(7,77): error TS1005: ':' expected.
+src/data/region-data.ts(7,82): error TS1109: Expression expected.
+src/data/region-data.ts(7,93): error TS1005: ':' expected.
+src/data/region-data.ts(7,95): error TS1127: Invalid character.
+src/data/region-data.ts(7,98): error TS1005: ',' expected.
+src/data/region-data.ts(7,99): error TS1136: Property assignment expected.
+src/data/region-data.ts(8,29): error TS1005: ',' expected.
+src/data/region-data.ts(8,34): error TS1109: Expression expected.
+src/data/region-data.ts(8,45): error TS1005: ',' expected.
+src/data/region-data.ts(8,50): error TS1109: Expression expected.
+src/data/region-data.ts(8,61): error TS1005: ',' expected.
+src/data/region-data.ts(8,69): error TS1109: Expression expected.
+src/data/region-data.ts(8,83): error TS1005: ',' expected.
+src/data/region-data.ts(8,91): error TS1109: Expression expected.
+src/data/region-data.ts(8,105): error TS1005: ',' expected.
+src/data/region-data.ts(8,110): error TS1109: Expression expected.
+src/data/region-data.ts(8,124): error TS1005: ',' expected.
+src/data/region-data.ts(8,130): error TS1005: ',' expected.
+src/data/region-data.ts(8,133): error TS1002: Unterminated string literal.
+src/data/region-data.ts(9,3): error TS1005: ',' expected.
+src/data/region-data.ts(9,13): error TS1005: ',' expected.
+src/data/region-data.ts(9,18): error TS1109: Expression expected.
+src/data/region-data.ts(9,29): error TS1005: ',' expected.
+src/data/region-data.ts(9,34): error TS1109: Expression expected.
+src/data/region-data.ts(9,45): error TS1005: ',' expected.
+src/data/region-data.ts(9,46): error TS1127: Invalid character.
+src/data/region-data.ts(9,50): error TS1109: Expression expected.
+src/data/region-data.ts(9,61): error TS1005: ',' expected.
+src/data/region-data.ts(9,62): error TS1127: Invalid character.
+src/data/region-data.ts(9,66): error TS1109: Expression expected.
+src/data/region-data.ts(9,77): error TS1005: ',' expected.
+src/data/region-data.ts(9,82): error TS1109: Expression expected.
+src/data/region-data.ts(9,93): error TS1005: ',' expected.
+src/data/region-data.ts(9,98): error TS1109: Expression expected.
+src/data/region-data.ts(9,109): error TS1005: ',' expected.
+src/data/region-data.ts(9,114): error TS1109: Expression expected.
+src/data/region-data.ts(10,13): error TS1005: ':' expected.
+src/data/region-data.ts(10,18): error TS1109: Expression expected.
+src/data/region-data.ts(10,29): error TS1005: ':' expected.
+src/data/region-data.ts(10,34): error TS1109: Expression expected.
+src/data/region-data.ts(10,45): error TS1005: ':' expected.
+src/data/region-data.ts(10,50): error TS1109: Expression expected.
+src/data/region-data.ts(10,61): error TS1005: ':' expected.
+src/data/region-data.ts(10,66): error TS1109: Expression expected.
+src/data/region-data.ts(10,77): error TS1005: ':' expected.
+src/data/region-data.ts(10,89): error TS1005: ',' expected.
+src/data/region-data.ts(10,92): error TS1002: Unterminated string literal.
+src/data/region-data.ts(11,3): error TS1005: ':' expected.
+src/data/region-data.ts(11,11): error TS1005: ',' expected.
+src/data/region-data.ts(11,36): error TS1005: ']' expected.
+src/data/region-data.ts(11,37): error TS1127: Invalid character.
+src/data/region-data.ts(11,52): error TS1005: ':' expected.
+src/data/region-data.ts(11,58): error TS1005: ',' expected.
+src/data/region-data.ts(11,62): error TS1005: ':' expected.
+src/data/region-data.ts(11,67): error TS1109: Expression expected.
+src/data/region-data.ts(11,78): error TS1005: ':' expected.
+src/data/region-data.ts(11,82): error TS1127: Invalid character.
+src/data/region-data.ts(11,84): error TS1005: ',' expected.
+src/data/region-data.ts(11,88): error TS1005: ':' expected.
+src/data/region-data.ts(11,94): error TS1005: ',' expected.
+src/data/region-data.ts(11,98): error TS1005: ':' expected.
+src/data/region-data.ts(11,99): error TS1127: Invalid character.
+src/data/region-data.ts(11,104): error TS1005: ',' expected.
+src/data/region-data.ts(11,108): error TS1005: ':' expected.
+src/data/region-data.ts(11,113): error TS1109: Expression expected.
+src/data/region-data.ts(11,124): error TS1005: ':' expected.
+src/data/region-data.ts(11,133): error TS1005: ',' expected.
+src/data/region-data.ts(11,136): error TS1002: Unterminated string literal.
+src/data/region-data.ts(12,3): error TS1005: ':' expected.
+src/data/region-data.ts(12,13): error TS1005: ',' expected.
+src/data/region-data.ts(12,18): error TS1005: ',' expected.
+src/data/region-data.ts(12,19): error TS1136: Property assignment expected.
+src/data/region-data.ts(13,13): error TS1005: ':' expected.
+src/data/region-data.ts(13,18): error TS1109: Expression expected.
+src/data/region-data.ts(13,29): error TS1005: ':' expected.
+src/data/region-data.ts(13,34): error TS1109: Expression expected.
+src/data/region-data.ts(13,45): error TS1005: ':' expected.
+src/data/region-data.ts(13,50): error TS1109: Expression expected.
+src/data/region-data.ts(13,59): error TS1005: ':' expected.
+src/data/region-data.ts(13,69): error TS1005: ':' expected.
+src/data/region-data.ts(13,80): error TS1005: ':' expected.
+src/data/region-data.ts(13,85): error TS1109: Expression expected.
+src/data/region-data.ts(13,96): error TS1005: ':' expected.
+src/data/region-data.ts(13,101): error TS1109: Expression expected.
+src/data/region-data.ts(13,112): error TS1005: ':' expected.
+src/data/region-data.ts(13,117): error TS1109: Expression expected.
+src/data/region-data.ts(13,118): error TS1136: Property assignment expected.
+src/data/region-data.ts(14,13): error TS1005: ':' expected.
+src/data/region-data.ts(14,14): error TS1127: Invalid character.
+src/data/region-data.ts(14,29): error TS1005: ':' expected.
+src/data/region-data.ts(14,30): error TS1127: Invalid character.
+src/data/region-data.ts(14,45): error TS1005: ':' expected.
+src/data/region-data.ts(14,50): error TS1109: Expression expected.
+src/data/region-data.ts(14,61): error TS1005: ':' expected.
+src/data/region-data.ts(14,66): error TS1109: Expression expected.
+src/data/region-data.ts(14,77): error TS1005: ':' expected.
+src/data/region-data.ts(14,82): error TS1109: Expression expected.
+src/data/region-data.ts(14,93): error TS1005: ':' expected.
+src/data/region-data.ts(14,98): error TS1109: Expression expected.
+src/data/region-data.ts(14,99): error TS1136: Property assignment expected.
+src/data/region-data.ts(15,13): error TS1005: ':' expected.
+src/data/region-data.ts(15,18): error TS1109: Expression expected.
+src/data/region-data.ts(15,29): error TS1005: ':' expected.
+src/data/region-data.ts(15,34): error TS1109: Expression expected.
+src/data/region-data.ts(15,45): error TS1005: ':' expected.
+src/data/region-data.ts(15,46): error TS1127: Invalid character.
+src/data/region-data.ts(15,51): error TS1005: ',' expected.
+src/data/region-data.ts(15,55): error TS1005: ':' expected.
+src/data/region-data.ts(15,56): error TS1127: Invalid character.
+src/data/region-data.ts(15,71): error TS1005: ':' expected.
+src/data/region-data.ts(15,76): error TS1109: Expression expected.
+src/data/region-data.ts(15,87): error TS1005: ':' expected.
+src/data/region-data.ts(15,92): error TS1109: Expression expected.
+src/data/region-data.ts(15,103): error TS1005: ':' expected.
+src/data/region-data.ts(15,108): error TS1109: Expression expected.
+src/data/region-data.ts(15,119): error TS1005: ':' expected.
+src/data/region-data.ts(15,124): error TS1109: Expression expected.
+src/data/region-data.ts(15,135): error TS1005: ':' expected.
+src/data/region-data.ts(15,140): error TS1109: Expression expected.
+src/data/region-data.ts(15,141): error TS1136: Property assignment expected.
+src/data/region-data.ts(16,13): error TS1005: ':' expected.
+src/data/region-data.ts(16,18): error TS1109: Expression expected.
+src/data/region-data.ts(16,29): error TS1005: ':' expected.
+src/data/region-data.ts(16,34): error TS1109: Expression expected.
+src/data/region-data.ts(16,45): error TS1005: ':' expected.
+src/data/region-data.ts(16,50): error TS1109: Expression expected.
+src/data/region-data.ts(16,61): error TS1005: ':' expected.
+src/data/region-data.ts(16,66): error TS1109: Expression expected.
+src/data/region-data.ts(16,77): error TS1005: ':' expected.
+src/data/region-data.ts(16,82): error TS1109: Expression expected.
+src/data/region-data.ts(16,83): error TS1136: Property assignment expected.
+src/data/region-data.ts(17,13): error TS1005: ':' expected.
+src/data/region-data.ts(17,18): error TS1109: Expression expected.
+src/data/region-data.ts(17,28): error TS1005: ':' expected.
+src/data/region-data.ts(17,39): error TS1005: ':' expected.
+src/data/region-data.ts(17,44): error TS1109: Expression expected.
+src/data/region-data.ts(17,55): error TS1005: ':' expected.
+src/data/region-data.ts(17,60): error TS1109: Expression expected.
+src/data/region-data.ts(17,71): error TS1005: ':' expected.
+src/data/region-data.ts(17,76): error TS1109: Expression expected.
+src/data/region-data.ts(17,87): error TS1005: ':' expected.
+src/data/region-data.ts(17,92): error TS1109: Expression expected.
+src/data/region-data.ts(17,102): error TS1002: Unterminated string literal.
+src/data/region-data.ts(18,3): error TS1005: ':' expected.
+src/data/region-data.ts(18,13): error TS1005: ',' expected.
+src/data/region-data.ts(18,29): error TS1005: ':' expected.
+src/data/region-data.ts(18,34): error TS1109: Expression expected.
+src/data/region-data.ts(18,45): error TS1005: ':' expected.
+src/data/region-data.ts(18,50): error TS1109: Expression expected.
+src/data/region-data.ts(18,61): error TS1005: ':' expected.
+src/data/region-data.ts(18,66): error TS1109: Expression expected.
+src/data/region-data.ts(18,77): error TS1005: ':' expected.
+src/data/region-data.ts(18,82): error TS1109: Expression expected.
+src/data/region-data.ts(18,93): error TS1005: ':' expected.
+src/data/region-data.ts(18,98): error TS1109: Expression expected.
+src/data/region-data.ts(18,109): error TS1005: ':' expected.
+src/data/region-data.ts(18,114): error TS1109: Expression expected.
+src/data/region-data.ts(18,125): error TS1005: ':' expected.
+src/data/region-data.ts(18,130): error TS1109: Expression expected.
+src/data/region-data.ts(18,140): error TS1002: Unterminated string literal.
+src/data/region-data.ts(19,3): error TS1005: ':' expected.
+src/data/region-data.ts(19,13): error TS1005: ',' expected.
+src/data/region-data.ts(19,27): error TS1005: ':' expected.
+src/data/region-data.ts(19,38): error TS1005: ':' expected.
+src/data/region-data.ts(19,40): error TS1127: Invalid character.
+src/data/region-data.ts(19,44): error TS1005: ',' expected.
+src/data/region-data.ts(19,48): error TS1005: ':' expected.
+src/data/region-data.ts(19,53): error TS1109: Expression expected.
+src/data/region-data.ts(19,64): error TS1005: ':' expected.
+src/data/region-data.ts(19,69): error TS1109: Expression expected.
+src/data/region-data.ts(19,80): error TS1005: ':' expected.
+src/data/region-data.ts(19,81): error TS1127: Invalid character.
+src/data/region-data.ts(19,96): error TS1005: ':' expected.
+src/data/region-data.ts(19,97): error TS1127: Invalid character.
+src/data/region-data.ts(19,111): error TS1005: ':' expected.
+src/data/region-data.ts(19,122): error TS1005: ':' expected.
+src/data/region-data.ts(19,127): error TS1109: Expression expected.
+src/data/region-data.ts(19,138): error TS1005: ':' expected.
+src/data/region-data.ts(19,143): error TS1109: Expression expected.
+src/data/region-data.ts(19,153): error TS1005: ':' expected.
+src/data/region-data.ts(19,163): error TS1002: Unterminated string literal.
+src/data/region-data.ts(20,3): error TS1005: ':' expected.
+src/data/region-data.ts(20,13): error TS1005: ',' expected.
+src/data/region-data.ts(20,14): error TS1127: Invalid character.
+src/data/region-data.ts(20,29): error TS1005: ':' expected.
+src/data/region-data.ts(20,34): error TS1109: Expression expected.
+src/data/region-data.ts(20,45): error TS1005: ':' expected.
+src/data/region-data.ts(20,50): error TS1109: Expression expected.
+src/data/region-data.ts(20,61): error TS1005: ':' expected.
+src/data/region-data.ts(20,66): error TS1109: Expression expected.
+src/data/region-data.ts(20,77): error TS1005: ':' expected.
+src/data/region-data.ts(20,82): error TS1109: Expression expected.
+src/data/region-data.ts(20,93): error TS1005: ':' expected.
+src/data/region-data.ts(20,98): error TS1109: Expression expected.
+src/data/region-data.ts(20,109): error TS1005: ':' expected.
+src/data/region-data.ts(20,110): error TS1127: Invalid character.
+src/data/region-data.ts(20,114): error TS1127: Invalid character.
+src/data/region-data.ts(20,124): error TS1005: ',' expected.
+src/data/region-data.ts(20,128): error TS1005: ':' expected.
+src/data/region-data.ts(20,130): error TS1127: Invalid character.
+src/data/region-data.ts(20,144): error TS1005: ':' expected.
+src/data/region-data.ts(20,145): error TS1127: Invalid character.
+src/data/region-data.ts(20,162): error TS1002: Unterminated string literal.
+src/data/region-data.ts(21,3): error TS1005: ':' expected.
+src/data/region-data.ts(21,13): error TS1005: ',' expected.
+src/data/region-data.ts(21,29): error TS1005: ':' expected.
+src/data/region-data.ts(21,34): error TS1109: Expression expected.
+src/data/region-data.ts(21,45): error TS1005: ':' expected.
+src/data/region-data.ts(21,50): error TS1109: Expression expected.
+src/data/region-data.ts(21,61): error TS1005: ':' expected.
+src/data/region-data.ts(21,66): error TS1109: Expression expected.
+src/data/region-data.ts(21,76): error TS1005: ':' expected.
+src/data/region-data.ts(21,87): error TS1005: ':' expected.
+src/data/region-data.ts(21,92): error TS1109: Expression expected.
+src/data/region-data.ts(21,103): error TS1005: ':' expected.
+src/data/region-data.ts(21,104): error TS1127: Invalid character.
+src/data/region-data.ts(21,108): error TS1005: ',' expected.
+src/data/region-data.ts(21,112): error TS1005: ':' expected.
+src/data/region-data.ts(21,117): error TS1109: Expression expected.
+src/data/region-data.ts(21,136): error TS1005: ':' expected.
+src/data/region-data.ts(21,137): error TS1136: Property assignment expected.
+src/data/region-data.ts(22,13): error TS1005: ':' expected.
+src/data/region-data.ts(22,18): error TS1109: Expression expected.
+src/data/region-data.ts(22,29): error TS1005: ':' expected.
+src/data/region-data.ts(22,34): error TS1109: Expression expected.
+src/data/region-data.ts(22,45): error TS1005: ':' expected.
+src/data/region-data.ts(22,50): error TS1109: Expression expected.
+src/data/region-data.ts(22,61): error TS1005: ':' expected.
+src/data/region-data.ts(22,66): error TS1109: Expression expected.
+src/data/region-data.ts(22,77): error TS1005: ':' expected.
+src/data/region-data.ts(22,82): error TS1109: Expression expected.
+src/data/region-data.ts(22,93): error TS1005: ':' expected.
+src/data/region-data.ts(22,98): error TS1109: Expression expected.
+src/data/region-data.ts(22,109): error TS1005: ':' expected.
+src/data/region-data.ts(22,114): error TS1109: Expression expected.
+src/data/region-data.ts(22,125): error TS1005: ':' expected.
+src/data/region-data.ts(22,130): error TS1109: Expression expected.
+src/data/region-data.ts(22,141): error TS1005: ':' expected.
+src/data/region-data.ts(22,146): error TS1109: Expression expected.
+src/data/region-data.ts(22,157): error TS1005: ':' expected.
+src/data/region-data.ts(22,158): error TS1127: Invalid character.
+src/data/region-data.ts(22,173): error TS1005: ':' expected.
+src/data/region-data.ts(22,178): error TS1109: Expression expected.
+src/data/region-data.ts(22,179): error TS1136: Property assignment expected.
+src/data/region-data.ts(23,19): error TS1005: ':' expected.
+src/data/region-data.ts(23,24): error TS1109: Expression expected.
+src/data/region-data.ts(23,35): error TS1005: ':' expected.
+src/data/region-data.ts(23,40): error TS1109: Expression expected.
+src/data/region-data.ts(23,51): error TS1005: ':' expected.
+src/data/region-data.ts(23,56): error TS1109: Expression expected.
+src/data/region-data.ts(23,66): error TS1005: ':' expected.
+src/data/region-data.ts(23,77): error TS1005: ':' expected.
+src/data/region-data.ts(23,82): error TS1109: Expression expected.
+src/data/region-data.ts(23,93): error TS1005: ':' expected.
+src/data/region-data.ts(23,98): error TS1109: Expression expected.
+src/data/region-data.ts(23,109): error TS1005: ':' expected.
+src/data/region-data.ts(23,114): error TS1109: Expression expected.
+src/data/region-data.ts(23,125): error TS1005: ':' expected.
+src/data/region-data.ts(23,130): error TS1109: Expression expected.
+src/data/region-data.ts(23,131): error TS1136: Property assignment expected.
+src/data/region-data.ts(24,13): error TS1005: ':' expected.
+src/data/region-data.ts(24,18): error TS1109: Expression expected.
+src/data/region-data.ts(24,29): error TS1005: ':' expected.
+src/data/region-data.ts(24,34): error TS1109: Expression expected.
+src/data/region-data.ts(24,45): error TS1005: ':' expected.
+src/data/region-data.ts(24,51): error TS1005: ',' expected.
+src/data/region-data.ts(24,55): error TS1005: ':' expected.
+src/data/region-data.ts(24,60): error TS1109: Expression expected.
+src/data/region-data.ts(24,71): error TS1005: ':' expected.
+src/data/region-data.ts(24,76): error TS1109: Expression expected.
+src/data/region-data.ts(24,87): error TS1005: ':' expected.
+src/data/region-data.ts(24,92): error TS1109: Expression expected.
+src/data/region-data.ts(24,103): error TS1005: ':' expected.
+src/data/region-data.ts(24,108): error TS1109: Expression expected.
+src/data/region-data.ts(24,119): error TS1005: ':' expected.
+src/data/region-data.ts(24,126): error TS1127: Invalid character.
+src/data/region-data.ts(24,147): error TS1005: ':' expected.
+src/data/region-data.ts(24,154): error TS1127: Invalid character.
+src/data/region-data.ts(24,175): error TS1005: ':' expected.
+src/data/region-data.ts(24,185): error TS1127: Invalid character.
+src/data/region-data.ts(24,208): error TS1002: Unterminated string literal.
+src/data/region-data.ts(25,3): error TS1005: ':' expected.
+src/data/region-data.ts(25,13): error TS1005: ',' expected.
+src/data/region-data.ts(25,18): error TS1005: ',' expected.
+src/data/region-data.ts(25,19): error TS1136: Property assignment expected.
+src/data/region-data.ts(26,13): error TS1005: ':' expected.
+src/data/region-data.ts(26,18): error TS1109: Expression expected.
+src/data/region-data.ts(26,29): error TS1005: ':' expected.
+src/data/region-data.ts(26,30): error TS1127: Invalid character.
+src/data/region-data.ts(26,47): error TS1005: ':' expected.
+src/data/region-data.ts(26,52): error TS1109: Expression expected.
+src/data/region-data.ts(26,63): error TS1005: ':' expected.
+src/data/region-data.ts(26,68): error TS1109: Expression expected.
+src/data/region-data.ts(26,79): error TS1005: ':' expected.
+src/data/region-data.ts(26,84): error TS1109: Expression expected.
+src/data/region-data.ts(26,95): error TS1005: ':' expected.
+src/data/region-data.ts(26,100): error TS1109: Expression expected.
+src/data/region-data.ts(26,111): error TS1005: ':' expected.
+src/data/region-data.ts(26,113): error TS1127: Invalid character.
+src/data/region-data.ts(26,127): error TS1005: ':' expected.
+src/data/region-data.ts(26,132): error TS1109: Expression expected.
+src/data/region-data.ts(26,143): error TS1005: ':' expected.
+src/data/region-data.ts(26,148): error TS1109: Expression expected.
+src/data/region-data.ts(26,159): error TS1005: ':' expected.
+src/data/region-data.ts(26,169): error TS1127: Invalid character.
+src/data/region-data.ts(26,190): error TS1005: ':' expected.
+src/data/region-data.ts(26,197): error TS1127: Invalid character.
+src/data/region-data.ts(26,201): error TS1005: ',' expected.
+src/data/region-data.ts(26,202): error TS1136: Property assignment expected.
+src/data/region-data.ts(27,13): error TS1005: ':' expected.
+src/data/region-data.ts(27,18): error TS1109: Expression expected.
+src/data/region-data.ts(27,28): error TS1005: ':' expected.
+src/data/region-data.ts(27,39): error TS1005: ':' expected.
+src/data/region-data.ts(27,41): error TS1127: Invalid character.
+src/data/region-data.ts(27,55): error TS1005: ':' expected.
+src/data/region-data.ts(27,60): error TS1109: Expression expected.
+src/data/region-data.ts(27,83): error TS1005: ':' expected.
+src/data/region-data.ts(27,98): error TS1005: ',' expected.
+src/data/region-data.ts(27,102): error TS1005: ':' expected.
+src/data/region-data.ts(27,117): error TS1005: ',' expected.
+src/data/region-data.ts(27,120): error TS1002: Unterminated string literal.
+src/data/region-data.ts(28,3): error TS1005: ':' expected.
+src/data/region-data.ts(28,13): error TS1005: ',' expected.
+src/data/region-data.ts(28,29): error TS1005: ':' expected.
+src/data/region-data.ts(28,34): error TS1109: Expression expected.
+src/data/region-data.ts(28,45): error TS1005: ':' expected.
+src/data/region-data.ts(28,46): error TS1127: Invalid character.
+src/data/region-data.ts(28,47): error TS1127: Invalid character.
+src/data/region-data.ts(28,50): error TS1005: ',' expected.
+src/data/region-data.ts(28,54): error TS1005: ':' expected.
+src/data/region-data.ts(28,59): error TS1109: Expression expected.
+src/data/region-data.ts(28,70): error TS1005: ':' expected.
+src/data/region-data.ts(28,75): error TS1109: Expression expected.
+src/data/region-data.ts(28,92): error TS1005: ':' expected.
+src/data/region-data.ts(28,93): error TS1127: Invalid character.
+src/data/region-data.ts(28,107): error TS1005: ',' expected.
+src/data/region-data.ts(28,111): error TS1005: ':' expected.
+src/data/region-data.ts(28,115): error TS1127: Invalid character.
+src/data/region-data.ts(28,121): error TS1127: Invalid character.
+src/data/region-data.ts(28,145): error TS1005: ':' expected.
+src/data/region-data.ts(28,152): error TS1127: Invalid character.
+src/data/region-data.ts(28,175): error TS1005: ':' expected.
+src/data/region-data.ts(28,191): error TS1005: ':' expected.
+src/data/region-data.ts(28,207): error TS1002: Unterminated string literal.
+src/data/region-data.ts(29,3): error TS1005: ':' expected.
+src/data/region-data.ts(29,16): error TS1005: ',' expected.
+src/data/region-data.ts(29,31): error TS1005: ':' expected.
+src/data/region-data.ts(29,42): error TS1005: ':' expected.
+src/data/region-data.ts(29,47): error TS1109: Expression expected.
+src/data/region-data.ts(29,58): error TS1005: ':' expected.
+src/data/region-data.ts(29,63): error TS1109: Expression expected.
+src/data/region-data.ts(29,73): error TS1005: ':' expected.
+src/data/region-data.ts(29,74): error TS1136: Property assignment expected.
+src/data/region-data.ts(30,13): error TS1005: ':' expected.
+src/data/region-data.ts(30,18): error TS1109: Expression expected.
+src/data/region-data.ts(30,29): error TS1005: ':' expected.
+src/data/region-data.ts(30,34): error TS1109: Expression expected.
+src/data/region-data.ts(30,45): error TS1005: ':' expected.
+src/data/region-data.ts(30,46): error TS1127: Invalid character.
+src/data/region-data.ts(30,61): error TS1005: ':' expected.
+src/data/region-data.ts(30,66): error TS1109: Expression expected.
+src/data/region-data.ts(30,77): error TS1005: ':' expected.
+src/data/region-data.ts(30,82): error TS1109: Expression expected.
+src/data/region-data.ts(30,92): error TS1002: Unterminated string literal.
+src/data/region-data.ts(31,3): error TS1005: ':' expected.
+src/data/region-data.ts(31,13): error TS1005: ',' expected.
+src/data/region-data.ts(31,28): error TS1005: ':' expected.
+src/data/region-data.ts(31,39): error TS1005: ':' expected.
+src/data/region-data.ts(31,44): error TS1109: Expression expected.
+src/data/region-data.ts(31,55): error TS1005: ':' expected.
+src/data/region-data.ts(31,56): error TS1127: Invalid character.
+src/data/region-data.ts(31,57): error TS1127: Invalid character.
+src/data/region-data.ts(31,71): error TS1005: ':' expected.
+src/data/region-data.ts(31,76): error TS1109: Expression expected.
+src/data/region-data.ts(31,87): error TS1005: ':' expected.
+src/data/region-data.ts(31,92): error TS1109: Expression expected.
+src/data/region-data.ts(31,103): error TS1005: ':' expected.
+src/data/region-data.ts(31,108): error TS1109: Expression expected.
+src/data/region-data.ts(31,125): error TS1005: ':' expected.
+src/data/region-data.ts(31,132): error TS1127: Invalid character.
+src/data/region-data.ts(31,136): error TS1005: ',' expected.
+src/data/region-data.ts(31,137): error TS1136: Property assignment expected.
+src/data/region-data.ts(32,13): error TS1005: ':' expected.
+src/data/region-data.ts(32,18): error TS1109: Expression expected.
+src/data/region-data.ts(32,29): error TS1005: ':' expected.
+src/data/region-data.ts(32,36): error TS1127: Invalid character.
+src/data/region-data.ts(32,57): error TS1005: ':' expected.
+src/data/region-data.ts(32,64): error TS1127: Invalid character.
+src/data/region-data.ts(32,85): error TS1005: ':' expected.
+src/data/region-data.ts(32,92): error TS1127: Invalid character.
+src/data/region-data.ts(32,115): error TS1005: ':' expected.
+src/data/region-data.ts(32,116): error TS1136: Property assignment expected.
+src/data/region-data.ts(33,19): error TS1005: ':' expected.
+src/data/region-data.ts(33,24): error TS1109: Expression expected.
+src/data/region-data.ts(33,34): error TS1005: ':' expected.
+src/data/region-data.ts(33,45): error TS1005: ':' expected.
+src/data/region-data.ts(33,50): error TS1109: Expression expected.
+src/data/region-data.ts(33,60): error TS1002: Unterminated string literal.
+src/data/region-data.ts(34,3): error TS1005: ':' expected.
+src/data/region-data.ts(34,17): error TS1005: ',' expected.
+src/data/region-data.ts(34,32): error TS1005: ']' expected.
+src/data/region-data.ts(34,40): error TS1109: Expression expected.
+src/data/region-data.ts(34,50): error TS1005: ':' expected.
+src/data/region-data.ts(34,61): error TS1005: ':' expected.
+src/data/region-data.ts(34,68): error TS1127: Invalid character.
+src/data/region-data.ts(34,92): error TS1005: ':' expected.
+src/data/region-data.ts(34,96): error TS1127: Invalid character.
+src/data/region-data.ts(34,97): error TS1127: Invalid character.
+src/data/region-data.ts(34,102): error TS1127: Invalid character.
+src/data/region-data.ts(34,120): error TS1005: ':' expected.
+src/data/region-data.ts(34,127): error TS1127: Invalid character.
+src/data/region-data.ts(34,133): error TS1127: Invalid character.
+src/data/region-data.ts(34,148): error TS1005: ':' expected.
+src/data/region-data.ts(34,158): error TS1005: ':' expected.
+src/data/region-data.ts(34,174): error TS1005: ':' expected.
+src/data/region-data.ts(34,184): error TS1005: ':' expected.
+src/data/region-data.ts(34,198): error TS1005: ':' expected.
+src/data/region-data.ts(34,204): error TS1005: ',' expected.
+src/data/region-data.ts(34,208): error TS1005: ':' expected.
+src/data/region-data.ts(34,214): error TS1005: ',' expected.
+src/data/region-data.ts(34,218): error TS1005: ':' expected.
+src/data/region-data.ts(34,226): error TS1109: Expression expected.
+src/data/region-data.ts(34,236): error TS1005: ':' expected.
+src/data/region-data.ts(34,247): error TS1005: ':' expected.
+src/data/region-data.ts(34,253): error TS1005: ',' expected.
+src/data/region-data.ts(34,257): error TS1005: ':' expected.
+src/data/region-data.ts(34,262): error TS1109: Expression expected.
+src/data/region-data.ts(34,276): error TS1005: ':' expected.
+src/data/region-data.ts(34,281): error TS1109: Expression expected.
+src/data/region-data.ts(34,291): error TS1005: ':' expected.
+src/data/region-data.ts(34,302): error TS1005: ':' expected.
+src/data/region-data.ts(34,307): error TS1109: Expression expected.
+src/data/region-data.ts(34,308): error TS1136: Property assignment expected.
+src/data/region-data.ts(35,19): error TS1005: ':' expected.
+src/data/region-data.ts(35,30): error TS1109: Expression expected.
+src/data/region-data.ts(35,31): error TS1136: Property assignment expected.
+src/data/region-data.ts(36,19): error TS1005: ':' expected.
+src/data/region-data.ts(36,30): error TS1109: Expression expected.
+src/data/region-data.ts(36,31): error TS1136: Property assignment expected.
+src/data/region-data.ts(37,13): error TS1005: ':' expected.
+src/data/region-data.ts(37,18): error TS1109: Expression expected.
+src/data/region-data.ts(37,29): error TS1005: ':' expected.
+src/data/region-data.ts(37,34): error TS1109: Expression expected.
+src/data/region-data.ts(37,45): error TS1005: ':' expected.
+src/data/region-data.ts(37,50): error TS1109: Expression expected.
+src/data/region-data.ts(37,61): error TS1005: ':' expected.
+src/data/region-data.ts(37,66): error TS1109: Expression expected.
+src/data/region-data.ts(37,77): error TS1005: ':' expected.
+src/data/region-data.ts(37,82): error TS1109: Expression expected.
+src/data/region-data.ts(37,93): error TS1005: ':' expected.
+src/data/region-data.ts(37,98): error TS1109: Expression expected.
+src/data/region-data.ts(37,109): error TS1005: ':' expected.
+src/data/region-data.ts(37,114): error TS1109: Expression expected.
+src/data/region-data.ts(37,125): error TS1005: ':' expected.
+src/data/region-data.ts(37,130): error TS1109: Expression expected.
+src/data/region-data.ts(37,141): error TS1005: ':' expected.
+src/data/region-data.ts(37,146): error TS1109: Expression expected.
+src/data/region-data.ts(37,157): error TS1005: ':' expected.
+src/data/region-data.ts(37,162): error TS1109: Expression expected.
+src/data/region-data.ts(37,173): error TS1005: ':' expected.
+src/data/region-data.ts(37,178): error TS1109: Expression expected.
+src/data/region-data.ts(37,188): error TS1002: Unterminated string literal.
+src/data/region-data.ts(38,1): error TS1005: ':' expected.
+src/data/region-data.ts(42,13): error TS1005: ':' expected.
+src/data/region-data.ts(42,18): error TS1109: Expression expected.
+src/data/region-data.ts(42,29): error TS1005: ':' expected.
+src/data/region-data.ts(42,34): error TS1109: Expression expected.
+src/data/region-data.ts(42,45): error TS1005: ':' expected.
+src/data/region-data.ts(42,50): error TS1109: Expression expected.
+src/data/region-data.ts(42,61): error TS1005: ':' expected.
+src/data/region-data.ts(42,66): error TS1109: Expression expected.
+src/data/region-data.ts(42,77): error TS1005: ':' expected.
+src/data/region-data.ts(42,82): error TS1109: Expression expected.
+src/data/region-data.ts(42,93): error TS1005: ':' expected.
+src/data/region-data.ts(42,94): error TS1127: Invalid character.
+src/data/region-data.ts(42,109): error TS1005: ':' expected.
+src/data/region-data.ts(42,115): error TS1005: ',' expected.
+src/data/region-data.ts(42,119): error TS1005: ':' expected.
+src/data/region-data.ts(42,124): error TS1109: Expression expected.
+src/data/region-data.ts(42,135): error TS1005: ':' expected.
+src/data/region-data.ts(42,140): error TS1109: Expression expected.
+src/data/region-data.ts(42,141): error TS1136: Property assignment expected.
+src/data/region-data.ts(43,13): error TS1005: ':' expected.
+src/data/region-data.ts(43,18): error TS1109: Expression expected.
+src/data/region-data.ts(43,29): error TS1005: ':' expected.
+src/data/region-data.ts(43,34): error TS1109: Expression expected.
+src/data/region-data.ts(43,45): error TS1005: ':' expected.
+src/data/region-data.ts(43,46): error TS1127: Invalid character.
+src/data/region-data.ts(43,61): error TS1005: ':' expected.
+src/data/region-data.ts(43,66): error TS1109: Expression expected.
+src/data/region-data.ts(43,77): error TS1005: ':' expected.
+src/data/region-data.ts(43,82): error TS1109: Expression expected.
+src/data/region-data.ts(43,93): error TS1005: ':' expected.
+src/data/region-data.ts(43,94): error TS1127: Invalid character.
+src/data/region-data.ts(43,99): error TS1005: ',' expected.
+src/data/region-data.ts(43,103): error TS1005: ':' expected.
+src/data/region-data.ts(43,108): error TS1109: Expression expected.
+src/data/region-data.ts(43,119): error TS1005: ':' expected.
+src/data/region-data.ts(43,124): error TS1109: Expression expected.
+src/data/region-data.ts(43,135): error TS1005: ':' expected.
+src/data/region-data.ts(43,140): error TS1109: Expression expected.
+src/data/region-data.ts(43,141): error TS1136: Property assignment expected.
+src/data/region-data.ts(44,13): error TS1005: ':' expected.
+src/data/region-data.ts(44,18): error TS1109: Expression expected.
+src/data/region-data.ts(44,29): error TS1005: ':' expected.
+src/data/region-data.ts(44,34): error TS1109: Expression expected.
+src/data/region-data.ts(44,44): error TS1005: ':' expected.
+src/data/region-data.ts(44,55): error TS1005: ':' expected.
+src/data/region-data.ts(44,61): error TS1005: ',' expected.
+src/data/region-data.ts(44,65): error TS1005: ':' expected.
+src/data/region-data.ts(44,69): error TS1127: Invalid character.
+src/data/region-data.ts(44,71): error TS1005: ',' expected.
+src/data/region-data.ts(44,75): error TS1005: ':' expected.
+src/data/region-data.ts(44,80): error TS1109: Expression expected.
+src/data/region-data.ts(44,91): error TS1005: ':' expected.
+src/data/region-data.ts(44,92): error TS1127: Invalid character.
+src/data/region-data.ts(44,107): error TS1005: ':' expected.
+src/data/region-data.ts(44,112): error TS1109: Expression expected.
+src/data/region-data.ts(44,123): error TS1005: ':' expected.
+src/data/region-data.ts(44,128): error TS1109: Expression expected.
+src/data/region-data.ts(44,139): error TS1005: ':' expected.
+src/data/region-data.ts(44,144): error TS1109: Expression expected.
+src/data/region-data.ts(44,155): error TS1005: ':' expected.
+src/data/region-data.ts(44,160): error TS1109: Expression expected.
+src/data/region-data.ts(44,171): error TS1005: ':' expected.
+src/data/region-data.ts(44,176): error TS1109: Expression expected.
+src/data/region-data.ts(44,187): error TS1005: ':' expected.
+src/data/region-data.ts(44,192): error TS1109: Expression expected.
+src/data/region-data.ts(44,203): error TS1005: ':' expected.
+src/data/region-data.ts(44,204): error TS1127: Invalid character.
+src/data/region-data.ts(44,208): error TS1005: ',' expected.
+src/data/region-data.ts(44,212): error TS1005: ':' expected.
+src/data/region-data.ts(44,217): error TS1109: Expression expected.
+src/data/region-data.ts(44,228): error TS1005: ':' expected.
+src/data/region-data.ts(44,233): error TS1109: Expression expected.
+src/data/region-data.ts(44,244): error TS1005: ':' expected.
+src/data/region-data.ts(44,245): error TS1127: Invalid character.
+src/data/region-data.ts(44,256): error TS1005: ':' expected.
+src/data/region-data.ts(44,267): error TS1005: ':' expected.
+src/data/region-data.ts(44,272): error TS1109: Expression expected.
+src/data/region-data.ts(44,283): error TS1005: ':' expected.
+src/data/region-data.ts(44,284): error TS1127: Invalid character.
+src/data/region-data.ts(44,304): error TS1005: ':' expected.
+src/data/region-data.ts(44,326): error TS1005: ':' expected.
+src/data/region-data.ts(44,331): error TS1127: Invalid character.
+src/data/region-data.ts(44,341): error TS1005: ',' expected.
+src/data/region-data.ts(44,345): error TS1005: ':' expected.
+src/data/region-data.ts(44,346): error TS1127: Invalid character.
+src/data/region-data.ts(44,353): error TS1127: Invalid character.
+src/data/region-data.ts(44,360): error TS1005: ',' expected.
+src/data/region-data.ts(44,363): error TS1002: Unterminated string literal.
+src/data/region-data.ts(46,3): error TS1005: ':' expected.
+src/data/region-data.ts(46,13): error TS1005: ',' expected.
+src/data/region-data.ts(46,29): error TS1005: ':' expected.
+src/data/region-data.ts(46,34): error TS1109: Expression expected.
+src/data/region-data.ts(46,45): error TS1005: ':' expected.
+src/data/region-data.ts(46,50): error TS1109: Expression expected.
+src/data/region-data.ts(46,61): error TS1005: ':' expected.
+src/data/region-data.ts(46,66): error TS1109: Expression expected.
+src/data/region-data.ts(46,77): error TS1005: ':' expected.
+src/data/region-data.ts(46,82): error TS1109: Expression expected.
+src/data/region-data.ts(46,83): error TS1136: Property assignment expected.
+src/data/region-data.ts(47,13): error TS1005: ':' expected.
+src/data/region-data.ts(47,14): error TS1127: Invalid character.
+src/data/region-data.ts(47,29): error TS1005: ':' expected.
+src/data/region-data.ts(47,34): error TS1109: Expression expected.
+src/data/region-data.ts(47,45): error TS1005: ':' expected.
+src/data/region-data.ts(47,50): error TS1109: Expression expected.
+src/data/region-data.ts(47,60): error TS1005: ':' expected.
+src/data/region-data.ts(47,70): error TS1005: ':' expected.
+src/data/region-data.ts(47,81): error TS1005: ':' expected.
+src/data/region-data.ts(47,82): error TS1127: Invalid character.
+src/data/region-data.ts(47,97): error TS1005: ':' expected.
+src/data/region-data.ts(47,98): error TS1127: Invalid character.
+src/data/region-data.ts(47,113): error TS1005: ':' expected.
+src/data/region-data.ts(47,118): error TS1109: Expression expected.
+src/data/region-data.ts(47,129): error TS1005: ':' expected.
+src/data/region-data.ts(47,134): error TS1109: Expression expected.
+src/data/region-data.ts(47,144): error TS1005: ':' expected.
+src/data/region-data.ts(47,155): error TS1005: ':' expected.
+src/data/region-data.ts(47,160): error TS1109: Expression expected.
+src/data/region-data.ts(47,171): error TS1005: ':' expected.
+src/data/region-data.ts(47,172): error TS1127: Invalid character.
+src/data/region-data.ts(47,176): error TS1005: ',' expected.
+src/data/region-data.ts(47,179): error TS1002: Unterminated string literal.
+src/data/region-data.ts(48,3): error TS1005: ':' expected.
+src/data/region-data.ts(48,13): error TS1005: ',' expected.
+src/data/region-data.ts(48,29): error TS1005: ':' expected.
+src/data/region-data.ts(48,34): error TS1109: Expression expected.
+src/data/region-data.ts(48,45): error TS1005: ':' expected.
+src/data/region-data.ts(48,50): error TS1109: Expression expected.
+src/data/region-data.ts(48,61): error TS1005: ':' expected.
+src/data/region-data.ts(48,66): error TS1109: Expression expected.
+src/data/region-data.ts(48,77): error TS1005: ':' expected.
+src/data/region-data.ts(48,82): error TS1109: Expression expected.
+src/data/region-data.ts(48,93): error TS1005: ':' expected.
+src/data/region-data.ts(48,98): error TS1109: Expression expected.
+src/data/region-data.ts(48,109): error TS1005: ':' expected.
+src/data/region-data.ts(48,114): error TS1109: Expression expected.
+src/data/region-data.ts(48,115): error TS1136: Property assignment expected.
+src/data/region-data.ts(49,13): error TS1005: ':' expected.
+src/data/region-data.ts(49,18): error TS1109: Expression expected.
+src/data/region-data.ts(49,29): error TS1005: ':' expected.
+src/data/region-data.ts(49,34): error TS1109: Expression expected.
+src/data/region-data.ts(49,45): error TS1005: ':' expected.
+src/data/region-data.ts(49,46): error TS1127: Invalid character.
+src/data/region-data.ts(49,61): error TS1005: ':' expected.
+src/data/region-data.ts(49,62): error TS1127: Invalid character.
+src/data/region-data.ts(49,76): error TS1005: ':' expected.
+src/data/region-data.ts(49,87): error TS1005: ':' expected.
+src/data/region-data.ts(49,88): error TS1127: Invalid character.
+src/data/region-data.ts(49,103): error TS1005: ':' expected.
+src/data/region-data.ts(49,108): error TS1109: Expression expected.
+src/data/region-data.ts(49,118): error TS1002: Unterminated string literal.
+src/data/region-data.ts(50,3): error TS1005: ':' expected.
+src/data/region-data.ts(50,13): error TS1005: ',' expected.
+src/data/region-data.ts(50,29): error TS1005: ':' expected.
+src/data/region-data.ts(50,34): error TS1109: Expression expected.
+src/data/region-data.ts(50,45): error TS1005: ':' expected.
+src/data/region-data.ts(50,50): error TS1109: Expression expected.
+src/data/region-data.ts(50,61): error TS1005: ':' expected.
+src/data/region-data.ts(50,66): error TS1109: Expression expected.
+src/data/region-data.ts(50,77): error TS1005: ':' expected.
+src/data/region-data.ts(50,82): error TS1109: Expression expected.
+src/data/region-data.ts(50,93): error TS1005: ':' expected.
+src/data/region-data.ts(50,98): error TS1109: Expression expected.
+src/data/region-data.ts(50,109): error TS1005: ':' expected.
+src/data/region-data.ts(50,114): error TS1109: Expression expected.
+src/data/region-data.ts(50,115): error TS1136: Property assignment expected.
+src/data/region-data.ts(51,13): error TS1005: ':' expected.
+src/data/region-data.ts(51,15): error TS1127: Invalid character.
+src/data/region-data.ts(51,29): error TS1005: ':' expected.
+src/data/region-data.ts(51,34): error TS1109: Expression expected.
+src/data/region-data.ts(51,45): error TS1005: ':' expected.
+src/data/region-data.ts(51,46): error TS1127: Invalid character.
+src/data/region-data.ts(51,61): error TS1005: ':' expected.
+src/data/region-data.ts(51,67): error TS1005: ',' expected.
+src/data/region-data.ts(51,71): error TS1005: ':' expected.
+src/data/region-data.ts(51,76): error TS1109: Expression expected.
+src/data/region-data.ts(51,87): error TS1005: ':' expected.
+src/data/region-data.ts(51,92): error TS1109: Expression expected.
+src/data/region-data.ts(51,102): error TS1002: Unterminated string literal.
+src/data/region-data.ts(52,1): error TS1005: ':' expected.
+src/layout/index.vue(140,107): error TS1002: Unterminated string literal.
+src/layout/index.vue(141,3): error TS1005: ',' expected.
+src/layout/index.vue(141,16): error TS1005: ',' expected.
+src/layout/index.vue(141,63): error TS1005: ',' expected.
+src/layout/index.vue(142,1): error TS1128: Declaration or statement expected.
+src/layout/index.vue(142,2): error TS1128: Declaration or statement expected.
+src/router/index.ts(16,11): error TS1005: ',' expected.
+src/router/index.ts(17,11): error TS1005: ',' expected.
+src/router/index.ts(18,16): error TS1005: ',' expected.
+src/router/index.ts(19,11): error TS1005: ',' expected.
+src/router/index.ts(20,5): error TS1137: Expression or comma expected.
+src/router/index.ts(27,167): error TS1002: Unterminated string literal.
+src/router/index.ts(28,7): error TS1005: ',' expected.
+src/router/index.ts(35,131): error TS1002: Unterminated string literal.
+src/router/index.ts(37,9): error TS1005: ',' expected.
+src/router/index.ts(43,165): error TS1002: Unterminated string literal.
+src/router/index.ts(45,9): error TS1005: ',' expected.
+src/router/index.ts(69,156): error TS1002: Unterminated string literal.
+src/router/index.ts(70,9): error TS1005: ',' expected.
+src/router/index.ts(89,130): error TS1002: Unterminated string literal.
+src/router/index.ts(90,9): error TS1005: ',' expected.
+src/router/index.ts(100,3): error TS1135: Argument expression expected.
+src/router/index.ts(100,4): error TS1128: Declaration or statement expected.
+src/router/index.ts(101,1): error TS1128: Declaration or statement expected.
+src/router/index.ts(101,2): error TS1128: Declaration or statement expected.
+src/router/index.ts(108,23): error TS1005: ';' expected.
+src/router/index.ts(108,55): error TS1127: Invalid character.
+src/router/index.ts(148,1): error TS1160: Unterminated template literal.
+src/views/after-sales/after-sales-orders.vue(183,50): error TS1002: Unterminated string literal.
+src/views/after-sales/after-sales-orders.vue(184,5): error TS1005: ',' expected.
+src/views/after-sales/after-sales-orders.vue(185,5): error TS1005: ',' expected.
+src/views/after-sales/after-sales-orders.vue(186,3): error TS1005: ',' expected.
+src/views/after-sales/after-sales-orders.vue(210,50): error TS1002: Unterminated string literal.
+src/views/after-sales/after-sales-orders.vue(211,5): error TS1005: ',' expected.
+src/views/after-sales/after-sales-orders.vue(212,5): error TS1005: ',' expected.
+src/views/after-sales/after-sales-orders.vue(213,3): error TS1005: ',' expected.
+src/views/after-sales/after-sales-orders.vue(251,76): error TS1005: ':' expected.
+src/views/after-sales/after-sales-orders.vue(251,77): error TS1127: Invalid character.
+src/views/after-sales/after-sales-orders.vue(251,79): error TS1127: Invalid character.
+src/views/after-sales/after-sales-orders.vue(251,80): error TS1434: Unexpected keyword or identifier.
+src/views/after-sales/after-sales-orders.vue(251,103): error TS1005: ';' expected.
+src/views/after-sales/after-sales-orders.vue(251,106): error TS1002: Unterminated string literal.
+src/views/after-sales/refund-records.vue(166,77): error TS1002: Unterminated string literal.
+src/views/after-sales/refund-records.vue(167,1): error TS1005: ',' expected.
+src/views/after-sales/refund-records.vue(167,10): error TS1005: ':' expected.
+src/views/after-sales/refund-records.vue(167,22): error TS1005: ',' expected.
+src/views/after-sales/refund-records.vue(167,32): error TS1005: ',' expected.
+src/views/after-sales/refund-records.vue(170,1): error TS1005: '}' expected.
+src/views/content/index.vue(251,45): error TS1005: ',' expected.
+src/views/content/index.vue(251,49): error TS1005: ',' expected.
+src/views/content/index.vue(283,64): error TS1005: ',' expected.
+src/views/content/index.vue(283,72): error TS1005: ',' expected.
+src/views/content/index.vue(292,31): error TS1005: ',' expected.
+src/views/content/index.vue(292,32): error TS1127: Invalid character.
+src/views/content/index.vue(292,35): error TS1005: ',' expected.
+src/views/content/index.vue(292,43): error TS1005: ',' expected.
+src/views/content/index.vue(292,44): error TS1127: Invalid character.
+src/views/content/index.vue(292,52): error TS1005: ',' expected.
+src/views/content/index.vue(292,59): error TS1005: ':' expected.
+src/views/content/index.vue(303,51): error TS1005: ',' expected.
+src/views/content/index.vue(303,55): error TS1005: ',' expected.
+src/views/content/index.vue(335,59): error TS1005: ',' expected.
+src/views/content/index.vue(335,69): error TS1005: ',' expected.
+src/views/content/index.vue(343,31): error TS1005: ',' expected.
+src/views/content/index.vue(343,32): error TS1127: Invalid character.
+src/views/content/index.vue(343,43): error TS1005: ',' expected.
+src/views/content/index.vue(343,50): error TS1005: ':' expected.
+src/views/content/index.vue(355,1): error TS1128: Declaration or statement expected.
+src/views/finance/rules.vue(188,50): error TS1005: ',' expected.
+src/views/finance/rules.vue(188,53): error TS1005: ',' expected.
+src/views/finance/rules.vue(188,65): error TS1005: ',' expected.
+src/views/finance/rules.vue(188,72): error TS1005: ',' expected.
+src/views/finance/rules.vue(188,76): error TS1002: Unterminated string literal.
+src/views/finance/rules.vue(189,5): error TS1005: ',' expected.
+src/views/finance/rules.vue(190,5): error TS1005: ',' expected.
+src/views/finance/rules.vue(191,5): error TS1005: ',' expected.
+src/views/finance/rules.vue(192,3): error TS1005: ',' expected.
+src/views/login/index.vue(56,62): error TS1005: ',' expected.
+src/views/login/index.vue(56,66): error TS1005: ',' expected.
+src/views/login/index.vue(56,71): error TS1002: Unterminated string literal.
+src/views/login/index.vue(57,1): error TS1005: ':' expected.
+src/views/login/index.vue(59,1): error TS1005: ',' expected.
+src/views/login/index.vue(70,1): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(177,52): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(178,52): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(179,52): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(180,52): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(180,53): error TS1127: Invalid character.
+src/views/orders/bookkeeping.vue(180,57): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(180,82): error TS1005: ':' expected.
+src/views/orders/bookkeeping.vue(180,84): error TS1127: Invalid character.
+src/views/orders/bookkeeping.vue(180,85): error TS1127: Invalid character.
+src/views/orders/bookkeeping.vue(214,38): error TS1002: Unterminated string literal.
+src/views/orders/bookkeeping.vue(216,1): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(219,35): error TS1002: Unterminated string literal.
+src/views/orders/bookkeeping.vue(223,1): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(225,79): error TS1002: Unterminated string literal.
+src/views/orders/bookkeeping.vue(226,3): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(227,3): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(237,44): error TS1002: Unterminated string literal.
+src/views/orders/bookkeeping.vue(238,3): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(292,62): error TS1002: Unterminated string literal.
+src/views/orders/bookkeeping.vue(294,5): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(294,14): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(294,36): error TS1002: Unterminated string literal.
+src/views/orders/bookkeeping.vue(295,5): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(296,3): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(296,5): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(301,1): error TS1472: 'catch' or 'finally' expected.
+src/views/orders/bookkeeping.vue(306,62): error TS1002: Unterminated string literal.
+src/views/orders/bookkeeping.vue(308,5): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(308,14): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(308,36): error TS1002: Unterminated string literal.
+src/views/orders/bookkeeping.vue(309,5): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(310,3): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(310,5): error TS1005: ',' expected.
+src/views/orders/bookkeeping.vue(315,1): error TS1472: 'catch' or 'finally' expected.
+src/views/orders/bookkeeping.vue(348,1): error TS1005: '}' expected.
+src/views/orders/detail.vue(87,72): error TS1127: Invalid character.
+src/views/orders/detail.vue(243,29): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(244,3): error TS1005: ',' expected.
+src/views/orders/detail.vue(244,22): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(245,3): error TS1005: ',' expected.
+src/views/orders/detail.vue(275,37): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(276,5): error TS1005: ',' expected.
+src/views/orders/detail.vue(279,37): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(280,5): error TS1005: ',' expected.
+src/views/orders/detail.vue(293,46): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(294,3): error TS1005: ',' expected.
+src/views/orders/detail.vue(306,36): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(307,5): error TS1005: ',' expected.
+src/views/orders/detail.vue(313,26): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(314,7): error TS1005: ',' expected.
+src/views/orders/detail.vue(329,36): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(330,5): error TS1005: ',' expected.
+src/views/orders/detail.vue(331,5): error TS1005: ',' expected.
+src/views/orders/detail.vue(332,3): error TS1005: ',' expected.
+src/views/orders/detail.vue(340,52): error TS1005: ',' expected.
+src/views/orders/detail.vue(341,52): error TS1005: ',' expected.
+src/views/orders/detail.vue(342,52): error TS1005: ',' expected.
+src/views/orders/detail.vue(343,52): error TS1005: ',' expected.
+src/views/orders/detail.vue(343,53): error TS1127: Invalid character.
+src/views/orders/detail.vue(343,57): error TS1005: ',' expected.
+src/views/orders/detail.vue(343,82): error TS1005: ':' expected.
+src/views/orders/detail.vue(343,84): error TS1127: Invalid character.
+src/views/orders/detail.vue(343,85): error TS1127: Invalid character.
+src/views/orders/detail.vue(347,18): error TS1005: ',' expected.
+src/views/orders/detail.vue(347,40): error TS1005: ',' expected.
+src/views/orders/detail.vue(348,18): error TS1005: ',' expected.
+src/views/orders/detail.vue(348,40): error TS1005: ',' expected.
+src/views/orders/detail.vue(348,41): error TS1127: Invalid character.
+src/views/orders/detail.vue(348,45): error TS1005: ',' expected.
+src/views/orders/detail.vue(348,52): error TS1005: ':' expected.
+src/views/orders/detail.vue(348,54): error TS1127: Invalid character.
+src/views/orders/detail.vue(348,55): error TS1127: Invalid character.
+src/views/orders/detail.vue(375,1): error TS1128: Declaration or statement expected.
+src/views/orders/detail.vue(375,2): error TS1128: Declaration or statement expected.
+src/views/orders/detail.vue(379,29): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(380,5): error TS1005: ',' expected.
+src/views/orders/detail.vue(381,23): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(382,5): error TS1005: ',' expected.
+src/views/orders/detail.vue(383,21): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(384,5): error TS1005: ',' expected.
+src/views/orders/detail.vue(385,21): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(397,37): error TS1005: ',' expected.
+src/views/orders/detail.vue(397,38): error TS1127: Invalid character.
+src/views/orders/detail.vue(397,45): error TS1005: ',' expected.
+src/views/orders/detail.vue(397,70): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(398,5): error TS1005: ',' expected.
+src/views/orders/detail.vue(398,33): error TS1005: ',' expected.
+src/views/orders/detail.vue(398,36): error TS1005: ',' expected.
+src/views/orders/detail.vue(398,40): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(399,5): error TS1005: ':' expected.
+src/views/orders/detail.vue(399,9): error TS1005: ',' expected.
+src/views/orders/detail.vue(399,11): error TS1136: Property assignment expected.
+src/views/orders/detail.vue(399,19): error TS1003: Identifier expected.
+src/views/orders/detail.vue(399,31): error TS1005: ':' expected.
+src/views/orders/detail.vue(399,34): error TS1005: ',' expected.
+src/views/orders/detail.vue(399,37): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(400,3): error TS1005: ':' expected.
+src/views/orders/detail.vue(427,3): error TS1472: 'catch' or 'finally' expected.
+src/views/orders/detail.vue(427,5): error TS1005: 'try' expected.
+src/views/orders/detail.vue(430,1): error TS1128: Declaration or statement expected.
+src/views/orders/detail.vue(445,63): error TS1002: Unterminated string literal.
+src/views/orders/detail.vue(446,5): error TS1005: ',' expected.
+src/views/orders/detail.vue(447,3): error TS1005: ',' expected.
+src/views/orders/newspaper.vue(217,52): error TS1005: ',' expected.
+src/views/orders/newspaper.vue(218,52): error TS1005: ',' expected.
+src/views/orders/newspaper.vue(219,52): error TS1005: ',' expected.
+src/views/orders/newspaper.vue(220,52): error TS1005: ',' expected.
+src/views/orders/newspaper.vue(220,53): error TS1127: Invalid character.
+src/views/orders/newspaper.vue(220,57): error TS1005: ',' expected.
+src/views/orders/newspaper.vue(220,82): error TS1005: ':' expected.
+src/views/orders/newspaper.vue(220,84): error TS1127: Invalid character.
+src/views/orders/newspaper.vue(220,85): error TS1127: Invalid character.
+src/views/orders/newspaper.vue(223,43): error TS1005: ',' expected.
+src/views/orders/newspaper.vue(223,45): error TS1127: Invalid character.
+src/views/orders/newspaper.vue(223,47): error TS1127: Invalid character.
+src/views/orders/newspaper.vue(223,49): error TS1127: Invalid character.
+src/views/orders/newspaper.vue(223,50): error TS1137: Expression or comma expected.
+src/views/orders/newspaper.vue(223,64): error TS1005: ',' expected.
+src/views/orders/newspaper.vue(223,66): error TS1127: Invalid character.
+src/views/orders/newspaper.vue(223,71): error TS1109: Expression expected.
+src/views/orders/seal.vue(229,52): error TS1005: ',' expected.
+src/views/orders/seal.vue(229,89): error TS1002: Unterminated string literal.
+src/views/orders/seal.vue(230,3): error TS1005: ',' expected.
+src/views/orders/seal.vue(230,52): error TS1005: ',' expected.
+src/views/orders/seal.vue(230,89): error TS1002: Unterminated string literal.
+src/views/orders/seal.vue(231,3): error TS1005: ',' expected.
+src/views/orders/seal.vue(231,52): error TS1005: ',' expected.
+src/views/orders/seal.vue(231,53): error TS1127: Invalid character.
+src/views/orders/seal.vue(231,57): error TS1005: ',' expected.
+src/views/orders/seal.vue(231,82): error TS1005: ':' expected.
+src/views/orders/seal.vue(231,84): error TS1127: Invalid character.
+src/views/orders/seal.vue(231,85): error TS1127: Invalid character.
+src/views/orders/seal.vue(234,43): error TS1005: ',' expected.
+src/views/orders/seal.vue(234,45): error TS1127: Invalid character.
+src/views/orders/seal.vue(234,47): error TS1127: Invalid character.
+src/views/orders/seal.vue(234,49): error TS1127: Invalid character.
+src/views/orders/seal.vue(234,50): error TS1137: Expression or comma expected.
+src/views/orders/seal.vue(234,64): error TS1005: ',' expected.
+src/views/orders/seal.vue(234,66): error TS1127: Invalid character.
+src/views/orders/seal.vue(234,71): error TS1109: Expression expected.
+src/views/outlet/Layout.vue(52,34): error TS1002: Unterminated string literal.
+src/views/outlet/Layout.vue(53,5): error TS1005: ',' expected.
+src/views/outlet/Layout.vue(54,3): error TS1005: ',' expected.
+src/views/outlet/Login.vue(63,62): error TS1005: ',' expected.
+src/views/outlet/Login.vue(63,66): error TS1005: ',' expected.
+src/views/outlet/Login.vue(63,71): error TS1002: Unterminated string literal.
+src/views/outlet/Login.vue(64,1): error TS1005: ':' expected.
+src/views/outlet/Login.vue(66,1): error TS1005: ',' expected.
+src/views/outlet/Login.vue(81,7): error TS1472: 'catch' or 'finally' expected.
+src/views/outlet/Login.vue(81,12): error TS1005: ':' expected.
+src/views/outlet/Login.vue(82,14): error TS1005: ',' expected.
+src/views/outlet/Login.vue(83,7): error TS1005: ',' expected.
+src/views/outlet/Login.vue(83,16): error TS1005: ',' expected.
+src/views/outlet/Login.vue(85,5): error TS1005: ',' expected.
+src/views/outlet/Login.vue(87,60): error TS1002: Unterminated string literal.
+src/views/outlet/Login.vue(88,3): error TS1005: ',' expected.
+src/views/outlet/Login.vue(91,1): error TS1128: Declaration or statement expected.
+src/views/outlet/Workspace.vue(380,28): error TS1002: Unterminated string literal.
+src/views/outlet/Workspace.vue(381,3): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(381,27): error TS1002: Unterminated string literal.
+src/views/outlet/Workspace.vue(382,3): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(382,19): error TS1002: Unterminated string literal.
+src/views/outlet/Workspace.vue(383,3): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(383,30): error TS1002: Unterminated string literal.
+src/views/outlet/Workspace.vue(384,3): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(390,1): error TS1128: Declaration or statement expected.
+src/views/outlet/Workspace.vue(418,71): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(418,75): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(418,80): error TS1002: Unterminated string literal.
+src/views/outlet/Workspace.vue(419,3): error TS1005: ':' expected.
+src/views/outlet/Workspace.vue(419,12): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(419,66): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(419,70): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(419,75): error TS1002: Unterminated string literal.
+src/views/outlet/Workspace.vue(420,1): error TS1005: ':' expected.
+src/views/outlet/Workspace.vue(422,1): error TS1005: ']' expected.
+src/views/outlet/Workspace.vue(422,7): error TS1005: ':' expected.
+src/views/outlet/Workspace.vue(424,36): error TS1002: Unterminated string literal.
+src/views/outlet/Workspace.vue(427,22): error TS1002: Unterminated string literal.
+src/views/outlet/Workspace.vue(430,1): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(430,10): error TS1005: ':' expected.
+src/views/outlet/Workspace.vue(430,26): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(431,10): error TS1005: ':' expected.
+src/views/outlet/Workspace.vue(435,3): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(435,9): error TS1005: ':' expected.
+src/views/outlet/Workspace.vue(436,3): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(436,7): error TS1003: Identifier expected.
+src/views/outlet/Workspace.vue(436,13): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(436,20): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(436,29): error TS1005: ':' expected.
+src/views/outlet/Workspace.vue(437,3): error TS1005: ',' expected.
+src/views/outlet/Workspace.vue(437,10): error TS1005: ':' expected.
+src/views/outlet/Workspace.vue(554,5): error TS1109: Expression expected.
+src/views/outlet/Workspace.vue(554,6): error TS1128: Declaration or statement expected.
+src/views/outlet/Workspace.vue(601,5): error TS1472: 'catch' or 'finally' expected.
+src/views/outlet/Workspace.vue(602,5): error TS1005: 'try' expected.
+src/views/outlet/Workspace.vue(605,1): error TS1128: Declaration or statement expected.
+src/views/outlets/OrderAssign.vue(260,55): error TS1005: ',' expected.
+src/views/outlets/OrderAssign.vue(260,77): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(191,71): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(191,75): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(191,80): error TS1002: Unterminated string literal.
+src/views/outlets/OutletDashboard.vue(192,3): error TS1005: ':' expected.
+src/views/outlets/OutletDashboard.vue(192,12): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(192,66): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(192,70): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(192,75): error TS1002: Unterminated string literal.
+src/views/outlets/OutletDashboard.vue(193,1): error TS1005: ':' expected.
+src/views/outlets/OutletDashboard.vue(195,1): error TS1005: ']' expected.
+src/views/outlets/OutletDashboard.vue(200,1): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(200,16): error TS1005: ':' expected.
+src/views/outlets/OutletDashboard.vue(200,30): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(201,10): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(202,3): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(202,7): error TS1005: ':' expected.
+src/views/outlets/OutletDashboard.vue(203,11): error TS1005: ':' expected.
+src/views/outlets/OutletDashboard.vue(203,14): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(204,5): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(204,12): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(205,5): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(205,16): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(205,58): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(205,60): error TS1136: Property assignment expected.
+src/views/outlets/OutletDashboard.vue(206,21): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(207,7): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(207,13): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(209,3): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(209,5): error TS1005: ',' expected.
+src/views/outlets/OutletDashboard.vue(212,1): error TS1128: Declaration or statement expected.
+src/views/outlets/OutletList.vue(305,26): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(305,28): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(305,42): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(305,43): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(305,86): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(305,88): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(305,92): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(306,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(306,26): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(306,28): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(306,42): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(306,51): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(306,61): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(306,63): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(306,77): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(306,82): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(307,26): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(307,28): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(307,42): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(307,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(307,58): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(307,60): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(307,74): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(307,79): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(308,26): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(308,28): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(308,42): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(308,86): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(308,88): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(308,92): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(309,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(309,26): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(309,28): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(309,42): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(309,86): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(309,88): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(309,92): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(310,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(310,26): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(310,28): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(310,42): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(310,86): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(310,88): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(310,92): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(311,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(311,26): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(311,28): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(311,42): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(311,46): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(311,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(311,92): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(311,94): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(311,98): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(312,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(312,26): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(312,28): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(312,42): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(312,86): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(312,88): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(312,92): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(313,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(313,26): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(313,28): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(313,42): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(313,46): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(313,89): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(313,91): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(313,95): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(314,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(314,26): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(314,28): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(314,42): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(314,92): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(314,94): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(314,98): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(315,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(324,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(324,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(324,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(324,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(324,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(324,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(325,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(325,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(325,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(325,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(325,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(325,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(325,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(325,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(325,89): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(326,64): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(326,70): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(326,84): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(327,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(327,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(327,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(327,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(327,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(327,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(328,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(328,63): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(328,69): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(328,83): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(328,131): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(328,137): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(328,141): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(329,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(331,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(331,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(331,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(331,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(331,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(331,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(332,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(332,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(332,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(332,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(332,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(332,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(332,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(333,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(333,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(333,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(333,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(333,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(333,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(333,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(334,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(334,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(334,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(334,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(334,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(334,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(334,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(334,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(335,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(335,64): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(335,70): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(335,84): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(335,132): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(335,138): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(335,142): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(336,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(338,64): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(338,70): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(338,84): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(338,85): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(338,90): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(338,100): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(338,106): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(338,110): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(339,5): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(339,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(339,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(339,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(339,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(339,73): error TS1136: Property assignment expected.
+src/views/outlets/OutletList.vue(339,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(339,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(339,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(340,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(340,64): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(340,70): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(340,84): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(341,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(341,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(341,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(341,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(344,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(344,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(344,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(344,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(344,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(344,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(345,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(345,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(345,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(345,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(345,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(345,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(345,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(346,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(346,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(346,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(346,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(346,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(346,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(346,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(347,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(347,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(347,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(347,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(347,50): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(350,31): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(350,37): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(350,51): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(350,99): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(350,105): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(350,109): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(351,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(351,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(351,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(351,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(351,99): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(351,105): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(351,109): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(352,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(352,31): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(352,37): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(352,51): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(352,105): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(352,111): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(352,115): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(353,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(353,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(353,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(353,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(353,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(353,52): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(356,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(356,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(356,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(356,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(356,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(356,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(357,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(357,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(357,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(357,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(357,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(357,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(357,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(357,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(358,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(358,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(358,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(358,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(358,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(358,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(358,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(359,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(359,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(359,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(359,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(359,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(359,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(359,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(360,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(360,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(360,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(360,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(360,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(360,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(360,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(360,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(360,74): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(361,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(363,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(363,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(363,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(363,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(363,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(363,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(364,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(364,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(364,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(364,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(364,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(364,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(364,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(365,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(365,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(365,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(365,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(368,67): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(368,73): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(368,87): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(368,88): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(369,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(369,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(369,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(369,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(369,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(369,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(369,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(369,89): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(370,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(370,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(370,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(370,52): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(370,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(370,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(370,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(370,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(370,90): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(370,100): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(370,106): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(370,110): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(371,5): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(371,41): error TS1136: Property assignment expected.
+src/views/outlets/OutletList.vue(371,64): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(371,70): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(371,84): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(375,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(375,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(375,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(375,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(375,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(375,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(376,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(376,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(376,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(376,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(376,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(376,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(376,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(376,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(377,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(377,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(377,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(377,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(377,50): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(377,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(377,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(377,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(378,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(378,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(378,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(378,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(378,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(378,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(378,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(378,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(378,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(378,89): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(379,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(379,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(379,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(379,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(379,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(379,116): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(382,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(382,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(382,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(382,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(382,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(382,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(383,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(383,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(383,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(383,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(384,64): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(384,70): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(384,84): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(385,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(385,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(385,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(385,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(385,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(385,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(386,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(386,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(386,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(386,38): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(387,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(389,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(389,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(389,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(389,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(389,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(389,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(390,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(390,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(390,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(390,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(390,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(390,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(390,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(391,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(391,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(391,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(391,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(391,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(391,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(391,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(391,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(392,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(392,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(392,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(392,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(395,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(395,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(395,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(395,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(395,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(395,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(396,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(396,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(396,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(396,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(396,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(396,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(396,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(396,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(396,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(396,85): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(397,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(397,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(397,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(397,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(397,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(397,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(398,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(398,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(398,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(398,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(398,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(398,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(398,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(399,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(399,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(399,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(399,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(399,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(399,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(399,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(400,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(400,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(400,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(400,38): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(401,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(403,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(403,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(403,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(403,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(403,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(403,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(403,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(404,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(404,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(404,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(404,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(404,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(404,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(404,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(405,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(405,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(405,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(405,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(405,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(405,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(405,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(406,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(408,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(408,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(408,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(408,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(408,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(408,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(408,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(408,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(408,89): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(409,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(409,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(409,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(409,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(409,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(409,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(410,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(410,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(410,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(410,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(410,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(410,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(410,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(411,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(411,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(411,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(411,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(414,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(414,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(414,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(414,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(414,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(414,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(415,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(415,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(415,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(415,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(415,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(415,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(415,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(416,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(416,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(416,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(416,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(416,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(416,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(416,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(417,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(417,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(417,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(417,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(417,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(417,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(417,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(418,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(418,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(418,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(418,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(418,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(418,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(418,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(419,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(419,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(419,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(419,38): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(420,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(422,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(422,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(422,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(422,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(422,53): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(422,63): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(422,69): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(422,83): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(422,88): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(423,64): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(423,70): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(423,84): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(423,86): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(424,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(424,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(424,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(424,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(424,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(424,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(424,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(425,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(425,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(425,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(425,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(425,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(426,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(426,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(426,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(426,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(426,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(426,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(427,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(427,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(427,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(427,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(427,50): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(427,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(427,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(427,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(427,74): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(428,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(430,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(430,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(430,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(430,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(430,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(430,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(431,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(431,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(431,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(431,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(431,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(431,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(431,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(432,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(432,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(432,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(432,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(432,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(432,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(432,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(433,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(433,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(433,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(433,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(433,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(433,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(433,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(434,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(437,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(437,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(437,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(437,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(437,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(437,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(437,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(438,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(438,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(438,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(438,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(438,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(438,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(438,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(439,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(439,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(439,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(439,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(439,50): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(439,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(439,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(439,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(439,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(439,89): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(440,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(440,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(440,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(441,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(441,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(441,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(441,53): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(441,63): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(441,73): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(441,79): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(441,83): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(442,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(444,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(444,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(444,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(444,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(444,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(444,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(445,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(445,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(445,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(445,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(445,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(445,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(445,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(446,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(446,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(446,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(446,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(446,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(446,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(446,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(447,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(447,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(447,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(447,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(447,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(447,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(447,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(448,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(448,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(448,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(448,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(448,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(448,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(448,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(449,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(449,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(449,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(449,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(449,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(449,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(449,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(450,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(450,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(450,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(450,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(450,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(450,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(450,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(450,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(451,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(453,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(453,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(453,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(453,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(453,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(453,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(454,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(454,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(454,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(454,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(455,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(455,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(455,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(455,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(455,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(455,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(456,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(456,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(456,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(456,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(456,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(456,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(456,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(457,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(457,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(457,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(457,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(460,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(460,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(460,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(460,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(460,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(460,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(461,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(461,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(461,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(461,38): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(462,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(464,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(464,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(464,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(464,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(464,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(464,116): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(464,122): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(464,132): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(464,138): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(464,142): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(465,5): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(465,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(465,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(465,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(465,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(465,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(465,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(465,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(465,88): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(465,90): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(465,100): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(465,106): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(465,110): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(466,5): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(466,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(466,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(466,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(466,50): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(466,73): error TS1136: Property assignment expected.
+src/views/outlets/OutletList.vue(466,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(466,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(466,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(467,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(467,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(467,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(467,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(467,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(467,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(467,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(468,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(468,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(468,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(468,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(468,50): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(468,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(468,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(468,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(469,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(469,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(469,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(469,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(469,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(469,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(469,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(470,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(470,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(470,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(470,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(470,50): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(470,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(470,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(470,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(471,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(471,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(471,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(471,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(471,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(471,53): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(471,63): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(471,69): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(471,83): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(471,88): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(472,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(472,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(472,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(472,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(472,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(472,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(473,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(473,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(473,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(473,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(473,51): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(473,61): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(473,67): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(473,81): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(473,86): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(474,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(474,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(474,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(474,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(474,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(474,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(474,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(475,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(475,81): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(475,87): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(475,101): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(475,106): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(475,116): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(475,126): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(475,132): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(475,146): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(475,147): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(475,154): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(475,161): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(475,171): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(475,177): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(475,181): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(476,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(478,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(478,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(478,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(478,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(478,98): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(478,104): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(478,108): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(479,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(479,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(479,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(479,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(479,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(479,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(479,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(480,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(480,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(480,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(480,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(480,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(480,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(480,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(481,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(481,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(481,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(481,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(481,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(481,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(481,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(482,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(482,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(482,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(482,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(482,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(482,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(482,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(483,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(483,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(483,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(483,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(483,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(483,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(483,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(484,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(484,37): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(484,43): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(484,57): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(484,64): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(484,117): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(484,123): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(484,127): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(485,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(487,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(487,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(487,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(487,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(487,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(487,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(487,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(487,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(487,89): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(488,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(488,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(488,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(488,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(488,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(488,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(489,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(489,40): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(489,46): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(489,60): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(489,75): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(489,85): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(489,91): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(489,105): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(489,120): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(489,130): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(489,136): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(489,140): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(490,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(492,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(492,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(492,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(492,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(492,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(492,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(493,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(493,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(493,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(493,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(493,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(493,50): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(493,53): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(493,63): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(493,69): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(493,83): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(493,88): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(494,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(494,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(494,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(494,102): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(494,108): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(494,112): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(495,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(495,82): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(495,88): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(495,102): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(495,112): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(496,34): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(496,40): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(496,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(496,61): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(496,62): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(496,69): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(496,79): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(496,85): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(496,99): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(496,111): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(496,121): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(496,127): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(496,131): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(497,5): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(497,34): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(497,40): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(497,44): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(498,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(500,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(500,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(500,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(500,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(500,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(500,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(500,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(500,89): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(501,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(501,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(501,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(501,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(501,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(501,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(502,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(505,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(505,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(505,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(505,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(505,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(505,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(506,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(506,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(506,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(506,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(506,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(506,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(506,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(506,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(507,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(507,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(507,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(507,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(507,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(507,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(507,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(508,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(508,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(508,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(508,38): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(509,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(511,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(511,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(511,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(511,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(511,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(511,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(511,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(511,89): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(512,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(512,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(512,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(512,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(512,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(512,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(512,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(513,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(513,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(513,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(513,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(513,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(513,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(513,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(514,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(514,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(514,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(514,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(514,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(514,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(514,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(515,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(515,34): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(515,40): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(515,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(515,61): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(518,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(518,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(518,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(518,102): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(518,108): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(518,112): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(519,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(519,34): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(519,40): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(519,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(519,61): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(519,114): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(519,120): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(519,124): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(520,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(520,34): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(520,40): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(520,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(520,69): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(520,79): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(520,85): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(520,89): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(521,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(523,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(523,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(523,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(523,54): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(523,64): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(523,70): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(523,84): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(523,89): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(524,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(524,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(524,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(524,49): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(527,31): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(527,37): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(527,51): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(528,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(528,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(528,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(528,55): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(528,111): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(528,117): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(528,121): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(529,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(529,37): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(529,43): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(529,57): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(529,120): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(529,126): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(529,130): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(530,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(531,67): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(531,73): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(531,77): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(532,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(534,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(534,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(534,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(534,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(534,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(534,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(535,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(535,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(535,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(535,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(535,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(535,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(535,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(536,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(536,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(536,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(536,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(536,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(536,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(536,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(537,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(537,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(537,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(537,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(537,50): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(537,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(537,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(537,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(538,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(538,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(538,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(538,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(538,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(538,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(538,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(539,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(539,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(539,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(539,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(539,96): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(539,102): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(539,106): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(540,5): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(540,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(540,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(540,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(541,28): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(541,34): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(541,48): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(548,8): error TS1005: ';' expected.
+src/views/outlets/OutletList.vue(548,20): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(548,21): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(548,25): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(548,36): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(548,41): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(549,8): error TS1005: ';' expected.
+src/views/outlets/OutletList.vue(549,20): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(549,25): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(550,8): error TS1005: ';' expected.
+src/views/outlets/OutletList.vue(550,20): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(550,25): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(550,36): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(550,41): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(550,52): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(550,57): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(550,67): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(551,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(551,8): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(551,20): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(551,25): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(551,35): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(552,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(552,8): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(552,20): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(552,24): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(552,27): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(552,31): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(552,41): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(553,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(553,8): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(553,20): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(553,25): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(553,36): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(553,41): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(553,54): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(554,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(554,8): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(554,20): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(554,25): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(554,36): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(554,38): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(554,43): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(554,47): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(555,13): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(555,16): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(555,20): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(555,23): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(555,27): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(555,30): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(555,33): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(556,1): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(556,2): error TS1137: Expression or comma expected.
+src/views/outlets/OutletList.vue(559,3): error TS1137: Expression or comma expected.
+src/views/outlets/OutletList.vue(562,1): error TS1128: Declaration or statement expected.
+src/views/outlets/OutletList.vue(562,2): error TS1128: Declaration or statement expected.
+src/views/outlets/OutletList.vue(569,1): error TS1128: Declaration or statement expected.
+src/views/outlets/OutletList.vue(569,2): error TS1128: Declaration or statement expected.
+src/views/outlets/OutletList.vue(575,1): error TS1128: Declaration or statement expected.
+src/views/outlets/OutletList.vue(592,1): error TS1128: Declaration or statement expected.
+src/views/outlets/OutletList.vue(600,1): error TS1128: Declaration or statement expected.
+src/views/outlets/OutletList.vue(600,2): error TS1128: Declaration or statement expected.
+src/views/outlets/OutletList.vue(623,34): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(623,35): error TS1127: Invalid character.
+src/views/outlets/OutletList.vue(623,39): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(623,50): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(623,55): error TS1109: Expression expected.
+src/views/outlets/OutletList.vue(627,37): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(627,44): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(627,48): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(628,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(628,37): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(628,43): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(628,47): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(629,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(629,37): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(629,44): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(629,48): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(630,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(630,37): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(630,44): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(630,48): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(631,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(631,37): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(631,41): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(631,45): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(632,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(632,37): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(632,43): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(632,47): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(633,1): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(702,76): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(703,3): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(718,56): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(718,60): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(718,64): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(719,5): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(719,69): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(719,73): error TS1005: ',' expected.
+src/views/outlets/OutletList.vue(719,77): error TS1002: Unterminated string literal.
+src/views/outlets/OutletList.vue(720,3): error TS1005: ':' expected.
+src/views/outlets/OutletList.vue(846,1): error TS1160: Unterminated template literal.
+src/views/outlets/OutletOverview.vue(208,17): error TS1002: Unterminated string literal.
+src/views/outlets/OutletOverview.vue(209,3): error TS1005: ',' expected.
+src/views/outlets/OutletOverview.vue(211,18): error TS1002: Unterminated string literal.
+src/views/outlets/OutletOverview.vue(212,3): error TS1005: ',' expected.
+src/views/outlets/OutletOverview.vue(214,19): error TS1002: Unterminated string literal.
+src/views/outlets/OutletOverview.vue(215,3): error TS1005: ',' expected.
+src/views/outlets/OutletOverview.vue(282,60): error TS1005: ',' expected.
+src/views/outlets/OutletOverview.vue(283,13): error TS1005: ':' expected.
+src/views/outlets/OutletOverview.vue(284,9): error TS1005: ',' expected.
+src/views/outlets/OutletOverview.vue(285,9): error TS1005: ',' expected.
+src/views/outlets/OutletOverview.vue(286,9): error TS1005: ',' expected.
+src/views/outlets/OutletOverview.vue(294,31): error TS1005: ',' expected.
+src/views/outlets/OutletOverview.vue(294,36): error TS1109: Expression expected.
+src/views/outlets/OutletOverview.vue(300,22): error TS1002: Unterminated string literal.
+src/views/outlets/OutletOverview.vue(301,9): error TS1005: ',' expected.
+src/views/outlets/OutletOverview.vue(310,22): error TS1002: Unterminated string literal.
+src/views/outlets/OutletOverview.vue(311,9): error TS1005: ',' expected.
+src/views/products/bookkeeping-packages.vue(178,36): error TS1002: Unterminated string literal.
+src/views/products/bookkeeping-packages.vue(179,5): error TS1005: ',' expected.
+src/views/products/bookkeeping-packages.vue(238,1): error TS1160: Unterminated template literal.
+src/views/products/newspaper-templates.vue(170,58): error TS1005: ')' expected.
+src/views/products/newspaper-templates.vue(329,57): error TS1005: ':' expected.
+src/views/products/newspaper-templates.vue(329,60): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(559,61): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(559,65): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(559,70): error TS1002: Unterminated string literal.
+src/views/products/newspaper-templates.vue(560,3): error TS1005: ':' expected.
+src/views/products/newspaper-templates.vue(560,13): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(560,68): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(560,74): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(560,79): error TS1002: Unterminated string literal.
+src/views/products/newspaper-templates.vue(561,1): error TS1005: ':' expected.
+src/views/products/newspaper-templates.vue(562,1): error TS1005: ']' expected.
+src/views/products/newspaper-templates.vue(562,7): error TS1005: ':' expected.
+src/views/products/newspaper-templates.vue(564,1): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(564,10): error TS1005: ':' expected.
+src/views/products/newspaper-templates.vue(564,33): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(564,55): error TS1109: Expression expected.
+src/views/products/newspaper-templates.vue(564,62): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(565,17): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(566,3): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(566,12): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(566,29): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(567,11): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(579,5): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(579,10): error TS1005: ':' expected.
+src/views/products/newspaper-templates.vue(580,17): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(586,3): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(586,24): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(662,60): error TS1002: Unterminated string literal.
+src/views/products/newspaper-templates.vue(672,33): error TS1002: Unterminated string literal.
+src/views/products/newspaper-templates.vue(673,5): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(676,37): error TS1002: Unterminated string literal.
+src/views/products/newspaper-templates.vue(677,5): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(694,43): error TS1002: Unterminated string literal.
+src/views/products/newspaper-templates.vue(695,7): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(708,38): error TS1002: Unterminated string literal.
+src/views/products/newspaper-templates.vue(709,5): error TS1005: ',' expected.
+src/views/products/newspaper-templates.vue(796,35): error TS1002: Unterminated string literal.
+src/views/products/newspaper-templates.vue(797,5): error TS1005: ',' expected.
+src/views/products/record-queries.vue(132,61): error TS1005: ',' expected.
+src/views/products/record-queries.vue(132,65): error TS1005: ',' expected.
+src/views/products/record-queries.vue(132,70): error TS1002: Unterminated string literal.
+src/views/products/record-queries.vue(133,3): error TS1005: ':' expected.
+src/views/products/record-queries.vue(133,15): error TS1005: ',' expected.
+src/views/products/record-queries.vue(133,69): error TS1005: ',' expected.
+src/views/products/record-queries.vue(133,73): error TS1005: ',' expected.
+src/views/products/record-queries.vue(133,78): error TS1002: Unterminated string literal.
+src/views/products/record-queries.vue(134,3): error TS1005: ':' expected.
+src/views/products/record-queries.vue(134,6): error TS1005: ',' expected.
+src/views/products/record-queries.vue(138,49): error TS1002: Unterminated string literal.
+src/views/products/record-queries.vue(139,7): error TS1005: ',' expected.
+src/views/products/record-queries.vue(141,3): error TS1109: Expression expected.
+src/views/products/record-queries.vue(141,4): error TS1005: ':' expected.
+src/views/products/record-queries.vue(144,1): error TS1005: ']' expected.
+src/views/products/record-queries.vue(144,7): error TS1005: ':' expected.
+src/views/products/record-queries.vue(150,1): error TS1005: ',' expected.
+src/views/products/record-queries.vue(150,10): error TS1005: ':' expected.
+src/views/products/record-queries.vue(150,28): error TS1005: ',' expected.
+src/views/products/record-queries.vue(154,1): error TS1005: ',' expected.
+src/views/products/record-queries.vue(166,1): error TS1005: ',' expected.
+src/views/products/record-queries.vue(183,1): error TS1005: ',' expected.
+src/views/products/record-queries.vue(210,1): error TS1005: ',' expected.
+src/views/products/record-queries.vue(226,1): error TS1160: Unterminated template literal.
+src/views/products/scenes.vue(203,67): error TS1002: Unterminated string literal.
+src/views/products/scenes.vue(204,3): error TS1005: ',' expected.
+src/views/products/scenes.vue(205,3): error TS1005: ',' expected.
+src/views/products/scenes.vue(242,66): error TS1002: Unterminated string literal.
+src/views/products/scenes.vue(243,5): error TS1005: ',' expected.
+src/views/products/scenes.vue(271,33): error TS1002: Unterminated string literal.
+src/views/products/scenes.vue(272,5): error TS1005: ',' expected.
+src/views/products/scenes.vue(273,3): error TS1005: ',' expected.
+src/views/products/scenes.vue(285,33): error TS1002: Unterminated string literal.
+src/views/products/scenes.vue(286,5): error TS1005: ',' expected.
+src/views/products/scenes.vue(287,5): error TS1005: ',' expected.
+src/views/products/scenes.vue(288,3): error TS1005: ',' expected.
+src/views/products/scenes.vue(307,1): error TS1160: Unterminated template literal.
+src/views/products/seals.vue(261,65): error TS1005: ':' expected.
+src/views/products/seals.vue(261,73): error TS1005: ',' expected.
+src/views/products/seals.vue(313,59): error TS1005: ':' expected.
+src/views/products/seals.vue(313,69): error TS1005: ',' expected.
+src/views/products/seals.vue(330,52): error TS1003: Identifier expected.
+src/views/products/seals.vue(365,68): error TS1005: ':' expected.
+src/views/products/seals.vue(365,76): error TS1005: ',' expected.
+src/views/products/seals.vue(494,1): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(494,2): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(520,1): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(520,2): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(523,28): error TS1005: ';' expected.
+src/views/products/seals.vue(523,40): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(524,32): error TS1005: ';' expected.
+src/views/products/seals.vue(524,36): error TS1127: Invalid character.
+src/views/products/seals.vue(524,41): error TS1109: Expression expected.
+src/views/products/seals.vue(524,42): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(525,32): error TS1005: ';' expected.
+src/views/products/seals.vue(525,41): error TS1109: Expression expected.
+src/views/products/seals.vue(525,42): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(526,32): error TS1005: ';' expected.
+src/views/products/seals.vue(526,41): error TS1109: Expression expected.
+src/views/products/seals.vue(526,42): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(527,32): error TS1005: ';' expected.
+src/views/products/seals.vue(527,41): error TS1109: Expression expected.
+src/views/products/seals.vue(527,42): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(528,35): error TS1005: ';' expected.
+src/views/products/seals.vue(528,39): error TS1127: Invalid character.
+src/views/products/seals.vue(528,47): error TS1109: Expression expected.
+src/views/products/seals.vue(528,48): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(529,31): error TS1005: ';' expected.
+src/views/products/seals.vue(529,46): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(530,1): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(537,1): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(550,1): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(550,2): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(605,56): error TS1005: ',' expected.
+src/views/products/seals.vue(605,59): error TS1005: ',' expected.
+src/views/products/seals.vue(605,71): error TS1005: ',' expected.
+src/views/products/seals.vue(605,78): error TS1005: ',' expected.
+src/views/products/seals.vue(605,82): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(606,5): error TS1005: ',' expected.
+src/views/products/seals.vue(607,3): error TS1005: ',' expected.
+src/views/products/seals.vue(636,71): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(637,3): error TS1005: ',' expected.
+src/views/products/seals.vue(638,3): error TS1005: ',' expected.
+src/views/products/seals.vue(682,9): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(683,9): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(701,49): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(702,7): error TS1005: ',' expected.
+src/views/products/seals.vue(702,49): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(703,3): error TS1005: ',' expected.
+src/views/products/seals.vue(707,2): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(720,1): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(720,2): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(734,97): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(735,1): error TS1005: ',' expected.
+src/views/products/seals.vue(735,101): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(739,3): error TS1005: ',' expected.
+src/views/products/seals.vue(742,1): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(778,106): error TS1005: ',' expected.
+src/views/products/seals.vue(778,112): error TS1005: ',' expected.
+src/views/products/seals.vue(778,117): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(779,7): error TS1005: ':' expected.
+src/views/products/seals.vue(780,7): error TS1005: ')' expected.
+src/views/products/seals.vue(780,12): error TS1135: Argument expression expected.
+src/views/products/seals.vue(788,54): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(790,106): error TS1005: ',' expected.
+src/views/products/seals.vue(790,107): error TS1127: Invalid character.
+src/views/products/seals.vue(790,112): error TS1005: ',' expected.
+src/views/products/seals.vue(790,117): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(791,7): error TS1005: ':' expected.
+src/views/products/seals.vue(792,7): error TS1005: ')' expected.
+src/views/products/seals.vue(793,13): error TS1005: ':' expected.
+src/views/products/seals.vue(794,7): error TS1005: ',' expected.
+src/views/products/seals.vue(794,13): error TS1005: ':' expected.
+src/views/products/seals.vue(795,7): error TS1005: ',' expected.
+src/views/products/seals.vue(795,12): error TS1005: ',' expected.
+src/views/products/seals.vue(796,7): error TS1005: ',' expected.
+src/views/products/seals.vue(796,15): error TS1005: ',' expected.
+src/views/products/seals.vue(798,3): error TS1005: ',' expected.
+src/views/products/seals.vue(798,5): error TS1005: 'try' expected.
+src/views/products/seals.vue(811,53): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(812,9): error TS1005: ',' expected.
+src/views/products/seals.vue(820,51): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(821,7): error TS1005: ',' expected.
+src/views/products/seals.vue(873,62): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(874,3): error TS1005: ',' expected.
+src/views/products/seals.vue(874,105): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(875,3): error TS1005: ',' expected.
+src/views/products/seals.vue(876,3): error TS1005: ',' expected.
+src/views/products/seals.vue(887,14): error TS1005: ';' expected.
+src/views/products/seals.vue(889,20): error TS1005: ';' expected.
+src/views/products/seals.vue(890,13): error TS1005: ';' expected.
+src/views/products/seals.vue(891,14): error TS1005: ';' expected.
+src/views/products/seals.vue(892,19): error TS1005: ';' expected.
+src/views/products/seals.vue(893,23): error TS1005: ';' expected.
+src/views/products/seals.vue(894,7): error TS1109: Expression expected.
+src/views/products/seals.vue(894,8): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(895,7): error TS1472: 'catch' or 'finally' expected.
+src/views/products/seals.vue(910,5): error TS1005: 'try' expected.
+src/views/products/seals.vue(989,65): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(990,3): error TS1005: ',' expected.
+src/views/products/seals.vue(990,108): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(991,3): error TS1005: ',' expected.
+src/views/products/seals.vue(991,120): error TS1002: Unterminated string literal.
+src/views/products/seals.vue(992,3): error TS1005: ',' expected.
+src/views/products/seals.vue(993,3): error TS1005: ',' expected.
+src/views/products/seals.vue(997,12): error TS1005: ';' expected.
+src/views/products/seals.vue(998,18): error TS1005: ';' expected.
+src/views/products/seals.vue(999,11): error TS1005: ';' expected.
+src/views/products/seals.vue(1000,13): error TS1005: ';' expected.
+src/views/products/seals.vue(1001,20): error TS1005: ';' expected.
+src/views/products/seals.vue(1002,16): error TS1005: ';' expected.
+src/views/products/seals.vue(1003,15): error TS1005: ';' expected.
+src/views/products/seals.vue(1004,5): error TS1109: Expression expected.
+src/views/products/seals.vue(1005,5): error TS1472: 'catch' or 'finally' expected.
+src/views/products/seals.vue(1019,5): error TS1005: 'try' expected.
+src/views/products/seals.vue(1101,2): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(1140,2): error TS1128: Declaration or statement expected.
+src/views/products/seals.vue(1141,1): error TS1005: '}' expected.
+src/views/questions/index.vue(298,36): error TS1002: Unterminated string literal.
+src/views/questions/index.vue(299,5): error TS1005: ',' expected.
+src/views/questions/index.vue(316,61): error TS1005: ',' expected.
+src/views/questions/index.vue(316,65): error TS1127: Invalid character.
+src/views/questions/index.vue(316,66): error TS1127: Invalid character.
+src/views/questions/index.vue(316,71): error TS1002: Unterminated string literal.
+src/views/questions/index.vue(317,7): error TS1005: ',' expected.
+src/views/questions/index.vue(317,24): error TS1005: ',' expected.
+src/views/questions/index.vue(318,23): error TS1005: ',' expected.
+src/views/questions/index.vue(319,11): error TS1005: ',' expected.
+src/views/questions/index.vue(320,5): error TS1135: Argument expression expected.
+src/views/questions/index.vue(320,6): error TS1472: 'catch' or 'finally' expected.
+src/views/questions/index.vue(324,5): error TS1005: 'try' expected.
+src/views/questions/index.vue(329,1): error TS1128: Declaration or statement expected.
+src/views/questions/index.vue(345,3): error TS1472: 'catch' or 'finally' expected.
+src/views/questions/index.vue(345,5): error TS1005: 'try' expected.
+src/views/questions/index.vue(350,1): error TS1128: Declaration or statement expected.
+src/views/refund/index.vue(99,22): error TS1002: Unterminated string literal.
+src/views/refund/index.vue(128,34): error TS1002: Unterminated string literal.
+src/views/refund/index.vue(129,5): error TS1005: ',' expected.
+src/views/refund/index.vue(129,34): error TS1005: ')' expected.
+src/views/refund/index.vue(157,59): error TS1005: ',' expected.
+src/views/refund/index.vue(157,62): error TS1005: ',' expected.
+src/views/refund/index.vue(157,74): error TS1005: ',' expected.
+src/views/refund/index.vue(157,81): error TS1005: ',' expected.
+src/views/refund/index.vue(157,86): error TS1002: Unterminated string literal.
+src/views/refund/index.vue(158,5): error TS1005: ',' expected.
+src/views/refund/index.vue(158,31): error TS1005: ')' expected.
+src/views/reviews/index.vue(153,36): error TS1002: Unterminated string literal.
+src/views/reviews/index.vue(154,5): error TS1005: ',' expected.
+src/views/settlement/index.vue(453,66): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(454,3): error TS1005: ',' expected.
+src/views/settlement/index.vue(455,3): error TS1005: ',' expected.
+src/views/settlement/index.vue(471,59): error TS1005: ',' expected.
+src/views/settlement/index.vue(471,61): error TS1109: Expression expected.
+src/views/settlement/index.vue(519,64): error TS1005: ')' expected.
+src/views/settlement/index.vue(519,65): error TS1005: ',' expected.
+src/views/settlement/index.vue(519,66): error TS1134: Variable declaration expected.
+src/views/settlement/index.vue(519,68): error TS1134: Variable declaration expected.
+src/views/settlement/index.vue(519,70): error TS1134: Variable declaration expected.
+src/views/settlement/index.vue(519,106): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(520,3): error TS1005: ')' expected.
+src/views/settlement/index.vue(530,69): error TS1005: ',' expected.
+src/views/settlement/index.vue(530,70): error TS1127: Invalid character.
+src/views/settlement/index.vue(530,71): error TS1127: Invalid character.
+src/views/settlement/index.vue(530,75): error TS1005: ',' expected.
+src/views/settlement/index.vue(530,87): error TS1005: ',' expected.
+src/views/settlement/index.vue(530,94): error TS1005: ',' expected.
+src/views/settlement/index.vue(530,98): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(531,5): error TS1005: ',' expected.
+src/views/settlement/index.vue(532,5): error TS1005: ',' expected.
+src/views/settlement/index.vue(533,5): error TS1005: ',' expected.
+src/views/settlement/index.vue(534,3): error TS1005: ',' expected.
+src/views/settlement/index.vue(553,44): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(554,3): error TS1005: ',' expected.
+src/views/settlement/index.vue(558,36): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(559,5): error TS1005: ',' expected.
+src/views/settlement/index.vue(560,5): error TS1005: ',' expected.
+src/views/settlement/index.vue(561,3): error TS1005: ',' expected.
+src/views/settlement/index.vue(581,44): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(582,3): error TS1005: ',' expected.
+src/views/settlement/index.vue(589,54): error TS1005: ',' expected.
+src/views/settlement/index.vue(589,55): error TS1127: Invalid character.
+src/views/settlement/index.vue(589,60): error TS1005: ',' expected.
+src/views/settlement/index.vue(589,80): error TS1005: ',' expected.
+src/views/settlement/index.vue(589,81): error TS1127: Invalid character.
+src/views/settlement/index.vue(589,85): error TS1109: Expression expected.
+src/views/settlement/index.vue(637,46): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(638,3): error TS1005: ',' expected.
+src/views/settlement/index.vue(638,49): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(639,3): error TS1005: ',' expected.
+src/views/settlement/index.vue(639,54): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(640,1): error TS1005: ',' expected.
+src/views/settlement/index.vue(683,24): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(685,37): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(708,64): error TS1005: ',' expected.
+src/views/settlement/index.vue(708,70): error TS1005: ',' expected.
+src/views/settlement/index.vue(708,75): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(709,3): error TS1005: ':' expected.
+src/views/settlement/index.vue(709,15): error TS1005: ',' expected.
+src/views/settlement/index.vue(709,80): error TS1005: ':' expected.
+src/views/settlement/index.vue(711,64): error TS1005: ',' expected.
+src/views/settlement/index.vue(711,68): error TS1005: ',' expected.
+src/views/settlement/index.vue(711,73): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(712,1): error TS1005: ':' expected.
+src/views/settlement/index.vue(714,1): error TS1005: ',' expected.
+src/views/settlement/index.vue(733,1): error TS1005: ',' expected.
+src/views/settlement/index.vue(738,1): error TS1005: ',' expected.
+src/views/settlement/index.vue(743,1): error TS1005: ',' expected.
+src/views/settlement/index.vue(744,72): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(745,3): error TS1005: ',' expected.
+src/views/settlement/index.vue(746,104): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(747,3): error TS1005: ',' expected.
+src/views/settlement/index.vue(767,113): error TS1005: ',' expected.
+src/views/settlement/index.vue(767,128): error TS1005: ',' expected.
+src/views/settlement/index.vue(767,132): error TS1005: ',' expected.
+src/views/settlement/index.vue(767,136): error TS1127: Invalid character.
+src/views/settlement/index.vue(767,137): error TS1127: Invalid character.
+src/views/settlement/index.vue(767,150): error TS1005: ',' expected.
+src/views/settlement/index.vue(767,157): error TS1005: ',' expected.
+src/views/settlement/index.vue(767,161): error TS1002: Unterminated string literal.
+src/views/settlement/index.vue(768,5): error TS1005: ',' expected.
+src/views/settlement/index.vue(769,5): error TS1005: ',' expected.
+src/views/settlement/index.vue(770,5): error TS1005: ',' expected.
+src/views/settlement/index.vue(771,3): error TS1005: ',' expected.
+src/views/settlement/index.vue(790,1): error TS1005: '}' expected.
+src/views/system/admins.vue(10,151): error TS1127: Invalid character.
+src/views/system/admins.vue(10,152): error TS1127: Invalid character.
+src/views/system/admins.vue(10,154): error TS1127: Invalid character.
+src/views/system/admins.vue(26,74): error TS1127: Invalid character.
+src/views/system/admins.vue(26,78): error TS1003: Identifier expected.
+src/views/system/admins.vue(72,132): error TS1005: ',' expected.
+src/views/system/admins.vue(72,138): error TS1005: ',' expected.
+src/views/system/admins.vue(72,157): error TS1002: Unterminated string literal.
+src/views/system/admins.vue(73,1): error TS1005: ',' expected.
+src/views/system/admins.vue(74,1): error TS1005: ',' expected.
+src/views/system/configs.vue(89,62): error TS1002: Unterminated string literal.
+src/views/system/configs.vue(90,13): error TS1005: ',' expected.
+src/views/system/configs.vue(94,62): error TS1002: Unterminated string literal.
+src/views/system/configs.vue(95,13): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(178,11): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(178,12): error TS1127: Invalid character.
+src/views/system/dispatch-rules.vue(178,16): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(178,25): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(178,30): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(179,11): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(179,16): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(179,25): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(179,30): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(180,11): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(180,16): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(180,25): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(180,30): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(180,39): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(180,44): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(181,11): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(181,16): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(181,25): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(181,30): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(181,38): error TS1002: Unterminated string literal.
+src/views/system/dispatch-rules.vue(182,3): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(182,11): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(182,16): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(182,25): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(182,30): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(182,39): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(182,44): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(182,52): error TS1002: Unterminated string literal.
+src/views/system/dispatch-rules.vue(183,3): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(183,29): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(183,33): error TS1127: Invalid character.
+src/views/system/dispatch-rules.vue(183,37): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(183,52): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(183,64): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(183,66): error TS1002: Unterminated string literal.
+src/views/system/dispatch-rules.vue(184,3): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(184,17): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(184,28): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(188,11): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(188,12): error TS1127: Invalid character.
+src/views/system/dispatch-rules.vue(188,16): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(188,25): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(188,30): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(189,11): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(189,16): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(189,25): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(189,26): error TS1127: Invalid character.
+src/views/system/dispatch-rules.vue(189,30): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(189,39): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(189,44): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(189,53): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(189,58): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(189,66): error TS1002: Unterminated string literal.
+src/views/system/dispatch-rules.vue(190,3): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(190,11): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(190,16): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(190,25): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(190,30): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(190,39): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(190,45): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(190,48): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(190,53): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(191,20): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(191,21): error TS1127: Invalid character.
+src/views/system/dispatch-rules.vue(191,25): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(191,34): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(191,39): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(191,48): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(191,53): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(191,61): error TS1002: Unterminated string literal.
+src/views/system/dispatch-rules.vue(192,3): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(192,19): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(192,20): error TS1127: Invalid character.
+src/views/system/dispatch-rules.vue(192,24): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(192,33): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(192,38): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(192,47): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(192,52): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(192,60): error TS1002: Unterminated string literal.
+src/views/system/dispatch-rules.vue(193,3): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(193,11): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(193,16): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(193,25): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(193,30): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(193,39): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(193,44): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(193,53): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(193,58): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(194,11): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(194,16): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(194,28): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(194,33): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(194,42): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(194,47): error TS1109: Expression expected.
+src/views/system/dispatch-rules.vue(194,58): error TS1002: Unterminated string literal.
+src/views/system/dispatch-rules.vue(212,33): error TS1002: Unterminated string literal.
+src/views/system/dispatch-rules.vue(213,3): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(250,24): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(250,28): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(250,29): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(250,42): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(250,57): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(250,58): error TS1127: Invalid character.
+src/views/system/dispatch-rules.vue(250,62): error TS1127: Invalid character.
+src/views/system/dispatch-rules.vue(250,64): error TS1127: Invalid character.
+src/views/system/dispatch-rules.vue(250,72): error TS1005: ':' expected.
+src/views/system/dispatch-rules.vue(250,86): error TS1005: ',' expected.
+src/views/system/dispatch-rules.vue(301,1): error TS1160: Unterminated template literal.
+src/views/system/logs.vue(125,1): error TS1128: Declaration or statement expected.
+src/views/system/menu-roles.vue(116,33): error TS1002: Unterminated string literal.
+src/views/system/menu-roles.vue(117,5): error TS1005: ',' expected.
+src/views/system/menu-roles.vue(144,1): error TS1160: Unterminated template literal.
+src/views/transaction/index.vue(286,9): error TS1005: ';' expected.
+src/views/transaction/index.vue(287,12): error TS1005: ';' expected.
+src/views/transaction/index.vue(288,9): error TS1005: ';' expected.
+src/views/transaction/index.vue(289,10): error TS1005: ';' expected.
+src/views/transaction/index.vue(290,12): error TS1005: ';' expected.
+src/views/transaction/index.vue(291,10): error TS1005: ';' expected.
+src/views/transaction/index.vue(292,11): error TS1005: ';' expected.
+src/views/transaction/index.vue(293,1): error TS1109: Expression expected.
+src/views/transaction/index.vue(293,2): error TS1128: Declaration or statement expected.
+src/views/transaction/index.vue(307,38): error TS1002: Unterminated string literal.
+src/views/transaction/index.vue(308,3): error TS1005: ',' expected.
+src/views/transaction/index.vue(318,24): error TS1005: ';' expected.
+src/views/transaction/index.vue(318,35): error TS1128: Declaration or statement expected.
+src/views/transaction/index.vue(319,24): error TS1005: ';' expected.
+src/views/transaction/index.vue(319,39): error TS1128: Declaration or statement expected.
+src/views/transaction/index.vue(320,27): error TS1005: ';' expected.
+src/views/transaction/index.vue(320,27): error TS1434: Unexpected keyword or identifier.
+src/views/transaction/index.vue(320,35): error TS1002: Unterminated string literal.
+src/views/transaction/index.vue(321,28): error TS1005: ';' expected.
+src/views/transaction/index.vue(321,28): error TS1434: Unexpected keyword or identifier.
+src/views/transaction/index.vue(321,37): error TS1002: Unterminated string literal.
+src/views/transaction/index.vue(322,1): error TS1128: Declaration or statement expected.
+src/views/transaction/index.vue(433,1): error TS1472: 'catch' or 'finally' expected.
+src/views/transaction/index.vue(456,24): error TS1002: Unterminated string literal.
+src/views/transaction/index.vue(484,19): error TS1002: Unterminated string literal.
+src/views/transaction/index.vue(485,5): error TS1005: ',' expected.
+src/views/transaction/index.vue(486,21): error TS1002: Unterminated string literal.
+src/views/transaction/index.vue(494,20): error TS1002: Unterminated string literal.
+src/views/transaction/index.vue(495,5): error TS1005: ',' expected.
+src/views/transaction/index.vue(497,38): error TS1002: Unterminated string literal.
+src/views/transaction/index.vue(518,1): error TS1128: Declaration or statement expected.
+src/views/transaction/index.vue(518,2): error TS1128: Declaration or statement expected.
+src/views/users/index.vue(25,88): error TS1005: ':' expected.
+src/views/users/index.vue(25,92): error TS1005: ',' expected.
+src/views/users/index.vue(69,1): error TS1160: Unterminated template literal.

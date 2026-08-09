@@ -301,3 +301,16 @@ export const upsertOutletPricing = (data: {
 
 export const deleteOutletPricing = (id: string) =>
   request.delete('/outlet-pricing/' + id);
+
+// ==================== 帮助中心（FAQ） ====================
+export const getFaqAdminList = () => request.get('/faqs/admin/list')
+export const addFaqCategory = (data: any) => request.post('/faqs/admin/category', data)
+export const updateFaqCategory = (id: string, data: any) => request.put(`/faqs/admin/category/${id}`, data)
+export const deleteFaqCategory = (id: string) => request.delete(`/faqs/admin/category/${id}`)
+export const addFaq = (data: any) => request.post('/faqs/admin', data)
+export const updateFaq = (id: string, data: any) => request.put(`/faqs/admin/${id}`, data)
+export const deleteFaq = (id: string) => request.delete(`/faqs/admin/${id}`)
+export const updateFaqStatus = (id: string, status: number) => request.put(`/faqs/admin/${id}/status`, { status })
+export const updateFaqCategoryStatus = (id: string, status: number) => request.put(`/faqs/admin/category/${id}/status`, { status })
+export const getFaqPhone = () => request.get('/faqs/admin/phone')
+export const setFaqPhone = (phone: string) => request.put('/faqs/admin/phone', { phone })

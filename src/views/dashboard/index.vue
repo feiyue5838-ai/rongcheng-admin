@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="dashboard">
     <div class="page-header">
       <h2 class="page-title">工作台</h2>
@@ -213,7 +213,7 @@
             </div>
           </template>
           <div class="aux-grid">
-            <div v-for="k in customerKeys" :key="k" class="aux-card"
+            <div v-for="k in customerKeys" :key="k" class="aux-card customer-card"
               :style="{ background: 'linear-gradient(135deg, ' + customerStats[k].bgLight + ' 0%, ' + customerStats[k].bgDark + ' 100%)', border: '1px solid ' + customerStats[k].bgBorder }">
               <div class="aux-icon" :style="{ background: 'linear-gradient(135deg, ' + customerStats[k].accent + ', ' + customerStats[k].accentEnd + ')' }">
                 <el-icon :size="16" color="#fff">
@@ -223,15 +223,16 @@
               <div class="aux-info">
                 <div class="aux-value">{{ customerStats[k].value }}</div>
                 <div class="aux-label">{{ customerStats[k].label }}</div>
-                <div class="aux-trend" :class="customerStats[k].trend > 0 ? 'trend-up' : 'trend-down'">
-                  {{ customerStats[k].trend > 0 ? '↑' : '↓' }}{{ Math.abs(customerStats[k].trend) }}%
-                </div>
+                <div class="aux-period">{{ customerStats[k].period }}</div>
               </div>
+              <button class="aux-action" :title="customerStats[k].actionLabel" @click.stop="onCustomerAction(customerStats[k].action)">
+                <el-icon :size="12"><component :is="actionIcon(customerStats[k].action)" /></el-icon>
+                <span>{{ customerStats[k].actionLabel }}</span>
+              </button>
             </div>
           </div>
         </el-card>
       </el-col>
-
       <!-- 关键指标 -->
       <el-col :xs="24" :lg="12" style="display: flex; flex-direction: column;">
         <el-card class="panel-card" shadow="hover" style="flex: 1; display: flex; flex-direction: column;">
@@ -282,7 +283,7 @@
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { getDashboard, getDashboardTrend, getOutletsAPI, getSettlementRecords } from '@/api'
 import * as echarts from 'echarts'
-import { Refresh, User, UserFilled, CircleCheck, ChatDotRound, Clock, Document, Lightning, WarningFilled, Star } from '@element-plus/icons-vue'
+import { Refresh, Promotion, Download, Service, User, UserFilled, CircleCheck, ChatDotRound, Clock, Document, Lightning, WarningFilled, Star } from '@element-plus/icons-vue'
 
 type StatConfig = {
   label: string
@@ -310,11 +311,26 @@ const revenueBreakdown = reactive({
 })
 
 const customerStats = reactive({
-  totalCustomers: { label: '总客户',    value: 0, icon: 'User',           trend: 0, accent: '#5B6FE8', accentEnd: '#7B8FF8', bgLight: '#eef2ff', bgDark: '#dde4ff', bgBorder: 'rgba(91,111,232,.15)' },
-  activeCustomers:  { label: '活跃客户',  value: 0, icon: 'UserFilled',     trend: 0, accent: '#52c41a', accentEnd: '#73d13d', bgLight: '#f6ffed', bgDark: '#d9f7be', bgBorder: 'rgba(82,196,26,.15)' },
-  silentCustomers:  { label: '沉默客户',  value: 0, icon: 'Clock',          trend: 0, accent: '#fa8c16', accentEnd: '#ffc53d', bgLight: '#fffbe6', bgDark: '#fff1b8', bgBorder: 'rgba(250,140,22,.15)' },
-  vipCustomers:     { label: 'VIP客户',   value: 0, icon: 'Star',           trend: 0, accent: '#722ed1', accentEnd: '#9254de', bgLight: '#f9f0ff', bgDark: '#e8d5ff', bgBorder: 'rgba(114,46,209,.15)' },
+  totalCustomers: { label: '总客户',    period: '累计注册',       action: 'export',  actionLabel: '导出', value: 0, icon: 'User',       trend: 0, accent: '#5B6FE8', accentEnd: '#7B8FF8', bgLight: '#eef2ff', bgDark: '#dde4ff', bgBorder: 'rgba(91,111,232,.15)' },
+  activeCustomers: { label: '活跃客户',  period: '近 7 天操作',    action: 'push',    actionLabel: '推送', value: 0, icon: 'UserFilled', trend: 0, accent: '#52c41a', accentEnd: '#73d13d', bgLight: '#f6ffed', bgDark: '#d9f7be', bgBorder: 'rgba(82,196,26,.15)' },
+  silentCustomers: { label: '沉默客户',  period: '7-30 天无操作',   action: 'wake',    actionLabel: '唤醒', value: 0, icon: 'Clock',      trend: 0, accent: '#fa8c16', accentEnd: '#ffc53d', bgLight: '#fffbe6', bgDark: '#fff1b8', bgBorder: 'rgba(250,140,22,.15)' },
+  vipCustomers:    { label: 'VIP客户',   period: '累计消费 ≥ ¥500', action: 'service', actionLabel: '客服', value: 0, icon: 'Star',       trend: 0, accent: '#722ed1', accentEnd: '#9254de', bgLight: '#f9f0ff', bgDark: '#e8d5ff', bgBorder: 'rgba(114,46,209,.15)' },
 })
+const customerActionIcons: Record<string, any> = {
+  export: Download,
+  push: Promotion,
+  wake: ChatDotRound,
+  service: Service,
+}
+
+function actionIcon(action: string) {
+  return customerActionIcons[action] || Promotion
+}
+
+function onCustomerAction(action: string) {
+  ElMessage.info('功能开发中：' + action)
+}
+
 const customerKeys = ['totalCustomers', 'activeCustomers', 'silentCustomers', 'vipCustomers'] as const
 const kpiKeys = ['totalUsers', 'todayUsers', 'completedOrders', 'pendingOrders'] as const
 
@@ -936,6 +952,39 @@ onMounted(() => {
 
 </style>
 <style scoped lang="css">
+.customer-card { position: relative; overflow: hidden; }
+.aux-period {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 3px;
+  line-height: 1.3;
+}
+.aux-action {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  font-size: 11px;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  color: #475569;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s, transform .15s, background .15s, color .15s;
+  font-weight: 500;
+  font-family: inherit;
+}
+.aux-card:hover .aux-action { opacity: 1; }
+.aux-action:hover {
+  background: #fff;
+  transform: scale(1.05);
+  color: #2563eb;
+}
+
 
 
 .chart-card { border-radius: 16px; }
