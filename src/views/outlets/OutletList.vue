@@ -226,7 +226,7 @@
     </el-dialog>
 
     <!-- 重置密码 -->
-    <el-dialog v-model="passwordDialogVisible" title="重置密码" width="420px" @closed="passwordResult = ''">
+    <el-dialog v-model="passwordDialogVisible" title="重置密码" width="420px" @closed="passwordResult = ''; showPwd = false">
       <!-- 确认阶段 -->
       <div v-if="!passwordResult">
         <p>确定要重置服务商「<strong>{{ currentOutlet?.name }}</strong>」的登录密码吗？</p>
@@ -241,8 +241,9 @@
           padding:16px 24px;margin-bottom:12px;
         ">
           <span style="font-size:28px;font-weight:700;letter-spacing:4px;color:#E6A23C;font-family:monospace">
-            {{ passwordResult }}
+            {{ showPwd ? passwordResult : maskedPwd }}
           </span>
+          <el-button size="small" @click="showPwd = !showPwd">{{ showPwd ? '隐藏' : '显示' }}</el-button>
           <el-button size="small" @click="copyToClipboard(passwordResult)">复制</el-button>
         </div>
         <p style="color:#999;font-size:13px">请立即复制保存，关闭后无法再次查看</p>
@@ -684,6 +685,8 @@ function previewDocs(row: any, type: string) {
 const dialogVisible = ref(false)
 const passwordDialogVisible = ref(false)
 const passwordResult = ref('')
+const showPwd = ref(false)
+const maskedPwd = computed(() => '•'.repeat((passwordResult.value || '').length || 8))
 const isEdit = ref(false)
 const submitting = ref(false)
 const currentOutlet = ref<any>(null)

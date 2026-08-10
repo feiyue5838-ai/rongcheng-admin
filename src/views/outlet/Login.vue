@@ -64,7 +64,6 @@ const rules = {
 }
 
 async function handleLogin() {
-  console.log('handleLogin called', form.phone, form.password)
   const valid = await formRef.value?.validate().catch((err) => {
     console.log('Validation error:', err)
     return false
@@ -74,7 +73,6 @@ async function handleLogin() {
   loading.value = true
   try {
     const res = await outletStore.loginAction(form.phone, form.password)
-    console.log('Login response:', res)
     // 后端实际返回 outlet（小写），兼容旧 store 字段 Outle（首字母大写）
     if (res && (res.outlet || res.Outlet)) {
       ElMessage.success('登录成功')
