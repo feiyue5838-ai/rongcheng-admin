@@ -274,13 +274,19 @@ function showRefundDialog() {
 
 async function confirmRefund() {
   if (!refundForm.value.amount || refundForm.value.amount <= 0) {
-    ElMessage.warning('请输入退款金额')
+    ElMessage.warning('请输入有效退款金额（大于 0）')
     return
   }
   if (!refundForm.value.reason.trim()) {
     ElMessage.warning('请填写退款原因')
     return
   }
+  const maxAmount = Number(order.value?.payPrice || order.value?.totalPrice || 0)
+  if (refundForm.value.amount > maxAmount) {
+    ElMessage.warning(`退款金额不能超过订单实付金额 ¥${maxAmount}`)
+    return
+  }
+
   refunding.value = true
   try {
     // amount 单位：元，后端 order.controller 收到后自行 *100 转分
@@ -336,6 +342,22 @@ async function confirmAfterSales() {
   } finally {
     afterSalesLoading.value = false
   }
+}
+
+// 合法的状态流转（管理员可操作的状态集合，与后端 VALID_STATUSES 对齐）
+const VALID_STATUSES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+// 允许管理员手动流转到的目标状态（不含退回场景，仅正向流转）
+const ALLOWED_TRANSITIONS: Record<number, number[]> = {
+  1: [2, 6],        // 待支付 → 已支付 / 已取消
+  2: [3, 5, 6],     // 已支付 → 制作中 / 已完成 / 已取消
+  3: [4, 6],        // 制作中 → 已发货 / 已取消
+  4: [5, 7],        // 已发货 → 已完成 / 售后中
+  5: [7],           // 已完成 → 售后中
+  6: [],            // 已取消（终态）
+  7: [8],           // 售后中 → 退款中
+  8: [9],           // 退款中 → 已退款
+  9: [],            // 已退款（终态）
 }
 
 const statusOptions = [
@@ -434,9 +456,23 @@ async function fetchDetail() {
 }
 
 async function saveChanges() {
+  const targetStatus = newStatus.value
+  // 安全校验：目标状态必须是合法状态值
+  if (!VALID_STATUSES.includes(targetStatus)) {
+    ElMessage.warning('无效的订单状态')
+    return
+  }
+  // 状态流转校验：禁止非法的状态跳转
+  if (targetStatus !== order.value.status) {
+    const allowed = ALLOWED_TRANSITIONS[order.value.status] ?? []
+    if (!allowed.includes(targetStatus)) {
+      ElMessage.warning(`订单从「${statusMap[order.value.status]}」不能直接流转到「${statusMap[targetStatus]}」`)
+      return
+    }
+  }
   await updateOrder(order.value.id, {
-    status: newStatus.value,
-    statusText: statusMap[newStatus.value] || order.value.statusText,
+    status: targetStatus,
+    statusText: statusMap[targetStatus] || order.value.statusText,
     adminRemark: adminRemark.value,
   })
   ElMessage.success('保存成功')
