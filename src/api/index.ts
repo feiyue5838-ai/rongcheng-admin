@@ -147,6 +147,7 @@ export const deleteQuestionReply = (replyId: string) => request.delete(`/questio
 
 // ==================== 管理端接口 ====================
 export const getDashboard = () => request.get('/dashboard')
+export const customerActionAPI = (dto: { action: string; segment: string }) => request.post('/dashboard/customer-action', dto)
 export const getDashboardTrend = (type: 'order' | 'amount' = 'order', days: number = 7) =>
   request.get('/dashboard/trend', { params: { type, days } })
 export const getAdmins = (params?: any) => request.get('/admin/admins', { params })

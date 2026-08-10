@@ -281,7 +281,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue'
-import { getDashboard, getDashboardTrend, getOutletsAPI, getSettlementRecords } from '@/api'
+import { getDashboard, getDashboardTrend, getOutletsAPI, getSettlementRecords, customerActionAPI } from '@/api'
 import * as echarts from 'echarts'
 import { Refresh, Promotion, Download, Service, User, UserFilled, CircleCheck, ChatDotRound, Clock, Document, Lightning, WarningFilled, Star } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -328,8 +328,43 @@ function actionIcon(action: string) {
   return customerActionIcons[action] || Promotion
 }
 
-function onCustomerAction(action: string) {
-  ElMessage.info('功能开发中：' + action)
+function exportCustomersCsv() {
+  const header = ['客户类型', '数值']
+  const rows = [
+    ['总客户', customerStats.totalCustomers.value],
+    ['活跃客户', customerStats.activeCustomers.value],
+    ['沉默客户', customerStats.silentCustomers.value],
+    ['VIP客户', customerStats.vipCustomers.value],
+  ]
+  const csv = '\uFEFF' + [header, ...rows].map(r => r.join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = '客户状态统计.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+const actionSegment: Record<string, string> = { push: 'active', wake: 'silent', service: 'vip' }
+const actionLabel: Record<string, string> = { push: '推送', wake: '唤醒', service: '客服' }
+const segmentLabel: Record<string, string> = { active: '活跃', silent: '沉默', vip: 'VIP' }
+
+async function onCustomerAction(action: string) {
+  if (action === 'export') {
+    exportCustomersCsv()
+    ElMessage.success('已导出客户状态统计 CSV')
+    return
+  }
+  const segment = actionSegment[action] || 'all'
+  try {
+    const res: any = await customerActionAPI({ action, segment })
+    const data = res.data ?? res
+    const count = data.count ?? 0
+    ElMessage.success(`已向 ${count} 位${segmentLabel[segment] || ''}客户触发${actionLabel[action] || action}`)
+  } catch (e) {
+    ElMessage.error('操作失败，请稍后重试')
+  }
 }
 
 const customerKeys = ['totalCustomers', 'activeCustomers', 'silentCustomers', 'vipCustomers'] as const
