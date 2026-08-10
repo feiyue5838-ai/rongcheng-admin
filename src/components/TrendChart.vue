@@ -9,12 +9,15 @@
       </el-radio-group>
     </div>
 
-    <div ref="chartRef" class="echarts-container"></div>
+    <div v-if="trendEmpty" class="empty-tip">
+      <el-empty description="暂无趋势数据" :image-size="60" />
+    </div>
+    <div v-else ref="chartRef" class="echarts-container"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, nextTick, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, onUnmounted } from 'vue'
 import type { ECharts, EChartsOption } from 'echarts'
 
 interface TrendItem {
@@ -44,6 +47,7 @@ const emit = defineEmits<{
   'rangeChange': [days: number]
 }>()
 
+const trendEmpty = computed(() => !props.data?.length)
 const chartRef = ref<HTMLElement>()
 const selectedRange = ref(props.modelValue)
 let chartInstance: ECharts | null = null
