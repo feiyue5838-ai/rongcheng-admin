@@ -218,6 +218,25 @@
             <el-radio :label="5">已终止</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-form-item label="结算周期" prop="settlementCycle">
+          <el-select v-model="form.settlementCycle" placeholder="留空则手动结算" clearable style="width:100%">
+            <el-option label="留空（手动）" :value="null" />
+            <el-option label="每天（每日结算）" value="daily" />
+            <el-option label="每周（每周固定日结算）" value="weekly" />
+            <el-option label="每月（每月1号结算上月）" value="monthly" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="form.settlementCycle === 'weekly'" label="每周起算日" prop="settlementWeeklyStartDay">
+          <el-select v-model="form.settlementWeeklyStartDay" style="width:100%">
+            <el-option label="周日" :value="0" />
+            <el-option label="周一（推荐）" :value="1" />
+            <el-option label="周二" :value="2" />
+            <el-option label="周三" :value="3" />
+            <el-option label="周四" :value="4" />
+            <el-option label="周五" :value="5" />
+            <el-option label="周六" :value="6" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -703,6 +722,8 @@ const form = reactive({
   businessLicense: '',
   status: 1,
   businessTypeIds: [] as string[],
+  settlementCycle: null as string | null,
+  settlementWeeklyStartDay: 1,
 })
 const permitFiles = ref<any[]>([])
 function parsePermits(str: any) {
@@ -733,7 +754,7 @@ const rules = {
 
 function openCreateDialog() {
   isEdit.value = false
-  Object.assign(form, { name: '', contact: '', phone: '', province: '', city: '', district: '', address: '', businessLicense: '', status: 1 })
+  Object.assign(form, { name: '', contact: '', phone: '', province: '', city: '', district: '', address: '', businessLicense: '', status: 1, settlementCycle: null, settlementWeeklyStartDay: 1 })
   permitFiles.value = []
   form.businessTypeIds = []
   currentOutlet.value = null
@@ -756,6 +777,8 @@ function openEditDialog(row: any) {
     address: row.address || '',
     businessLicense: row.businessLicense || '',
     status: row.status,
+    settlementCycle: row.settlementCycle ?? null,
+    settlementWeeklyStartDay: row.settlementWeeklyStartDay ?? 1,
   })
   permitFiles.value = parsePermits(row.specialPermits).map(url => ({ url, name: url.split('/').pop() || '证件' }))
   currentOutlet.value = row
@@ -768,7 +791,7 @@ async function onSubmit() {
 
   submitting.value = true
   try {
-    const payload = {
+    const payload: any = {
       name: form.name,
       contact: form.contact,
       phone: form.phone,
@@ -781,6 +804,12 @@ async function onSubmit() {
       special_permits: permitFiles.value
         .filter(f => f.url || f.response?.url)
         .map(f => f.url || f.response?.url),
+    }
+    if (form.settlementCycle !== null) {
+      payload.settlement_cycle = form.settlementCycle
+      payload.settlement_weekly_start_day = form.settlementCycle === 'weekly' ? form.settlementWeeklyStartDay : 1
+    } else {
+      payload.settlement_cycle = null
     }
     if (isEdit.value) {
       await updateOutletAPI(currentOutlet.value.id, payload)
