@@ -171,6 +171,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getOutletsAPI, getOutletAPI, getOutletOrdersAPI } from '@/api'
+import { acceptOrderAPI, completeOrderAPI } from '@/api/outlet'
 import { formatDate } from '@/utils/format'
 import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding } from '@element-plus/icons-vue'
 
@@ -240,25 +241,19 @@ function onAccept(order: any) {
 }
 
 async function onConfirmAccept() {
+  // 前端状态校验：只有 status === 1 才能接单
+  if (currentOrder.value?.status !== 1) {
+    ElMessage.warning('该订单当前状态不允许接单，请刷新页面后重试')
+    return
+  }
   actionLoading.value = true
   try {
-    const res = await fetch(`/api/orders/${(currentOrder.value as any)?.orderId}/accept`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ outletId: selectedOutlet.value }),
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.message || `HTTP ${res.status}`)
-    }
+    await acceptOrderAPI((currentOrder.value as any)?.orderId)
     ElMessage.success('接单成功')
     acceptDialogVisible.value = false
     loadData()
   } catch (err: any) {
-    ElMessage.error(err?.message || '接单失败')
+    ElMessage.error(err?.response?.data?.message || err?.message || '接单失败')
   } finally {
     actionLoading.value = false
   }
@@ -271,33 +266,25 @@ function onComplete(order: any) {
 }
 
 async function onConfirmComplete() {
+  // 前端状态校验：只有 status === 2 才能完成交货
+  if (currentOrder.value?.status !== 2) {
+    ElMessage.warning('该订单当前状态不允许交货，请刷新页面后重试')
+    return
+  }
   const valid = await completeFormRef.value?.validate().catch(() => false)
   if (!valid) return
   actionLoading.value = true
   try {
-    const res = await fetch(`/api/orders/${(currentOrder.value as any)?.orderId}/deliver`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        expressCompany: completeForm.expressCompany,
-        expressNo: completeForm.expressNo,
-        remark: completeForm.remark,
-        receipts: [],
-        outletId: selectedOutlet.value ?? '',
-      }),
+    await completeOrderAPI((currentOrder.value as any)?.orderId, {
+      expressCompany: completeForm.expressCompany,
+      expressNo: completeForm.expressNo,
+      remark: completeForm.remark,
     })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.message || `HTTP ${res.status}`)
-    }
     ElMessage.success('交货成功')
     completeDialogVisible.value = false
     loadData()
   } catch (err: any) {
-    ElMessage.error(err?.message || '交货失败')
+    ElMessage.error(err?.response?.data?.message || err?.message || '交货失败')
   } finally {
     actionLoading.value = false
   }
