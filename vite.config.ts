@@ -54,18 +54,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 1100,
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules/echarts')) return 'echarts'
-          if (id.includes('node_modules/vue') || id.includes('/vue.runtime')) return 'vue'
-          if (id.includes('node_modules/element-plus')) return 'element-plus'
-          if (id.includes('node_modules/@element-plus')) return 'element-plus'
-          if (id.includes('node_modules/@vueuse')) return 'vueuse'
-          if (id.includes('node_modules/@vue')) return 'vue-shared'
-          // element-plus (~1060KB) and echarts (~1040KB) are intentionally left as-is
-          // their gzip sizes are ~336KB and ~346KB respectively, acceptable for modern networks
-          // echarts is lazy-loaded via dynamic import() in TrendChart and ModuleDonut
-          return 'vendor'
-        },
+        // 禁止手动拆 chunk：element-plus 拆出单独 chunk 会触发内部循环依赖 bug
+        // 其他模块由 Rollup 自动处理
       },
     },
   },

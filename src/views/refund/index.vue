@@ -88,7 +88,7 @@ const pageSize = ref(20);
 const filterParams = reactive<any>({ status: null });
 
 const showApplyDialog = ref(false);
-const applyForm = reactive({ orderId: '', amount: null as number | null, reason: '' });
+const applyForm = reactive({ orderId: '', amount: undefined as number | undefined, reason: '' });
 
 const statusTagType = (status: number) => {
   const map: Record<number, string> = { 1: 'warning', 2: 'success', 3: 'info', 4: 'danger' };
@@ -128,7 +128,7 @@ const submitApply = async () => {
     ElMessage.success('申请已提交');
     showApplyDialog.value = false;
     applyForm.orderId = '';
-    applyForm.amount = null;
+    applyForm.amount = undefined;
     applyForm.reason = '';
     loadList();
   } catch (e: any) {

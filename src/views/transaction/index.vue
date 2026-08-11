@@ -61,7 +61,7 @@
       <el-form :inline="true" :model="filterParams">
         <el-form-item label="交易时间">
           <el-date-picker
-            v-model="dateRange"
+            v-model="(dateRange as any)"
             type="daterange"
             range-separator="至"
             start-placeholder="开始日期"

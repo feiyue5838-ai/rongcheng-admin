@@ -10,33 +10,33 @@
     </div>
 
     <!-- 统计卡片 -->
-    <div class="stats-row">
-      <div class="stat-card blue">
-        <div class="stat-icon"><el-icon><Document /></el-icon></div>
-        <div class="stat-info">
-          <div class="stat-num">{{ stats.total }}</div>
-          <div class="stat-label">报纸总数</div>
+    <div class="summary-grid">
+      <div class="summary-card summary-total">
+        <div class="card-icon">📋</div>
+        <div class="card-body">
+          <div class="sum-value">{{ stats.total }}</div>
+          <div class="sum-label">报纸总数</div>
         </div>
       </div>
-      <div class="stat-card green">
-        <div class="stat-icon"><el-icon><CircleCheckFilled /></el-icon></div>
-        <div class="stat-info">
-          <div class="stat-num">{{ stats.active }}</div>
-          <div class="stat-label">正常合作</div>
+      <div class="summary-card summary-active">
+        <div class="card-icon">✅</div>
+        <div class="card-body">
+          <div class="sum-value">{{ stats.active }}</div>
+          <div class="sum-label">正常合作</div>
         </div>
       </div>
-      <div class="stat-card gray">
-        <div class="stat-icon"><el-icon><VideoPause /></el-icon>️</div>
-        <div class="stat-info">
-          <div class="stat-num">{{ stats.inactive }}</div>
-          <div class="stat-label">已停用</div>
+      <div class="summary-card summary-pending">
+        <div class="card-icon">⏸</div>
+        <div class="card-body">
+          <div class="sum-value">{{ stats.inactive }}</div>
+          <div class="sum-label">已停用</div>
         </div>
       </div>
-      <div class="stat-card cyan">
-        <div class="stat-icon"><el-icon><DataLine /></el-icon></div>
-        <div class="stat-info">
-          <div class="stat-num">{{ stats.avgPrice }}</div>
-          <div class="stat-label">平均单价</div>
+      <div class="summary-card summary-orders">
+        <div class="card-icon">💰</div>
+        <div class="card-body">
+          <div class="sum-value">{{ stats.avgPrice }}</div>
+          <div class="sum-label">平均单价</div>
         </div>
       </div>
     </div>
@@ -1011,62 +1011,75 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-/* 统计卡片 */
-.stats-row {
-  display: flex;
-  gap: 12px;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
-  border-radius: 10px;
+/* 统计卡片 - 网点总览同款 */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
   margin-bottom: 20px;
 }
-
-.stat-card {
-  flex: 1;
+.summary-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 24px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 32px 18px;
-  border-radius: 8px;
-  color: #fff;
-  min-width: 0;
-  min-height: 104px;
+  gap: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
-
-.stat-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: rgba(255,255,255,.2);
+.summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+.summary-card .card-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 26px;
   flex-shrink: 0;
 }
-
-.stat-info {
-  display: flex;
-  flex-direction: column;
+.summary-card .card-body {
+  flex: 1;
   min-width: 0;
 }
-
-.stat-num {
-  font-size: 24px;
-  font-weight: 700;
+.summary-card .sum-value {
+  font-size: 30px;
+  font-weight: 800;
   line-height: 1;
 }
-
-.stat-label {
-  font-size: 12px;
-  opacity: .9;
+.summary-card .sum-label {
+  font-size: 13px;
+  color: #888;
   margin-top: 4px;
 }
-
-.stat-card.blue  { background: linear-gradient(135deg, #5B6FE8, #7B8FFF); }
-.stat-card.green { background: linear-gradient(135deg, #52c41a, #73d13d); }
-.stat-card.gray  { background: linear-gradient(135deg, #8c8c8c, #bfbfbf); }
-.stat-card.cyan  { background: linear-gradient(135deg, #13c2c2, #36cfc9); }
+.summary-total {
+  background: linear-gradient(135deg, #eef2ff, #dde4ff);
+  border: 1px solid rgba(91,111,232,0.15);
+}
+.summary-total .card-icon { background: rgba(91,111,232,0.12); color: #5b6fe8; }
+.summary-total .sum-value { color: #3d4fc4; }
+.summary-active {
+  background: linear-gradient(135deg, #f6ffed, #d9f7be);
+  border: 1px solid rgba(82,196,26,0.15);
+}
+.summary-active .card-icon { background: rgba(82,196,26,0.12); color: #52c41a; }
+.summary-active .sum-value { color: #389e0d; }
+.summary-pending {
+  background: linear-gradient(135deg, #fff1f0, #ffccc7);
+  border: 1px solid rgba(245,34,45,0.15);
+}
+.summary-pending .card-icon { background: rgba(245,34,45,0.12); color: #f5222d; }
+.summary-pending .sum-value { color: #cf1322; }
+.summary-orders {
+  background: linear-gradient(135deg, #fff7e6, #ffe8c2);
+  border: 1px solid rgba(250,140,22,0.15);
+}
+.summary-orders .card-icon { background: rgba(250,140,22,0.12); color: #fa8c16; }
+.summary-orders .sum-value { color: #c87619; }
 
 .page-card {
   background: #fff;
