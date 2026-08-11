@@ -31,7 +31,7 @@
           <el-input v-model="form.password" type="password" show-password :placeholder="isEdit?'不修改请留空':'请输入密码'" />
         </el-form-item>
         <el-form-item label="角色">
-          <el-radio-group v-model="form.role"><el-radio label="admin">普通管理员</el-radio><el-radio label="super">超级管理员</el-radio></el-radio-group>
+          <el-radio-group v-model="form.role"><el-radio label="admin">普通管理员</el-radio><el-radio label="superadmin">超级管理员</el-radio></el-radio-group>
         </el-form-item>
         <el-form-item label="状态" v-if="isEdit">
           <el-switch v-model="form.status" :active-value="1" :inactive-value="0" />
