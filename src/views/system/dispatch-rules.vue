@@ -126,6 +126,169 @@
           <el-empty v-if="forcedRegions.length === 0 && !loading" description="暂无强制手动地区" />
         </div>
       </el-tab-pane>
+
+      <!-- Tab4: 派单记录 -->
+      <el-tab-pane label="派单记录" name="records">
+        <!-- 统计卡片 -->
+        <el-row :gutter="16" style="margin-bottom: 16px">
+          <el-col :span="6">
+            <div class="stat-card stat-blue">
+              <div class="stat-icon">📋</div>
+              <div class="stat-info">
+                <div class="stat-num">{{ drStats.total }}</div>
+                <div class="stat-label">总派单数</div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="stat-card stat-green">
+              <div class="stat-icon">🤖</div>
+              <div class="stat-info">
+                <div class="stat-num">{{ drStats.autoCount }}</div>
+                <div class="stat-label">自动派单</div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="stat-card stat-orange">
+              <div class="stat-icon">👤</div>
+              <div class="stat-info">
+                <div class="stat-num">{{ drStats.manualCount }}</div>
+                <div class="stat-label">手动派单</div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="stat-card stat-purple">
+              <div class="stat-icon">⏱️</div>
+              <div class="stat-info">
+                <div class="stat-num">{{ drStats.avgAcceptTime }}<span class="unit">分</span></div>
+                <div class="stat-label">平均接单时长</div>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <!-- 筛选区 -->
+        <el-card style="margin-bottom: 16px">
+          <el-form :inline="true" :model="drFilters" size="default">
+            <el-form-item label="时间范围">
+              <el-date-picker
+                v-model="drDateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                value-format="YYYY-MM-DD"
+                @change="handleDrDateChange"
+              />
+            </el-form-item>
+            <el-form-item label="分配方式">
+              <el-select v-model="drFilters.assignedBy" placeholder="全部" clearable style="width: 120px">
+                <el-option label="自动派单" value="system" />
+                <el-option label="手动派单" value="manual" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="分配网点">
+              <el-select v-model="drFilters.outletId" placeholder="全部网点" clearable filterable style="width: 200px">
+                <el-option v-for="o in drOutletList" :key="o.id" :label="o.name" :value="o.id" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="订单状态">
+              <el-select v-model="drFilters.status" placeholder="全部" clearable style="width: 120px">
+                <el-option label="待接单" :value="1" />
+                <el-option label="已接单" :value="2" />
+                <el-option label="已完成" :value="3" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="订单号">
+              <el-input v-model="drFilters.orderNo" placeholder="请输入订单号" clearable style="width: 200px" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :icon="SearchIcon" @click="fetchDrData">查询</el-button>
+              <el-button :icon="RefreshIcon" @click="resetDrFilters">重置</el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
+
+        <!-- 数据表格 -->
+        <el-card v-loading="drLoading">
+          <el-table :data="drTableData" stripe border style="width: 100%">
+            <el-table-column prop="orderNo" label="订单号" width="180">
+              <template #default="{ row }">
+                <el-link type="primary" @click="drViewOrder(row)">{{ row.orderNo }}</el-link>
+              </template>
+            </el-table-column>
+            <el-table-column prop="companyName" label="公司名称" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="outletName" label="分配网点" width="150">
+              <template #default="{ row }">
+                <el-tag>{{ row.outletName }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="assignedBy" label="分配方式" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag :type="row.assignedBy === 'system' ? 'success' : 'warning'" size="small">
+                  {{ row.assignedBy === 'system' ? '自动' : '手动' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="matchScore" label="匹配分" width="80" align="center">
+              <template #default="{ row }">
+                <span v-if="row.matchScore">{{ row.matchScore }}分</span>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="statusText" label="分配状态" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 1 ? 'warning' : row.status === 2 ? 'primary' : 'success'" size="small">
+                  {{ row.statusText }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="createdAt" label="分配时间" width="170" />
+            <el-table-column prop="acceptedAt" label="接单时间" width="170">
+              <template #default="{ row }">
+                <span v-if="row.acceptedAt">{{ row.acceptedAt }}</span>
+                <span v-else style="color: #999">未接单</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
+          </el-table>
+          <el-pagination
+            v-model:current-page="drPagination.page"
+            v-model:page-size="drPagination.pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="drPagination.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            style="margin-top: 16px; justify-content: flex-end"
+            @size-change="fetchDrData"
+            @current-change="fetchDrData"
+          />
+        </el-card>
+
+        <!-- 详情弹窗 -->
+        <el-dialog v-model="drDetailVisible" title="派单详情" width="700px">
+          <el-descriptions :column="2" border v-if="drCurrentRecord">
+            <el-descriptions-item label="订单号">{{ drCurrentRecord.orderNo }}</el-descriptions-item>
+            <el-descriptions-item label="公司名称">{{ drCurrentRecord.companyName }}</el-descriptions-item>
+            <el-descriptions-item label="分配网点">{{ drCurrentRecord.outletName }}</el-descriptions-item>
+            <el-descriptions-item label="分配方式">
+              <el-tag :type="drCurrentRecord.assignedBy === 'system' ? 'success' : 'warning'">
+                {{ drCurrentRecord.assignedBy === 'system' ? '自动派单' : '手动派单' }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="匹配分">{{ drCurrentRecord.matchScore || '-' }}分</el-descriptions-item>
+            <el-descriptions-item label="分配状态">
+              <el-tag :type="drCurrentRecord.status === 1 ? 'warning' : drCurrentRecord.status === 2 ? 'primary' : 'success'">
+                {{ drCurrentRecord.statusText }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="分配时间">{{ drCurrentRecord.createdAt }}</el-descriptions-item>
+            <el-descriptions-item label="接单时长">{{ drCurrentRecord.acceptDuration ? drCurrentRecord.acceptDuration + '分钟' : '-' }}</el-descriptions-item>
+            <el-descriptions-item label="备注" :span="2">{{ drCurrentRecord.remark || '-' }}</el-descriptions-item>
+          </el-descriptions>
+        </el-dialog>
+      </el-tab-pane>
     </el-tabs>
 
     <!-- 添加强制手动地区弹窗 -->
@@ -154,8 +317,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search as SearchIcon, Refresh as RefreshIcon } from '@element-plus/icons-vue'
+import request from '@/api'
 import {
   getDispatchConfig, updateDispatchConfig,
   getDispatchPriorities, setDispatchPriority, batchSetDispatchPriorities,
@@ -164,6 +329,17 @@ import {
 
 const activeTab = ref('mode')
 const loading = ref(false)
+
+// ====== 派单记录 Tab 状态 ======
+const drLoading = ref(false)
+const drTableData = ref<any[]>([])
+const drOutletList = ref<any[]>([])
+const drStats = reactive({ total: 0, autoCount: 0, manualCount: 0, avgAcceptTime: 0 })
+const drFilters = reactive({ orderNo: '', assignedBy: '', outletId: '', status: null as number | null, startDate: '', endDate: '' })
+const drDateRange = ref<string[]>([])
+const drPagination = reactive({ page: 1, pageSize: 20, total: 0 })
+const drDetailVisible = ref(false)
+const drCurrentRecord = ref<any>(null)
 const submitting = ref(false)
 const batchPriority = ref(0)
 const selectedRows = ref<any[]>([])
@@ -294,6 +470,70 @@ async function deleteForced(id: string) {
   } catch { /* cancel or error */ }
 }
 
+// ====== 派单记录 Tab 函数 ======
+async function fetchDrOutlets() {
+  try {
+    const res: any = await request.get('/outlets', { params: { pageSize: 100 } })
+    drOutletList.value = res?.data?.list || res?.list || []
+  } catch { /* ignore */ }
+}
+
+async function fetchDrStats() {
+  try {
+    const res: any = await request.get('/dashboard/dispatch-stats', { params: drFilters })
+    Object.assign(drStats, res?.data || res)
+  } catch { /* ignore */ }
+}
+
+async function fetchDrData() {
+  drLoading.value = true
+  try {
+    const params: any = {
+      ...drFilters,
+      page: drPagination.page,
+      pageSize: drPagination.pageSize,
+    }
+    const res: any = await request.get('/dashboard/dispatch-records', { params })
+    const data = res?.data || res
+    drTableData.value = data.list || []
+    drPagination.total = data.pagination?.total || 0
+    fetchDrStats()
+  } catch {
+    ElMessage.error('加载数据失败')
+  } finally {
+    drLoading.value = false
+  }
+}
+
+function handleDrDateChange(val: string[]) {
+  if (val && val.length === 2) {
+    drFilters.startDate = val[0]
+    drFilters.endDate = val[1]
+  } else {
+    drFilters.startDate = ''
+    drFilters.endDate = ''
+  }
+}
+
+function resetDrFilters() {
+  Object.assign(drFilters, { orderNo: '', assignedBy: '', outletId: '', status: null, startDate: '', endDate: '' })
+  drDateRange.value = []
+  drPagination.page = 1
+  fetchDrData()
+}
+
+function drViewOrder(row: any) {
+  window.open(`/orders/seal?id=${row.orderId}`, '_blank')
+}
+
+// 加载派单记录 Tab 时才拉数据（懒加载）
+watch(activeTab, (tab) => {
+  if (tab === 'records') {
+    if (drOutletList.value.length === 0) fetchDrOutlets()
+    fetchDrData()
+  }
+})
+
 onMounted(() => {
   loadConfig()
   loadPriorities()
@@ -303,6 +543,45 @@ onMounted(() => {
 
 <style scoped>
 .dispatch-rules { }
+
+/* 派单记录 Tab 统计卡片 */
+.stat-card {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0,0,0,.06);
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-right: 14px;
+    flex-shrink: 0;
+  }
+
+  .stat-info {
+    flex: 1;
+    .stat-num {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 6px;
+      .unit { font-size: 13px; font-weight: normal; margin-left: 2px; }
+    }
+    .stat-label { font-size: 13px; color: #666; }
+  }
+
+  &.stat-blue  { background: linear-gradient(135deg, #eef2ff, #dde4ff); .stat-icon { background: #5b6fe8; } }
+  &.stat-green { background: linear-gradient(135deg, #f6ffed, #d9f7be); .stat-icon { background: #52c41a; } }
+  &.stat-orange{ background: linear-gradient(135deg, #fff7e6, #ffe8c2); .stat-icon { background: #faad14; } }
+  &.stat-purple{ background: linear-gradient(135deg, #f9f0ff, #efdbff); .stat-icon { background: #722ed1; } }
+}
 .page-header {
   display: flex;
   align-items: center;
