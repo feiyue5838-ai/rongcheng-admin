@@ -51,6 +51,14 @@
               <el-input v-model="sealConfig.legalPhotoCitiesText" type="textarea" :rows="3" placeholder="多个地区用逗号、顿号或空格分隔，如：上海, 山东, 新疆, 贵阳" />
               <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">企业/个体户刻章时，这些地区的法人需上传白底自拍照。地区名需与小程序 region 字段匹配；留空则所有地区都不显示该模块。</div>
             </el-form-item>
+            <el-form-item label="营业执照正本地区">
+              <el-input v-model="sealConfig.licenseOriginalCitiesText" type="textarea" :rows="3" placeholder="多个地区用逗号、顿号或空格分隔，如：上海" />
+              <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">这些地区需要上传营业执照正本照片。</div>
+            </el-form-item>
+            <el-form-item label="营业执照副本地区">
+              <el-input v-model="sealConfig.licenseCopyCitiesText" type="textarea" :rows="3" placeholder="多个地区用逗号、顿号或空格分隔，如：上海" />
+              <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">这些地区需要上传营业执照副本照片。</div>
+            </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="saveSealConfig">保存</el-button>
             </el-form-item>
@@ -72,7 +80,7 @@ const basicConfig = reactive({ companyName: '成都蓉城企业服务有限公�
 const wechatConfig = reactive({ appId: '', appSecret: '' })
 const paymentConfig = reactive({ mchId: '', mchKey: '', serial: '', notifyUrl: '' })
 const businessConfig = reactive({ minOrderAmount: 0, freeShippingAmount: 0, reviewRewardPoints: 0, pointsRate: '' })
-const sealConfig = reactive<{ handheldIdCities: string[]; handheldIdCitiesText: string; legalPhotoCities: string[]; legalPhotoCitiesText: string }>({ handheldIdCities: [], handheldIdCitiesText: '', legalPhotoCities: [], legalPhotoCitiesText: '' })
+const sealConfig = reactive<{ handheldIdCities: string[]; handheldIdCitiesText: string; legalPhotoCities: string[]; legalPhotoCitiesText: string; licenseOriginalCities: string[]; licenseOriginalCitiesText: string; licenseCopyCities: string[]; licenseCopyCitiesText: string }>({ handheldIdCities: [], handheldIdCitiesText: '', legalPhotoCities: [], legalPhotoCitiesText: '', licenseOriginalCities: [], licenseOriginalCitiesText: '', licenseCopyCities: [], licenseCopyCitiesText: '' })
 
 async function fetchConfigs() {
   const groups = { basic: basicConfig, wechat: wechatConfig, payment: paymentConfig, business: businessConfig, seal: sealConfig }
@@ -92,6 +100,16 @@ async function fetchConfigs() {
               try { arr = JSON.parse(item.value) } catch { arr = [] as string[] }
               sealConfig.legalPhotoCities = arr
               sealConfig.legalPhotoCitiesText = arr.join('，')
+            } else if (item.key === 'licenseOriginalCities') {
+              let arr: string[] = []
+              try { arr = JSON.parse(item.value) } catch { arr = [] as string[] }
+              sealConfig.licenseOriginalCities = arr
+              sealConfig.licenseOriginalCitiesText = arr.join('，')
+            } else if (item.key === 'licenseCopyCities') {
+              let arr: string[] = []
+              try { arr = JSON.parse(item.value) } catch { arr = [] as string[] }
+              sealConfig.licenseCopyCities = arr
+              sealConfig.licenseCopyCitiesText = arr.join('，')
             }
           } else if (cfg.hasOwnProperty(item.key)) {
             Object.assign(cfg, { [item.key]: item.value })
@@ -112,10 +130,22 @@ async function saveSealConfig() {
       .split(/[，,、\s]+/)
       .map((s: string) => s.trim())
       .filter((s: string) => s.length > 0)
+    const licenseOriginal = sealConfig.licenseOriginalCitiesText
+      .split(/[，,、\s]+/)
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0)
+    const licenseCopy = sealConfig.licenseCopyCitiesText
+      .split(/[，,、\s]+/)
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0)
     await request.put('/config', { key: 'handheldIdCities', value: handheld, group: 'seal' })
     await request.put('/config', { key: 'legalPhotoCities', value: legal, group: 'seal' })
+    await request.put('/config', { key: 'licenseOriginalCities', value: licenseOriginal, group: 'seal' })
+    await request.put('/config', { key: 'licenseCopyCities', value: licenseCopy, group: 'seal' })
     sealConfig.handheldIdCities = handheld
     sealConfig.legalPhotoCities = legal
+    sealConfig.licenseOriginalCities = licenseOriginal
+    sealConfig.licenseCopyCities = licenseCopy
     ElMessage.success('保存成功')
   } catch (e) {
     ElMessage.error('保存失败')
