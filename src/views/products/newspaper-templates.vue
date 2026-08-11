@@ -8,33 +8,33 @@
     <div class="page-card">
 
       <!-- 统计卡片 -->
-      <div class="stats-row">
-        <div class="stat-card stat-blue">
-          <div class="stat-icon"><el-icon><List /></el-icon></div>
-          <div class="stat-info">
-            <span class="stat-label">模板总数</span>
-            <span class="stat-num">{{ statTotal }}</span>
+      <div class="summary-grid">
+        <div class="summary-card summary-total">
+          <div class="card-icon">📋</div>
+          <div class="card-body">
+            <div class="sum-value">{{ statTotal }}</div>
+            <div class="sum-label">模板总数</div>
           </div>
         </div>
-        <div class="stat-card stat-green">
-          <div class="stat-icon"><el-icon><Select /></el-icon></div>
-          <div class="stat-info">
-            <span class="stat-label">启用中</span>
-            <span class="stat-num">{{ statOn }}</span>
+        <div class="summary-card summary-active">
+          <div class="card-icon">✅</div>
+          <div class="card-body">
+            <div class="sum-value">{{ statOn }}</div>
+            <div class="sum-label">启用中</div>
           </div>
         </div>
-        <div class="stat-card stat-orange">
-          <div class="stat-icon"><el-icon><VideoPause /></el-icon></div>
-          <div class="stat-info">
-            <span class="stat-label">已停用</span>
-            <span class="stat-num">{{ statOff }}</span>
+        <div class="summary-card summary-orders">
+          <div class="card-icon">⏸</div>
+          <div class="card-body">
+            <div class="sum-value">{{ statOff }}</div>
+            <div class="sum-label">已停用</div>
           </div>
         </div>
-        <div class="stat-card stat-red">
-          <div class="stat-icon">+</div>
-          <div class="stat-info">
-            <span class="stat-label">本月新增</span>
-            <span class="stat-num">{{ statNew }}</span>
+        <div class="summary-card summary-pending">
+          <div class="card-icon">🆕</div>
+          <div class="card-body">
+            <div class="sum-value">{{ statNew }}</div>
+            <div class="sum-label">本月新增</div>
           </div>
         </div>
       </div>
@@ -977,66 +977,31 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* 统计卡片 */
-.stats-row {
-  display: flex;
-  gap: 12px;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.stat-card {
-  flex: 1;
+/* 统计卡片 — 与网点总览统一风格 */
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.summary-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 24px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 8px;
-  color: #fff;
-  min-width: 0;
+  gap: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); }
+  .card-icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
+  .card-body { flex: 1; min-width: 0; }
+  .sum-value { font-size: 30px; font-weight: 800; line-height: 1; }
+  .sum-label { font-size: 13px; color: #888; margin-top: 4px; }
 }
-
-.stat-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: rgba(255,255,255,.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.stat-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.stat-label {
-  font-size: 12px;
-  opacity: .9;
-  margin-bottom: 2px;
-}
-
-.stat-num {
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1;
-}
-.stat-sub {
-  display: block;
-  font-size: 11px;
-  opacity: .75;
-  margin-top: 2px;
-}
-
-.stat-blue  { background: linear-gradient(135deg, #5B6FE8, #7B8FFF); }
-.stat-green { background: linear-gradient(135deg, #52c41a, #73d13d); }
-.stat-orange{ background: linear-gradient(135deg, #faad14, #ffc53d); color: #fff; }
-.stat-red   { background: linear-gradient(135deg, #ff4d4f, #ff7875); }
+// 模板总数 — 紫蓝
+.summary-total { background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%); border: 1px solid rgba(91, 111, 232, 0.15); .card-icon { background: rgba(91, 111, 232, 0.12); color: #5B6FE8; } .sum-value { color: #3d4fc4; } }
+// 启用中 — 清新绿
+.summary-active { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); border: 1px solid rgba(82, 196, 26, 0.15); .card-icon { background: rgba(82, 196, 26, 0.12); color: #52c41a; } .sum-value { color: #389e0d; } }
+// 已停用 — 活力橙
+.summary-orders { background: linear-gradient(135deg, #fff7e6 0%, #ffe8c2 100%); border: 1px solid rgba(250, 140, 22, 0.15); .card-icon { background: rgba(250, 140, 22, 0.12); color: #fa8c16; } .sum-value { color: #c87619; } }
+// 本月新增 — 警示红
+.summary-pending { background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%); border: 1px solid rgba(245, 34, 45, 0.15); .card-icon { background: rgba(245, 34, 45, 0.12); color: #f5222d; } .sum-value { color: #cf1322; } }
 
 /* 工具栏 */
 .toolbar-row {

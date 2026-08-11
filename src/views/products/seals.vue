@@ -165,7 +165,7 @@
                   <el-tag v-else-if="isElectronic && getSealSubType(row.name)" size="small" type="info" effect="plain">{{ getSealSubType(row.name) }}</el-tag>
                 </div>
                 <div class="card-name" :title="row.name">{{ row.name }}</div>
-                <div class="card-price">¥{{ row.price }}</div>
+                <div class="card-price">¥{{ row.displayPrice ?? row.price }}</div>
               </div>
               <div class="card-actions">
                 <el-button type="primary" link size="small" @click="showDialog('edit', row)">编辑</el-button>
@@ -206,7 +206,7 @@
               </div>
               <div class="card-body">
                 <div class="card-name" :title="row.name">{{ row.name }}</div>
-                <div class="card-price pkg-price">¥{{ row.price }}</div>
+                <div class="card-price pkg-price">¥{{ row.displayPrice ?? row.price }}</div>
               </div>
               <div class="card-actions">
                 <el-button type="primary" link size="small" @click="showPkgDialog(row)">编辑</el-button>

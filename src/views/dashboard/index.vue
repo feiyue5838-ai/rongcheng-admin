@@ -64,7 +64,7 @@
                   </linearGradient>
                 </defs>
                 <polyline
-                  points="{{ sparklinePoints.poly }}"
+                  :points="sparklinePoints.poly"
                   fill="none"
                   stroke="rgba(255,255,255,0.9)"
                   stroke-width="2"
@@ -72,7 +72,7 @@
                   stroke-linejoin="round"
                 />
                 <polygon
-                  points="{{ sparklinePoints.fill }}"
+                  :points="sparklinePoints.fill"
                   fill="url(#sparkFill)"
                 />
               </svg>
