@@ -68,12 +68,17 @@
           </el-sub-menu>
         </el-sub-menu>
 
-        <!-- 用户与内容 sub-menu -->
-        <el-sub-menu v-if="showUserCenter" index="userCenter">
-          <template #title><el-icon><User /></el-icon><span>用户与内容</span></template>
-          <el-menu-item v-if="canAccess('/users')" index="/users">用户管理</el-menu-item>
+        <!-- 用户管理 sub-menu -->
+        <el-sub-menu v-if="showUserMgmt" index="userMgmt">
+          <template #title><el-icon><User /></el-icon><span>用户管理</span></template>
+          <el-menu-item v-if="canAccess('/users')" index="/users">用户列表</el-menu-item>
           <el-menu-item v-if="canAccess('/reviews')" index="/reviews">评价管理</el-menu-item>
           <el-menu-item v-if="canAccess('/questions')" index="/questions">问答管理</el-menu-item>
+        </el-sub-menu>
+
+        <!-- 内容运营 sub-menu -->
+        <el-sub-menu v-if="showContentOps" index="contentOps">
+          <template #title><el-icon><Goods /></el-icon><span>内容运营</span></template>
           <el-menu-item v-if="canAccess('/faq')" index="/faq">帮助中心</el-menu-item>
           <el-menu-item v-if="canAccess('/content')" index="/content">内容管理</el-menu-item>
         </el-sub-menu>
@@ -173,8 +178,11 @@ const showNewspaperMgmt = computed(() =>
 const showBookkeepingMgmt = computed(() =>
   canAccess('/products/bookkeeping-packages'),
 )
-const showUserCenter = computed(() =>
-  canAccess('/users') || canAccess('/reviews') || canAccess('/questions') || canAccess('/content'),
+const showUserMgmt = computed(() =>
+  canAccess('/users') || canAccess('/reviews') || canAccess('/questions'),
+)
+const showContentOps = computed(() =>
+  canAccess('/faq') || canAccess('/content'),
 )
 const showSystem = computed(() =>
   canAccess('/system/admins') || canAccess('/system/logs') ||
