@@ -42,7 +42,7 @@
               <el-input v-model="bannerForm.title" placeholder="Banner 标题" />
             </el-form-item>
             <el-form-item label="图片">
-              <el-upload :action="'/api/upload/seal'" :show-file-list="false" :on-success="bannerUploadSuccess" :before-upload="beforeUpload" accept="image/*">
+              <el-upload :action="'/api/upload/image'" :headers="uploadHeaders()" :show-file-list="false" :on-success="bannerUploadSuccess" :before-upload="beforeUpload" accept="image/*">
                 <el-button>选择图片</el-button>
               </el-upload>
               <el-image v-if="bannerForm.image" :src="bannerForm.image" style="width: 200px; margin-top: 8px; border-radius: 4px" />
@@ -177,7 +177,7 @@
               <el-input v-model="introForm.subtitle" type="textarea" :rows="3" placeholder="介绍文案" />
             </el-form-item>
             <el-form-item label="宣传图片">
-              <el-upload :action="'/api/upload/seal'" :show-file-list="false" :on-success="introUploadSuccess" :before-upload="beforeUpload" accept="image/*">
+              <el-upload :action="'/api/upload/image'" :headers="uploadHeaders()" :show-file-list="false" :on-success="introUploadSuccess" :before-upload="beforeUpload" accept="image/*">
                 <el-button>选择图片</el-button>
               </el-upload>
               <el-image v-if="introForm.image" :src="introForm.image" style="width: 200px; margin-top: 8px; border-radius: 4px" />
@@ -211,6 +211,10 @@ function beforeUpload(file) {
   if (file.size > 2 * 1024 * 1024) { ElMessage.error('图片不能超过 2MB'); return false }
   return true
 }
+const uploadHeaders = () => {
+  const token = localStorage.getItem('admin_token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 // ==================== Banner ====================
 const banners = ref([])
@@ -223,7 +227,7 @@ async function loadBanners() {
   bannerLoading.value = true
   try {
     const res = await request.get('/content/banners')
-    banners.value = res.list || []
+    banners.value = Array.isArray(res) ? res : (res.list || [])
   } catch { /* ignore */ } finally { bannerLoading.value = false }
 }
 function openBannerDialog(row) {
@@ -360,7 +364,7 @@ onMounted(loadBanners)
 
 <style scoped>
 .content-tabs { background: #fff; border-radius: 12px; padding: 8px 16px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin: 8px 0 16px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin: 24px 0 16px; }
 .page-header h2 { margin: 0; font-size: 22px; font-weight: 600; }
 .page-card { background: #fff; border-radius: 12px; padding: 20px; }
 </style>
