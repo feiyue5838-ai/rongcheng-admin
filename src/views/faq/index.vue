@@ -9,62 +9,66 @@
       <el-button type="primary" :loading="phoneSaving" @click="savePhone">保存</el-button>
     </div>
 
-    <!-- 分类管理 -->
-    <div class="page-card" style="margin-bottom:16px">
-      <div class="filter-bar" style="display:flex;justify-content:space-between;align-items:center">
-        <h3>分类管理</h3>
-        <el-button type="primary" @click="openCatDialog()">新增分类</el-button>
-      </div>
-      <el-table :data="categories" v-loading="loading" stripe border>
-        <el-table-column prop="name" label="分类名称" min-width="140" />
-        <el-table-column prop="icon" label="图标" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="sort" label="排序" width="80" />
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
-          <template #default="{ row }">
-            <el-button size="small" @click="openCatDialog(row)">编辑</el-button>
-            <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleCat(row)">{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
-            <el-button size="small" type="danger" @click="delCat(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </div>
-
-    <!-- 问答管理 -->
+    <!-- 分类管理与问答管理 -->
     <div class="page-card">
-      <div class="filter-bar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3>问答管理</h3>
-        <div>
-          <el-select v-model="filterCat" placeholder="全部分类" clearable style="width:160px;margin-right:12px" @change="load">
-            <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
-          </el-select>
-          <el-button type="primary" @click="openFaqDialog()">新增问答</el-button>
-        </div>
-      </div>
-      <el-table :data="filteredFaqs" v-loading="loading" stripe border>
-        <el-table-column prop="question" label="问题" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="answer" label="答案" min-width="320" show-overflow-tooltip />
-        <el-table-column label="分类" width="120">
-          <template #default="{ row }">{{ catName(row.categoryId) }}</template>
-        </el-table-column>
-        <el-table-column prop="sort" label="排序" width="70" />
-        <el-table-column label="状态" width="90">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="230" fixed="right">
-          <template #default="{ row }">
-            <el-button size="small" @click="openFaqDialog(row)">编辑</el-button>
-            <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleFaq(row)">{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
-            <el-button size="small" type="danger" @click="delFaq(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <el-tabs v-model="activeTab" class="faq-tabs">
+        <!-- 分类管理 -->
+        <el-tab-pane label="分类管理" name="category">
+          <div class="filter-bar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span />
+            <el-button type="primary" @click="openCatDialog()">新增分类</el-button>
+          </div>
+          <el-table :data="categories" v-loading="loading" stripe border>
+            <el-table-column prop="name" label="分类名称" min-width="140" />
+            <el-table-column prop="icon" label="图标" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="sort" label="排序" width="80" />
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="240" fixed="right">
+              <template #default="{ row }">
+                <el-button size="small" @click="openCatDialog(row)">编辑</el-button>
+                <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleCat(row)">{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
+                <el-button size="small" type="danger" @click="delCat(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+
+        <!-- 问答管理 -->
+        <el-tab-pane label="问答管理" name="faq">
+          <div class="filter-bar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div>
+              <el-select v-model="filterCat" placeholder="全部分类" clearable style="width:160px;margin-right:12px" @change="filterFaqs">
+                <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
+              </el-select>
+            </div>
+            <el-button type="primary" @click="openFaqDialog()">新增问答</el-button>
+          </div>
+          <el-table :data="filteredFaqs" v-loading="loading" stripe border>
+            <el-table-column prop="question" label="问题" min-width="220" show-overflow-tooltip />
+            <el-table-column prop="answer" label="答案" min-width="320" show-overflow-tooltip />
+            <el-table-column label="分类" width="120">
+              <template #default="{ row }">{{ catName(row.categoryId) }}</template>
+            </el-table-column>
+            <el-table-column prop="sort" label="排序" width="70" />
+            <el-table-column label="状态" width="90">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="230" fixed="right">
+              <template #default="{ row }">
+                <el-button size="small" @click="openFaqDialog(row)">编辑</el-button>
+                <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleFaq(row)">{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
+                <el-button size="small" type="danger" @click="delFaq(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+      </el-tabs>
     </div>
 
     <!-- 分类弹窗 -->
@@ -115,12 +119,17 @@ const phoneSaving = ref(false)
 const phone = ref('')
 const categories = ref<any[]>([])
 const filterCat = ref<number | undefined>()
+const activeTab = ref('category')
 
 const allFaqs = ref<any[]>([])
 const filteredFaqs = computed(() => {
   if (!filterCat.value) return allFaqs.value
   return allFaqs.value.filter((f) => f.categoryId === filterCat.value)
 })
+
+function filterFaqs() {
+  // 纯前端筛选，不需要重新请求
+}
 
 const catVisible = ref(false)
 const catForm = ref<any>({ id: null, name: '', icon: '', sort: 0 })
@@ -213,5 +222,6 @@ onMounted(load)
 <style scoped>
 .page-header { margin-bottom: 16px; }
 .page-card { background: #fff; border-radius: 8px; padding: 16px; }
+.faq-tabs { margin-top: 4px; }
 .filter-bar { margin-bottom: 8px; }
 </style>
