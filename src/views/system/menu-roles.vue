@@ -9,7 +9,11 @@
     </div>
 
     <el-table :data="tableData" border style="width: 100%">
-      <el-table-column prop="path" label="路径" width="220" />
+      <el-table-column prop="path" label="路径" width="220">
+        <template #default="{ row }">
+          <span>{{ pathLabels[row.path] || row.path }}</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="pathType" label="匹配方式" width="100">
         <template #default="{ row }">
           <el-tag :type="row.pathType === 'exact' ? 'primary' : 'warning'">
@@ -77,6 +81,48 @@ import { getMenuRoleConfigs, createMenuRoleConfig, updateMenuRoleConfig, deleteM
 import { ROLE_LABELS } from '@/constants/roles'
 
 const roleLabels = ROLE_LABELS
+
+const pathLabels: Record<string, string> = {
+  '/dashboard': '工作台',
+  '/outlets': '网点管理',
+  '/outlets/overview': '网点总览',
+  '/outlets/dashboard': '网点工作台',
+  '/outlets/assign': '订单分配',
+  '/outlets/receipts': '收款单据',
+  '/orders': '订单管理',
+  '/orders/seal': '刻章订单',
+  '/orders/newspaper': '登报订单',
+  '/orders/bookkeeping': '记账订单',
+  '/orders/dispatch-records': '派单记录',
+  '/after-sales': '售后管理',
+  '/after-sales/orders': '售后工单',
+  '/after-sales/refund-records': '退款记录',
+  '/products': '产品管理',
+  '/products/seals/enterprise': '企业刻章',
+  '/products/seals/personal': '个人印章',
+  '/products/seals/electronic': '电子印章',
+  '/products/record-queries': '刻章备案查询',
+  '/products/scenes': '刻章场景',
+  '/products/packages': '套餐管理',
+  '/products/newspapers': '报纸仓库',
+  '/products/newspaper-templates': '报纸模板',
+  '/products/bookkeeping-packages': '记账套餐',
+  '/users': '用户管理',
+  '/reviews': '评价管理',
+  '/questions': '问答管理',
+  '/content': '内容管理',
+  '/content/banners': 'Banner管理',
+  '/content/announcements': '公告管理',
+  '/content/intros': '业务介绍',
+  '/system': '系统管理',
+  '/system/admins': '管理员账号',
+  '/system/logs': '操作日志',
+  '/system/configs': '系统配置',
+  '/system/dispatch-rules': '派单规则',
+  '/system/menu-roles': '菜单权限',
+  '/faq': '常见问题',
+  '/finance': '财务中心',
+}
 const tableData = ref<any[]>([])
 const dialogVisible = ref(false)
 const editId = ref<string | null>(null)
