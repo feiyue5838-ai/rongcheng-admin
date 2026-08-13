@@ -187,6 +187,20 @@
               <el-input v-model="aboutForm.companyName" placeholder="如：成都蓉城信息服务有限公司" />
               <div style="color: #909399; font-size: 12px; margin-top: 4px;">展示在「关于我们」页面底部版权下方</div>
             </el-form-item>
+            <el-form-item label="用户服务协议">
+              <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%;">
+                <Toolbar :editor="termsEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
+                <Editor v-model="aboutForm.termsContent" :defaultConfig="editorConfig" mode="default" style="height: 360px; overflow-y: hidden" @onCreated="termsCreated" />
+              </div>
+              <div style="color: #909399; font-size: 12px; margin-top: 4px;">留空则小程序展示默认协议文案</div>
+            </el-form-item>
+            <el-form-item label="隐私政策">
+              <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%;">
+                <Toolbar :editor="privacyEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
+                <Editor v-model="aboutForm.privacyContent" :defaultConfig="editorConfig" mode="default" style="height: 360px; overflow-y: hidden" @onCreated="privacyCreated" />
+              </div>
+              <div style="color: #909399; font-size: 12px; margin-top: 4px;">留空则小程序展示默认隐私文案</div>
+            </el-form-item>
           </el-form>
         </div>
       </el-tab-pane>
@@ -254,10 +268,43 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, shallowRef, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/api'
 import { formatDate } from '@/utils/format'
+import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
+import '@wangeditor/editor/dist/css/style.css'
+
+// 富文本图片上传走后台接口
+function uploadImageToServer(file, insertFn) {
+  const token = localStorage.getItem('admin_token')
+  const form = new FormData()
+  form.append('file', file)
+  fetch('/api/upload/image', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form })
+    .then(r => r.json())
+    .then(res => {
+      const url = res?.data?.url || res?.url
+      if (url) insertFn(url, '', '')
+      else ElMessage.error('图片上传失败')
+    })
+    .catch(() => ElMessage.error('图片上传失败'))
+}
+
+const editorToolbarConfig = { excludeKeys: [] }
+const editorConfig = {
+  placeholder: '请输入内容...',
+  MENU_CONF: {
+    uploadImage: { customUpload: uploadImageToServer }
+  }
+}
+const termsEditorRef = shallowRef(null)
+const privacyEditorRef = shallowRef(null)
+function termsCreated(editor) { termsEditorRef.value = editor }
+function privacyCreated(editor) { privacyEditorRef.value = editor }
+onBeforeUnmount(() => {
+  if (termsEditorRef.value) termsEditorRef.value.destroy()
+  if (privacyEditorRef.value) privacyEditorRef.value.destroy()
+})
 
 const activeTab = ref('banners')
 
@@ -418,7 +465,9 @@ const aboutForm = reactive({
   image: '',
   logoUrl: '',
   version: 'v1.0.0 正式版',
-  companyName: '成都蓉城信息服务有限公司'
+  companyName: '成都蓉城信息服务有限公司',
+  termsContent: '',
+  privacyContent: ''
 })
 const aboutSaving = ref(false)
 
