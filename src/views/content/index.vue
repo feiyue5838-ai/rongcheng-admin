@@ -183,6 +183,10 @@
             <el-form-item label="版权信息">
               <el-input v-model="aboutForm.copyright" placeholder="如：© 2026 蓉城企服 All Rights Reserved" />
             </el-form-item>
+            <el-form-item label="底部公司名">
+              <el-input v-model="aboutForm.companyName" placeholder="如：成都蓉城信息服务有限公司" />
+              <div style="color: #909399; font-size: 12px; margin-top: 4px;">展示在「关于我们」页面底部版权下方</div>
+            </el-form-item>
           </el-form>
         </div>
       </el-tab-pane>
@@ -413,7 +417,8 @@ const aboutForm = reactive({
   copyright: '© 2026 蓉城企服 All Rights Reserved',
   image: '',
   logoUrl: '',
-  version: 'v1.0.0 正式版'
+  version: 'v1.0.0 正式版',
+  companyName: '成都蓉城信息服务有限公司'
 })
 const aboutSaving = ref(false)
 
