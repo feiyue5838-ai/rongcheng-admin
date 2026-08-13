@@ -152,6 +152,16 @@
               <el-image v-if="aboutForm.image" :src="aboutForm.image" style="width: 200px; margin-top: 8px; border-radius: 4px" :preview-src-list="[aboutForm.image]" />
               <div style="color: #909399; font-size: 12px; margin-top: 4px;">展示在小程序「关于我们」页面顶部，建议尺寸 750x400</div>
             </el-form-item>
+            <el-form-item label="Logo 图标">
+              <el-upload :action="'/api/upload/image'" :headers="uploadHeaders()" :show-file-list="false" :on-success="logoUploadSuccess" :before-upload="beforeUpload" accept="image/*">
+                <el-button>选择图片</el-button>
+              </el-upload>
+              <el-image v-if="aboutForm.logoUrl" :src="aboutForm.logoUrl" style="width: 80px; height: 80px; margin-top: 8px; border-radius: 8px; object-fit: contain; background: #f5f5f5;" :preview-src-list="[aboutForm.logoUrl]" />
+              <div style="color: #909399; font-size: 12px; margin-top: 4px;">展示在「关于我们」顶部 Logo 区域，建议尺寸 120x120，透明背景 PNG</div>
+            </el-form-item>
+            <el-form-item label="版本号">
+              <el-input v-model="aboutForm.version" placeholder="如：v1.0.0 正式版" />
+            </el-form-item>
             <el-form-item label="平台名称">
               <el-input v-model="aboutForm.appName" placeholder="如：蓉城企服" />
             </el-form-item>
@@ -401,12 +411,18 @@ const aboutForm = reactive({
   intro: '',
   address: '',
   copyright: '© 2026 蓉城企服 All Rights Reserved',
-  image: ''
+  image: '',
+  logoUrl: '',
+  version: 'v1.0.0 正式版'
 })
 const aboutSaving = ref(false)
 
 function aboutUploadSuccess(res) {
   if (res.url) aboutForm.image = res.url
+  else ElMessage.error('上传失败')
+}
+function logoUploadSuccess(res) {
+  if (res.url) aboutForm.logoUrl = res.url
   else ElMessage.error('上传失败')
 }
 
