@@ -115,12 +115,24 @@
       </el-card>
 
       <!-- 物流信息 -->
-      <el-card shadow="hover" style="margin-bottom: 16px" v-if="order.expressCompany || order.expressNo">
-        <template #header><span>物流信息</span></template>
+      <el-card shadow="hover" style="margin-bottom: 16px; border: 2px solid #67c23a; background: #f0f9eb" v-if="order.expressCompany || order.expressNo">
+        <template #header><span>📦 物流信息</span></template>
         <el-descriptions :column="2" border>
           <el-descriptions-item label="快递公司">{{ order.expressCompany }}</el-descriptions-item>
           <el-descriptions-item label="快递单号">{{ order.expressNo }}</el-descriptions-item>
         </el-descriptions>
+      </el-card>
+
+      <!-- 用户评价 -->
+      <el-card shadow="hover" style="margin-bottom: 16px" v-if="order.reviews?.length">
+        <template #header><span>用户评价</span></template>
+        <div v-for="r in order.reviews" :key="r.id" style="margin-bottom: 16px; padding: 12px; border: 1px solid #eee; border-radius: 8px">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px">
+            <el-rate v-model="r.rating" disabled text-color="#ff9900" />
+            <span style="font-size: 12px; color: #999">{{ r.createdAt ? formatDate(r.createdAt) : '' }}</span>
+          </div>
+          <div style="color: #333; line-height: 1.6">{{ r.content || '用户未填写评价内容' }}</div>
+        </div>
       </el-card>
 
       <!-- 交付回执 -->
@@ -150,6 +162,10 @@
             <el-button type="primary" @click="saveChanges">保存</el-button>
           </el-form-item>
         </el-form>
+        <!-- 填写发货 -->
+        <div style="margin-top: 12px" v-if="[2,3].includes(order.status)">
+          <el-button type="primary" @click="showDeliverDialog">填写发货信息</el-button>
+        </div>
         <!-- 退款 / 售后按钮 -->
         <el-divider v-if="[2,3,4,5,7,8,9].includes(order.status)" />
         <div v-if="[2,3,4].includes(order.status)" style="margin-top: 12px">
@@ -206,6 +222,51 @@
       </template>
     </el-dialog>
 
+    <!-- 发货对话框 -->
+    <el-dialog v-model="deliverVisible" title="填写发货信息" width="520px">
+      <el-form label-width="100px">
+        <el-form-item label="快递公司" required>
+          <el-select v-model="deliverForm.expressCompany" placeholder="请选择快递公司" style="width: 100%">
+            <el-option label="顺丰速运" value="顺丰速运" />
+            <el-option label="圆通速递" value="圆通速递" />
+            <el-option label="中通快递" value="中通快递" />
+            <el-option label="韵达快递" value="韵达快递" />
+            <el-option label="申通快递" value="申通快递" />
+            <el-option label="邮政EMS" value="邮政EMS" />
+            <el-option label="京东物流" value="京东物流" />
+            <el-option label="德邦快递" value="德邦快递" />
+            <el-option label="百世快递" value="百世快递" />
+            <el-option label="其他" value="其他" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="快递单号" required>
+          <el-input v-model="deliverForm.expressNo" placeholder="请输入快递单号" />
+        </el-form-item>
+        <el-form-item label="交付凭证">
+          <el-upload
+            :action="'/api/upload'"
+            list-type="picture-card"
+            :file-list="deliverFileList"
+            :on-success="onDeliverFileSuccess"
+            :on-remove="onDeliverFileRemove"
+            :before-upload="(file: any) => { if (deliverFileList.length >= 9) { ElMessage.warning('最多上传9张图片'); return false } }"
+            multiple
+            accept="image/*"
+          >
+            <el-icon><Plus /></el-icon>
+          </el-upload>
+          <div style="color: #999; font-size: 12px; margin-top: 4px">最多上传9张图片</div>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="deliverForm.remark" type="textarea" :rows="2" placeholder="可选" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="deliverVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmDeliver" :loading="delivering">确认发货</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 分配网点对话框 -->
     <el-dialog v-model="assignVisible" title="分配网点" width="480px">
       <el-form label-width="100px">
@@ -229,8 +290,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { getOrderDetail, updateOrder, assignOrderAPI, getOutletsAPI, auditMaterial, refundOrder } from '@/api'
-import { ElMessage } from 'element-plus'
+import { getOrderDetail, updateOrder, assignOrderAPI, getOutletsAPI, auditMaterial, refundOrder, uploadFile } from '@/api'
+import { ElMessage, ElIcon } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
 const MATERIAL_LABEL: Record<string, string> = {
@@ -258,6 +320,65 @@ const assignVisible = ref(false)
 const assigning = ref(false)
 const outletList = ref<any[]>([])
 const assignForm = ref({ outletId: '', remark: '' })
+
+// 发货相关
+const deliverVisible = ref(false)
+const delivering = ref(false)
+const deliverFileList = ref<any[]>([])
+const deliverForm = ref({ expressCompany: '', expressNo: '', remark: '' })
+
+function showDeliverDialog() {
+  deliverForm.value = { expressCompany: '', expressNo: '', remark: '' }
+  deliverFileList.value = []
+  deliverVisible.value = true
+}
+
+function onDeliverFileSuccess(res: any, file: any) {
+  const url = res?.url || res?.data?.url || (typeof res === 'string' ? res : '')
+  if (url) {
+    deliverFileList.value.push({ name: file.name, url })
+  }
+}
+
+function onDeliverFileRemove(file: any) {
+  deliverFileList.value = deliverFileList.value.filter(f => f.url !== (file.url || file.response?.url))
+}
+
+async function confirmDeliver() {
+  if (!deliverForm.value.expressCompany) { ElMessage.warning('请选择快递公司'); return }
+  if (!deliverForm.value.expressNo.trim()) { ElMessage.warning('请输入快递单号'); return }
+  delivering.value = true
+  try {
+    await updateOrder(order.value.id, {
+      status: 4,
+      statusText: '已发货',
+      expressCompany: deliverForm.value.expressCompany,
+      expressNo: deliverForm.value.expressNo,
+      receipts: deliverFileList.value.map(f => ({ type: 'certificate', url: f.url })),
+      remark: deliverForm.value.remark || order.value.remark,
+    })
+    // also call dedicated deliver API if available
+    try {
+      await (window as any).fetch?.('/api/orders/' + order.value.id + '/deliver-admin', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          express_company: deliverForm.value.expressCompany,
+          express_no: deliverForm.value.expressNo,
+          receipts: deliverFileList.value.map((f: any) => ({ type: 'certificate', url: f.url })),
+          remark: deliverForm.value.remark || undefined,
+        })
+      })
+    } catch { /* deliver admin API optional */ }
+    ElMessage.success('发货成功')
+    deliverVisible.value = false
+    fetchDetail()
+  } catch (err: any) {
+    ElMessage.error(err?.message || '发货失败')
+  } finally {
+    delivering.value = false
+  }
+}
 
 // 退款相关
 const refundVisible = ref(false)
