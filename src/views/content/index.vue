@@ -137,6 +137,39 @@
         </el-dialog>
       </el-tab-pane>
 
+      <!-- ============ 关于我们 ============ -->
+      <el-tab-pane label="关于我们" name="about">
+        <div class="page-header">
+          <h2>关于我们配置</h2>
+          <el-button type="primary" :loading="aboutSaving" @click="saveAbout">保存配置</el-button>
+        </div>
+        <div class="page-card">
+          <el-form :model="aboutForm" label-width="120px" style="max-width: 600px">
+            <el-form-item label="平台名称">
+              <el-input v-model="aboutForm.appName" placeholder="如：蓉城企服" />
+            </el-form-item>
+            <el-form-item label="客服热线">
+              <el-input v-model="aboutForm.phone" placeholder="如：400-888-6666" />
+            </el-form-item>
+            <el-form-item label="微信公众号">
+              <el-input v-model="aboutForm.wechat" placeholder="如：蓉城企服" />
+            </el-form-item>
+            <el-form-item label="服务时间">
+              <el-input v-model="aboutForm.serviceTime" placeholder="如：周一至周五 9:00-18:00" />
+            </el-form-item>
+            <el-form-item label="平台介绍">
+              <el-input v-model="aboutForm.intro" type="textarea" :rows="4" placeholder="关于平台的介绍文案" />
+            </el-form-item>
+            <el-form-item label="公司地址">
+              <el-input v-model="aboutForm.address" placeholder="如：成都市高新区xxx" />
+            </el-form-item>
+            <el-form-item label="版权信息">
+              <el-input v-model="aboutForm.copyright" placeholder="如：© 2026 蓉城企服 All Rights Reserved" />
+            </el-form-item>
+          </el-form>
+        </div>
+      </el-tab-pane>
+
       <!-- ============ 业务介绍 ============ -->
       <el-tab-pane label="业务介绍" name="intros">
         <div class="page-header">
@@ -352,11 +385,38 @@ async function deleteIntro(row) {
   } catch (e) { ElMessage.error(e.message || '删除失败') }
 }
 
+// ==================== 关于我们 ====================
+const aboutForm = reactive({
+  appName: '蓉城企服',
+  phone: '',
+  wechat: '蓉城企服',
+  serviceTime: '周一至周五 9:00-18:00',
+  intro: '',
+  address: '',
+  copyright: '© 2026 蓉城企服 All Rights Reserved'
+})
+const aboutSaving = ref(false)
+
+async function loadAbout() {
+  try {
+    const res = await request.get('/content/about')
+    if (res) Object.assign(aboutForm, res)
+  } catch { /* ignore */ }
+}
+async function saveAbout() {
+  aboutSaving.value = true
+  try {
+    await request.put('/content/about', aboutForm)
+    ElMessage.success('保存成功')
+  } catch (e) { ElMessage.error(e.message || '保存失败') } finally { aboutSaving.value = false }
+}
+
 // 首次切到某 tab 时才加载（减少无意义请求）
 function onTabChange(name) {
   if (name === 'banners' && banners.value.length === 0) loadBanners()
   else if (name === 'announcements' && announcements.value.length === 0) loadAnnouncements()
   else if (name === 'intros' && intros.value.length === 0) loadIntros()
+  else if (name === 'about') loadAbout()
 }
 
 onMounted(loadBanners)
