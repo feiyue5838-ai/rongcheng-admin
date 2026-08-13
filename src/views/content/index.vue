@@ -145,6 +145,13 @@
         </div>
         <div class="page-card">
           <el-form :model="aboutForm" label-width="120px" style="max-width: 600px">
+            <el-form-item label="封面图片">
+              <el-upload :action="'/api/upload/image'" :headers="uploadHeaders()" :show-file-list="false" :on-success="aboutUploadSuccess" :before-upload="beforeUpload" accept="image/*">
+                <el-button>选择图片</el-button>
+              </el-upload>
+              <el-image v-if="aboutForm.image" :src="aboutForm.image" style="width: 200px; margin-top: 8px; border-radius: 4px" :preview-src-list="[aboutForm.image]" />
+              <div style="color: #909399; font-size: 12px; margin-top: 4px;">展示在小程序「关于我们」页面顶部，建议尺寸 750x400</div>
+            </el-form-item>
             <el-form-item label="平台名称">
               <el-input v-model="aboutForm.appName" placeholder="如：蓉城企服" />
             </el-form-item>
@@ -393,9 +400,15 @@ const aboutForm = reactive({
   serviceTime: '周一至周五 9:00-18:00',
   intro: '',
   address: '',
-  copyright: '© 2026 蓉城企服 All Rights Reserved'
+  copyright: '© 2026 蓉城企服 All Rights Reserved',
+  image: ''
 })
 const aboutSaving = ref(false)
+
+function aboutUploadSuccess(res) {
+  if (res.url) aboutForm.image = res.url
+  else ElMessage.error('上传失败')
+}
 
 async function loadAbout() {
   try {
