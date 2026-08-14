@@ -891,12 +891,13 @@ function subTypeName(key: string, catName?: string): string {
 function normalize(res: any): any[] {
   if (!res) return []
   if (Array.isArray(res)) return res
-  return (res as any)?.list || (res as any)?.data || (res as any)?.value || []
+  return (res as any)?.data ?? (res as any)?.list ?? (res as any)?.value ?? []
 }
 
 async function reloadTemplateMeta() {
   const mRes: any = await getTemplateMeta()
-  if (mRes && typeof mRes === 'object') {
+  // getTemplateMeta 返回 {businessTypes, subTypes}（无包装，businessTypes 是数组字段名非分页结构）
+  if (mRes && typeof mRes === 'object' && !Array.isArray(mRes)) {
     subTypesMap.value = mRes.subTypes || {}
   }
 }
@@ -908,7 +909,8 @@ async function reloadCategories() {
 
 async function reloadNewspapers() {
   const res = await getNewspapers()
-  newspapers.value = normalize(res)
+  // getNewspapers 返回 {list, total}（拦截器不剥包），取 .list
+  newspapers.value = Array.isArray(res) ? res : ((res as any)?.list || [])
 }
 
 async function reloadTemplates() {
@@ -926,21 +928,22 @@ async function reloadTemplates() {
 async function reloadAll() {
   loading.value = true
   try {
-    console.log('[DEBUG] reloadAll starting...')
-    const [nRes, cRes, mRes, tRes] = await Promise.all([
       getNewspapers(),
       getNewspaperCategories(),
       getTemplateMeta(),
-      getTemplates({ page: 1, pageSize: 500 }), // 一次拉全量
+      getTemplates({ page: 1, pageSize: 500 }),
     ])
-    console.log('[DEBUG] templates raw response:', tRes)
-    console.log('[DEBUG] templates normalized:', normalize(tRes))
-    newspapers.value = normalize(nRes)
+    // getNewspapers 返回 {list,total}，getTemplateMeta 返回 {businessTypes, subTypes}（均无包装）
+    const nRes = nRaw as any
+    newspapers.value = Array.isArray(nRes) ? nRes : (nRes?.list || [])
     categoryList.value = normalize(cRes)
-    subTypesMap.value = (mRes as any)?.subTypes || {}
-    templates.value = normalize(tRes)
-    templatesTotal.value = (tRes as any)?.total ?? templates.value.length
-    console.log('[DEBUG] templates.value after set:', templates.value.length, '/ total:', templatesTotal.value)
+    if (mRaw && typeof mRaw === 'object' && !Array.isArray(mRaw)) {
+      subTypesMap.value = (mRaw as any).subTypes || {}
+    } else {
+      subTypesMap.value = {}
+    }
+    templates.value = normalize(tRaw)
+    templatesTotal.value = (tRaw as any)?.total ?? templates.value.length
   } catch (e: any) {
     ElMessage.error('加载数据失败: ' + (e?.message || '未知错误'))
     console.error('reloadAll error:', e)
