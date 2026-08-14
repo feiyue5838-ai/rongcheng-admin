@@ -887,10 +887,11 @@ function subTypeName(key: string, catName?: string): string {
 }
 
 // ===== 数据加载 =====
+// 统一数据提取：支持数组/{list}/{data}/单个对象
 function normalize(res: any): any[] {
   if (!res) return []
   if (Array.isArray(res)) return res
-  return (res as any)?.list || (res as any)?.value || (res as any)?.data || []
+  return (res as any)?.list || (res as any)?.data || (res as any)?.value || []
 }
 
 async function reloadTemplateMeta() {
@@ -936,8 +937,7 @@ async function reloadAll() {
     console.log('[DEBUG] templates normalized:', normalize(tRes))
     newspapers.value = normalize(nRes)
     categoryList.value = normalize(cRes)
-    const mAny = mRes as any
-    subTypesMap.value = mAny?.subTypes || {}
+    subTypesMap.value = (mRes as any)?.subTypes || {}
     templates.value = normalize(tRes)
     templatesTotal.value = (tRes as any)?.total ?? templates.value.length
     console.log('[DEBUG] templates.value after set:', templates.value.length, '/ total:', templatesTotal.value)

@@ -257,8 +257,9 @@ async function fetchOrders() {
     query.startDate = dateRange.value?.[0] || ''
     query.endDate = dateRange.value?.[1] || ''
     const res: any = await getNewspaperOrders(query)
-    list.value = (res as any).data?.list ?? []
-    pagination.value = (res as any).data?.pagination ?? { page: 1, pageSize: 20, total: 0 }
+    // 拦截器已剥 {code:0,data:{list,pagination}} 外层，res 直接是 {list,pagination}
+    list.value = (res as any)?.list ?? []
+    pagination.value = (res as any)?.pagination ?? { page: 1, pageSize: 20, total: 0 }
   } finally { loading.value = false }
 }
 

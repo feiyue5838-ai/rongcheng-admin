@@ -676,8 +676,9 @@ async function fetchNewspapers() {
   loading.value = true
   try {
     // 一次性拉全量，前端过滤 + 统计
+    // getAllNewspapers() 返回 newspapers[] 数组（无包装）
     const res: any = await getAllNewspapers()
-    allNewspapers.value = (res as any).list || []
+    allNewspapers.value = Array.isArray(res) ? res : (res?.list || [])
   } finally {
     loading.value = false
   }
