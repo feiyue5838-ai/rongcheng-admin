@@ -512,11 +512,15 @@ const defaultCategory = computed(() => {
   return '__ALL_BUSINESS__'
 })
 
-// 个人印章子分类（硬编码，不再动态计算）
-const personalCategories = [
-  { id: '__personal__', name: '个人印章' },
-  { id: '__professional__', name: '个人职业印章' },
-]
+// 个人印章子分类：动态取真实 seal_categories id（避免写入无效外键导致保存失败）
+const personalCategories = computed(() => {
+  const pc = categories.value.find((c: any) => c.name === '个人印章')
+  const prc = categories.value.find((c: any) => c.name === '电子个人签名章' || c.name === '个人职业印章')
+  return [
+    { id: pc?.id || '__personal__', name: '个人印章' },
+    { id: prc?.id || '__professional__', name: '个人职业印章' },
+  ]
+})
 
 // 对话框「分类」下拉候选：企业=8 大业务场景；电子=单一电子场景（禁用）；个人走子分类（不展示本下拉）
 const sceneOptions = computed(() => {
@@ -701,14 +705,20 @@ async function loadPkgSealOptions(sceneId?: string) {
       const res: any = await getSealSceneProducts(sceneId)
       pkgSealOptions.value = Array.isArray(res?.seals) ? res.seals : []
     } else {
-      // 非企业路由 or 未选场景时：只展示当前分类下的印章（避免跨模块印章混入）
-      const cat = activeSceneId.value
-        ? businessCategories.value.find((c) => c.id === activeSceneId.value)
-        : null
-      const catName = cat?.name || ''
+      // 非企业路由（个人 / 电子）：getSeals() 返回对象无 _sceneName 字段，
+      // 需按 sealCategories.name（个人）或 name 前缀（电子）筛选，不能用不存在的 _sceneName
       const all: any = await getSeals()
       const list = Array.isArray(all) ? all : (all?.items || [])
-      pkgSealOptions.value = list.filter((s: any) => s._sceneName === catName)
+      if (isPersonal.value) {
+        pkgSealOptions.value = list.filter((s: any) => {
+          const n = s.sealCategories?.name
+          return n === '个人印章' || n === '电子个人签名章'
+        })
+      } else if (isElectronic.value) {
+        pkgSealOptions.value = list.filter((s: any) => s.name && s.name.startsWith('电子'))
+      } else {
+        pkgSealOptions.value = list
+      }
     }
   } catch {
     pkgSealOptions.value = []
@@ -723,8 +733,8 @@ const filteredSeals = computed(() => {
     list = list.filter((s) => s._sceneName === scene?.name)
   } else if (isPersonal.value) {
     list = activePersonalSubTab.value === '个人印章'
-      ? list.filter((s) => s.name === '个人签名章')
-      : list.filter((s) => s.name !== '个人签名章')
+      ? list.filter((s) => s.sealCategories?.name === '个人印章')
+      : list.filter((s) => s.sealCategories?.name === '电子个人签名章')
   } else if (isElectronic.value) {
     list = list.filter((s) => getSealSubType(s.name) === activeSingleSubTab.value)
   }
@@ -758,8 +768,8 @@ function sceneItemCount(sceneId: string): number {
 
 // 个人场景：子分组计数
 // 个人印章 Tab 数量（动态计算，不再硬编码子分类名）
-const personalSealCount = computed(() => seals.value.filter((s) => s.name === '个人签名章').length)
-const professionalSealCount = computed(() => seals.value.filter((s) => s.name !== '个人签名章').length)
+const personalSealCount = computed(() => seals.value.filter((s) => s.sealCategories?.name === '个人印章').length)
+const professionalSealCount = computed(() => seals.value.filter((s) => s.sealCategories?.name === '电子个人签名章').length)
 
 // 单路由（个人 + 电子）子 Tab 计数
 // 电子印章 Tab 数量（基于动态 electronicSubTypesMap）
@@ -1026,7 +1036,7 @@ async function savePkg() {
   pkgSaving.value = true
   try {
     const sceneIds = routeType.value === 'enterprise' && pkgForm.sceneId ? [pkgForm.sceneId] : []
-    const __DEBUG_SAVE_PKG_FIX__ = 'DEBUG_ACTIVE_SCENE_ID_REFRESH'; const targetSceneId = pkgForm.sceneId || defaultCategory.value // 记录保存到了哪个场景，用于后续刷新
+    const targetSceneId = pkgForm.sceneId || defaultCategory.value // 记录保存到了哪个场景，用于后续刷新
     const payload = {
       name: pkgForm.name,
       price: pkgForm.price,
