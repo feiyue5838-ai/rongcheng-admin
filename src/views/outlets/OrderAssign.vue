@@ -95,6 +95,11 @@
               <el-tag :type="getModuleTagType(row.module)" size="small">{{ getModuleLabel(row.module) }}</el-tag>
             </template>
           </el-table-column>
+          <el-table-column label="订单状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="getOrderStatusTag(row.status)" size="small">{{ getOrderStatusText(row.status) }}</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="companyName" label="公司名称" min-width="160" show-overflow-tooltip />
           <el-table-column prop="type" label="印章类型" width="130" show-overflow-tooltip />
           <el-table-column prop="contactPhone" label="联系电话" width="130" />
@@ -271,6 +276,17 @@ function getModuleLabel(m: any) {
 function getModuleTagType(m: any) {
   const map: Record<string,string> = { seal: '', newspaper: 'success', bookkeeping: 'warning' }
   return map[String(m)] || 'info'
+}
+
+function getOrderStatusText(status: any) {
+  const map: Record<number,string> = { 1: '待支付', 2: '已支付', 3: '制作中', 4: '已发货', 5: '已完成', 6: '已取消', 7: '售后中', 8: '退款中', 9: '已退款' }
+  return map[Number(status)] || String(status)
+}
+function getOrderStatusTag(status: any) {
+  const map: Record<number,string> = {
+    1: 'info', 2: 'primary', 3: 'warning', 4: 'primary', 5: 'success', 6: 'info', 7: 'danger', 8: 'danger', 9: 'success'
+  }
+  return map[Number(status)] || 'info'
 }
 function formatAddress(addressJson: any) {
   if (!addressJson) return '-'
