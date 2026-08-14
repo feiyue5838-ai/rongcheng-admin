@@ -130,9 +130,8 @@
 
       <!-- ====== 卡片网格 ====== -->
       <div v-loading="loading" class="scene-grid-wrap">
-        <!-- 空状态 -->
         <div v-if="!filteredSeals.length && !filteredPackages.length && !loading" class="empty-tip">
-          该场景暂无印章和套餐
+          暂无印章数据
         </div>
 
         <!-- 印章分区 -->
@@ -781,10 +780,19 @@ function singleSubCount(label: string): number {
 
 // seal_categories 中 name='个人印章'/'电子印章' 的项 → 补充 personalScene/electronicScene
 async function fetchAllCategories() {
-  const [catRes, sceneRes] = await Promise.all([
-    getSealCategories().catch(() => []),
-    getAdminScenes().catch(() => []),
-  ])
+  let catRes: any, sceneRes: any
+  try {
+    catRes = await getSealCategories()
+  } catch (e: any) {
+    console.error('[getSealCategories] failed:', e?.response?.status, e?.message)
+    catRes = []
+  }
+  try {
+    sceneRes = await getAdminScenes()
+  } catch (e: any) {
+    console.error('[getAdminScenes] failed:', e?.response?.status, e?.message)
+    sceneRes = []
+  }
   const cats = Array.isArray(catRes) ? catRes : (catRes?.data || [])
   const scenes = Array.isArray(sceneRes) ? sceneRes : (sceneRes?.data || [])
   const personalCat = cats.find((c: any) => c.name === '个人印章')
@@ -804,7 +812,12 @@ async function fetchSealsByCategory(catId: string) {
       const pkgResults = await Promise.all(businessCategories.value.map((c) => fetchCategoryPackages(c.id, c.name)))
       packages.value = pkgResults.flat()
       if (!activeSceneId.value && businessCategories.value.length) {
-        activeSceneId.value = businessCategories.value[0].id
+        // 只取真正的业务场景（排除测试/个人/电子等干扰场景）
+        const realBusiness = businessCategories.value.filter((c: any) => {
+          const name = (c.name || '').toLowerCase()
+          return !name.includes('测试') && !name.includes('电子') && !name.includes('个人') && !name.includes('备案')
+        })
+        activeSceneId.value = (realBusiness[0] || businessCategories.value[0]).id
       }
     } else if (isElectronic.value) {
       // 电子印章场景：父分类下无印章，实际印章挂在 6 个子分类下
@@ -1161,8 +1174,13 @@ watch(defaultCategory, (newVal, oldVal) => {
 watch(categories, async (newCats) => {
   if (!newCats?.length) return
   if (routeType.value !== 'enterprise') return
-  if (businessCategories.value.length) {
-    activeSceneId.value = businessCategories.value[0].id
+  // 只取真正的业务场景（排除测试/个人/电子等干扰场景）
+  const realBusiness = businessCategories.value.filter((c: any) => {
+    const name = (c.name || '').toLowerCase()
+    return !name.includes('测试') && !name.includes('电子') && !name.includes('个人') && !name.includes('备案')
+  })
+  if (realBusiness.length) {
+    activeSceneId.value = realBusiness[0].id
   }
 }, { immediate: false })
 
