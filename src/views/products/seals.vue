@@ -515,7 +515,7 @@ const defaultCategory = computed(() => {
 // 个人印章子分类：动态取真实 seal_categories id（避免写入无效外键导致保存失败）
 const personalCategories = computed(() => {
   const pc = categories.value.find((c: any) => c.name === '个人印章')
-  const prc = categories.value.find((c: any) => c.name === '电子个人签名章' || c.name === '个人职业印章')
+  const prc = categories.value.find((c: any) => c.name === '个人签名章')
   return [
     { id: pc?.id || '__personal__', name: '个人印章' },
     { id: prc?.id || '__professional__', name: '个人职业印章' },
@@ -712,7 +712,7 @@ async function loadPkgSealOptions(sceneId?: string) {
       if (isPersonal.value) {
         pkgSealOptions.value = list.filter((s: any) => {
           const n = s.sealCategories?.name
-          return n === '个人印章' || n === '电子个人签名章'
+          return n === '个人印章' || n === '个人签名章'
         })
       } else if (isElectronic.value) {
         pkgSealOptions.value = list.filter((s: any) => s.name && s.name.startsWith('电子'))
@@ -734,7 +734,7 @@ const filteredSeals = computed(() => {
   } else if (isPersonal.value) {
     list = activePersonalSubTab.value === '个人印章'
       ? list.filter((s) => s.sealCategories?.name === '个人印章')
-      : list.filter((s) => s.sealCategories?.name === '电子个人签名章')
+      : list.filter((s) => s.sealCategories?.name === '个人签名章')
   } else if (isElectronic.value) {
     list = list.filter((s) => getSealSubType(s.name) === activeSingleSubTab.value)
   }
@@ -769,7 +769,7 @@ function sceneItemCount(sceneId: string): number {
 // 个人场景：子分组计数
 // 个人印章 Tab 数量（动态计算，不再硬编码子分类名）
 const personalSealCount = computed(() => seals.value.filter((s) => s.sealCategories?.name === '个人印章').length)
-const professionalSealCount = computed(() => seals.value.filter((s) => s.sealCategories?.name === '电子个人签名章').length)
+const professionalSealCount = computed(() => seals.value.filter((s) => s.sealCategories?.name === '个人签名章').length)
 
 // 单路由（个人 + 电子）子 Tab 计数
 // 电子印章 Tab 数量（基于动态 electronicSubTypesMap）
@@ -824,7 +824,7 @@ async function fetchSealsByCategory(catId: string) {
       seals.value = list
         .filter((s: any) => {
           const n = s.sealCategories?.name
-          return n === '个人印章' || n === '电子个人签名章'
+          return n === '个人印章' || n === '个人签名章'
         })
         .map((s: any) => ({ ...s, categoryName: s.sealCategories?.name || '—', _sceneName: cat?.name || '个人印章' }))
       packages.value = []
