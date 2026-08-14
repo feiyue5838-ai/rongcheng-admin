@@ -290,7 +290,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { getOrderDetail, updateOrder, assignOrderAPI, getOutletsAPI, auditMaterial, refundOrder, uploadFile } from '@/api'
+import { getOrderDetail, updateOrder, assignOrderAPI, getOutletsAPI, auditMaterial, refundOrder } from '@/api'
 import { ElMessage, ElIcon } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'

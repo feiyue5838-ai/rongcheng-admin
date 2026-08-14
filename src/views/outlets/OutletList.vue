@@ -871,7 +871,6 @@ async function loadData(page?: number) {
       district: isMunicipality(province.value) ? (city.value === '' ? undefined : city.value) : undefined,
       businessType: businessType.value === '' ? undefined : businessType.value,
     })
-    console.log('API Response:', res)
     tableData.value = (res as any).data?.list ?? (res as any).list ?? []
     total.value = (res as any).data?.pagination?.total ?? (res as any).pagination?.total ?? 0
   } catch (err: any) {
