@@ -891,8 +891,8 @@ function subTypeName(key: string, catName?: string): string {
 function normalize(res: any): any[] {
   if (!res) return []
   if (Array.isArray(res)) return res
-  return (res as any)?.data ?? (res as any)?.list ?? (res as any)?.value ?? []
   return (res as any)?.list ?? (res as any)?.data ?? (res as any)?.value ?? []
+}
 
 async function reloadTemplateMeta() {
   const mRes: any = await getTemplateMeta()
@@ -928,6 +928,7 @@ async function reloadTemplates() {
 async function reloadAll() {
   loading.value = true
   try {
+    const [nRaw, cRes, mRaw, tRaw] = await Promise.all([
       getNewspapers(),
       getNewspaperCategories(),
       getTemplateMeta(),
