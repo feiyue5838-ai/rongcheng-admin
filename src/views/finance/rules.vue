@@ -151,7 +151,10 @@ async function loadOutlets() {
 function openRuleDialog(row = null) {
   if (row) {
     ruleForm.value = { ...defaultForm(), ...row }
-    dateRange.value = row.validFrom ? [row.validFrom.slice(0, 10), row.validTo ? row.validTo.slice(0, 10) : ''] : null
+    // 回填：仅当 validFrom 有值时才显示日期范围
+    dateRange.value = row.validFrom
+      ? [row.validFrom.slice(0, 10), row.validTo ? row.validTo.slice(0, 10) : null]
+      : null
   } else {
     ruleForm.value = defaultForm()
     dateRange.value = null
@@ -161,9 +164,10 @@ function openRuleDialog(row = null) {
 
 async function submitRule() {
   const data = { ...ruleForm.value }
-  if (dateRange.value && dateRange.value.length === 2) {
+  if (dateRange.value && dateRange.value.length >= 1 && dateRange.value[0]) {
+    // 过滤空字符串，统一用 null
     data.validFrom = dateRange.value[0] || null
-    data.validTo = dateRange.value[1] || null
+    data.validTo = (dateRange.value[1] && dateRange.value[1] !== '') ? dateRange.value[1] : null
   } else {
     data.validFrom = null
     data.validTo = null

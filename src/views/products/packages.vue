@@ -54,7 +54,14 @@ const loading = ref(false), saving = ref(false), packages = ref<any[]>([]), allS
 const dialogVisible = ref(false), isEdit = ref(false)
 const form = reactive<any>({ name: '', badge: '', price: 0, sealIds: [], description: '', sort: 0 })
 
-async function fetchPackages() { loading.value = true; try { packages.value = ((await getSealPackages()) as any) ?? [] } finally { loading.value = false } }
+async function fetchPackages() {
+  loading.value = true
+  try {
+    const res: any = await getSealPackages()
+    // 拦截器剥 {code:0,data} 后 res=数组；seal.service getPackages() 返回 seals[] 含印章详情
+    packages.value = Array.isArray(res) ? res : (res?.data || [])
+  } catch { packages.value = [] } finally { loading.value = false }
+}
 async function fetchSeals() { allSeals.value = ((await getSeals()) as any) ?? [] }
 function showDialog(type: string, row?: any) {
   isEdit.value = type === 'edit'

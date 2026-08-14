@@ -62,8 +62,8 @@
     <div v-if="mainTab === 'overview'" class="tab-panel">
       <div class="content-grid">
         <el-card shadow="never" class="panel">
-          <TrendChart 
-            :title="'近' + trendData.length + '天交易趋势'"
+          <TrendChart
+            :title="'近' + trendRange + '天交易趋势'"
             v-model="trendRange"
             :data="trendData"
             @range-change="onTrendRangeChange"

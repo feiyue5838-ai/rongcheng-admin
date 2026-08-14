@@ -255,6 +255,7 @@
             v-model="pricingMode"
             :active-value="'regional'"
             :inactive-value="'nationwide'"
+            @change="onPricingModeChange"
           />
           <span style="margin-left:8px;color:#606266">{{ pricingMode === 'regional' ? '区域价（按城市设置不同价格）' : '全国价（统一基准价）' }}</span>
         </el-form-item>
@@ -360,6 +361,7 @@
             v-model="pkgPricingMode"
             :active-value="'regional'"
             :inactive-value="'nationwide'"
+            @change="onPkgPricingModeChange"
           />
           <span style="margin-left:8px;color:#606266">{{ pkgPricingMode === 'regional' ? '区域价（按城市设置不同价格）' : '全国价（统一基准价）' }}</span>
         </el-form-item>
@@ -604,6 +606,14 @@ function getRegionPricesRows() {
 
 function addRegionPrice() {
   regionPricesRows.value.push({ city: '', price: 0, _cityValue: '' })
+}
+
+function onPricingModeChange(mode: string) {
+  if (mode === 'nationwide') regionPricesRows.value = []
+}
+
+function onPkgPricingModeChange(mode: string) {
+  if (mode === 'nationwide') pkgRegionPricesRows.value = []
 }
 
 function removeRegionPrice(idx: number) {

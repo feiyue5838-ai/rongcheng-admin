@@ -238,15 +238,15 @@
                 <span v-else>-</span>
               </template>
             </el-table-column>
-            <el-table-column prop="statusText" label="分配状态" width="100" align="center">
+            <el-table-column prop="status_text" label="分配状态" width="100" align="center">
               <template #default="{ row }">
                 <el-tag :type="row.status === 1 ? 'warning' : row.status === 2 ? 'primary' : 'success'" size="small">
-                  {{ row.statusText }}
+                  {{ row.status_text }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="createdAt" label="分配时间" width="170" />
-            <el-table-column prop="acceptedAt" label="接单时间" width="170">
+            <el-table-column prop="assigned_at" label="分配时间" width="170" />
+            <el-table-column prop="accepted_at" label="接单时间" width="170">
               <template #default="{ row }">
                 <span v-if="row.acceptedAt">{{ row.acceptedAt }}</span>
                 <span v-else style="color: #999">未接单</span>
@@ -280,11 +280,11 @@
             <el-descriptions-item label="匹配分">{{ drCurrentRecord.matchScore || '-' }}分</el-descriptions-item>
             <el-descriptions-item label="分配状态">
               <el-tag :type="drCurrentRecord.status === 1 ? 'warning' : drCurrentRecord.status === 2 ? 'primary' : 'success'">
-                {{ drCurrentRecord.statusText }}
+                {{ drCurrentRecord.status_text }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="分配时间">{{ drCurrentRecord.createdAt }}</el-descriptions-item>
-            <el-descriptions-item label="接单时长">{{ drCurrentRecord.acceptDuration ? drCurrentRecord.acceptDuration + '分钟' : '-' }}</el-descriptions-item>
+            <el-descriptions-item label="分配时间">{{ drCurrentRecord.assigned_at }}</el-descriptions-item>
+            <el-descriptions-item label="接单时长">{{ drCurrentRecord.acceptMinutes ? drCurrentRecord.acceptMinutes + '分钟' : '-' }}</el-descriptions-item>
             <el-descriptions-item label="备注" :span="2">{{ drCurrentRecord.remark || '-' }}</el-descriptions-item>
           </el-descriptions>
         </el-dialog>
@@ -481,7 +481,8 @@ async function fetchDrOutlets() {
 async function fetchDrStats() {
   try {
     const res: any = await request.get('/dashboard/dispatch-stats', { params: drFilters })
-    Object.assign(drStats, res?.data || res)
+    // 拦截器已剥 {code:0,data} 到 data 层，res 已是目标对象
+    Object.assign(drStats, res?.data ?? res ?? {})
   } catch { /* ignore */ }
 }
 
@@ -494,9 +495,9 @@ async function fetchDrData() {
       pageSize: drPagination.pageSize,
     }
     const res: any = await request.get('/dashboard/dispatch-records', { params })
-    const data = res?.data || res
-    drTableData.value = data.list || []
-    drPagination.total = data.pagination?.total || 0
+    // 拦截器剥 {code:0,data} 后 res={list,pagination}，直接取 list/pagination
+    drTableData.value = res?.data?.list ?? res?.list ?? []
+    drPagination.total = res?.data?.pagination?.total ?? res?.pagination?.total ?? 0
     fetchDrStats()
   } catch {
     ElMessage.error('加载数据失败')
