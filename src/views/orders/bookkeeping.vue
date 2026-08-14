@@ -168,7 +168,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { assignOrderAPI, getOutletsAPI, getOrderStatistics } from '@/api'
+import { assignOrderAPI, getOutletsAPI, getAvailableOutlets, getOrderStatistics, updateOrder, refundOrder, getBookkeepingOrders } from '@/api'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 import { FolderOpened, Clock, Tools, Calendar } from '@element-plus/icons-vue'
@@ -188,10 +188,10 @@ const loadStats = async () => {
   try {
     statsError.value = false
     const res = await getOrderStatistics() as any
-    stats.bookkeeping = res.bookkeeping || 0
-    stats.assigned = res.assignedOrders || 0
-    stats.making = res.making || 0
-    stats.todayBookkeeping = res.todayBookkeeping || 0
+    stats.bookkeeping = res.bookkeeping ?? 0
+    stats.assigned = res.assignedOrders ?? 0
+    stats.making = res.making ?? 0
+    stats.todayBookkeeping = res.todayBookkeeping ?? 0
   } catch (e) {
     statsError.value = true
   }
@@ -226,11 +226,7 @@ async function confirmRefund() {
   if (!refundReason.value.trim()) { ElMessage.warning('请填写退款原因'); return }
   refundLoading.value = true
   try {
-    await fetch(`/api/orders/${refundTarget.value.id}/refund`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: refundAmount.value, reason: refundReason.value })
-    }).then(r => r.json()).then(r => { if (!r.success) throw new Error(r.message) })
+    await refundOrder(refundTarget.value.id, { amount: refundAmount.value, reason: refundReason.value })
     ElMessage.success('退款申请已提交')
     refundVisible.value = false
     fetchOrders()
@@ -259,8 +255,11 @@ async function showAssignDialog(row: any) {
   currentOutletName.value = ''
   assignVisible.value = true
   try {
-    const res = await getOutletsAPI({ page: 1, pageSize: 100 } as any)
-    outletList.value = (res as any).data?.list || []
+    const params: any = {}
+    if (row.address_json) params.addressJson = row.address_json
+    params.businessType = 'accounting'
+    const res: any = await getAvailableOutlets(params)
+    outletList.value = (res as any).data ?? []
   } catch { /* ignore */ }
 }
 
@@ -287,11 +286,7 @@ async function confirmAssign() {
 // 确认付款 / 完成
 async function handleMarkPaid(order: any) {
   try {
-    await fetch(`/api/orders/admin/${order.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 2, statusText: '已支付' })
-    }).then(r => r.json()).then(r => { if (!r.success) throw new Error(r.message) })
+    await updateOrder(order.id, { status: 2, statusText: '已支付' })
     ElMessage.success('已标记为已支付')
     fetchOrders()
   } catch (e: any) {
@@ -301,11 +296,7 @@ async function handleMarkPaid(order: any) {
 
 async function handleComplete(order: any) {
   try {
-    await fetch(`/api/orders/admin/${order.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 5, statusText: '已完成' })
-    }).then(r => r.json()).then(r => { if (!r.success) throw new Error(r.message) })
+    await updateOrder(order.id, { status: 5, statusText: '已完成' })
     ElMessage.success('已标记为已完成')
     fetchOrders()
   } catch (e: any) {
@@ -328,9 +319,9 @@ async function fetchOrders() {
       params.startDate = dateRange.value[0]
       params.endDate = dateRange.value[1]
     }
-    const res = await fetch('/api/orders/admin/list?' + new URLSearchParams(params).toString()).then(r => r.json())
-    list.value = res.list || []
-    total.value = res.total || 0
+    const res: any = await getBookkeepingOrders(params)
+    list.value = (res as any).data?.list ?? []
+    total.value = (res as any).data?.pagination?.total ?? 0
   } catch (e) {
     ElMessage.error('加载失败')
   } finally {
