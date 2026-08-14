@@ -892,7 +892,7 @@ function normalize(res: any): any[] {
   if (!res) return []
   if (Array.isArray(res)) return res
   return (res as any)?.data ?? (res as any)?.list ?? (res as any)?.value ?? []
-}
+  return (res as any)?.list ?? (res as any)?.data ?? (res as any)?.value ?? []
 
 async function reloadTemplateMeta() {
   const mRes: any = await getTemplateMeta()
