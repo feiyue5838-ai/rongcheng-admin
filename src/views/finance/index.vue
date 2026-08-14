@@ -747,6 +747,7 @@ async function loadOutletOpts() {
     const res = await getOutletsWithFlows()
     const data = res || {}
     const list = Array.isArray(data) ? data : (data?.items || [])
+    outletOptions.value = (list || []).map((o) => ({ label: o.outletName, value: o.outletId }))
   } catch (e) { console.error(e) }
 }
 async function loadSettlementOutletOpts() {
@@ -758,7 +759,7 @@ async function loadSettlementOutletOpts() {
 }
 
 async function loadTransStats() {
-  try { const res = await getTransactionStats(); transStats.value = res?.data || res || {} }
+  try { const res = await getTransactionStats(); transStats.value = (res?.data && typeof res?.data === 'object') ? res.data : (res || {}) }
   catch (e) { console.error(e) }
 }
 
