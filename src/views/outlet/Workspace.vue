@@ -448,7 +448,7 @@ async function loadData() {
   loading.value = true
   try {
     const res = await getMyOutletOrdersAPI({ page: 1, pageSize: 100 })
-    const all = res.list || []
+    const all = res?.data?.list ?? []
     outletStore.allOrders = all
     const authorized = getAuthorizedOrders(all)
     stats.value = {
@@ -591,7 +591,7 @@ function startPolling() {
 async function loadNotifications(showToast = true) {
   try {
     const res = await getMyNotificationsAPI()
-    const list = res.list || []
+    const list = res?.data?.list ?? []
     notifyList.value = list
     unreadCount.value = list.filter((n) => !n.isRead).length
     // 有新未读消息时弹出提示

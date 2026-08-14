@@ -267,7 +267,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, onMounted, shallowRef, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/api'
@@ -337,7 +337,7 @@ function openBannerDialog(row) {
   bannerVisible.value = true
 }
 function bannerUploadSuccess(res) {
-  if (res.url) bannerForm.image = res.url
+  if (res?.data?.url ?? res?.url) bannerForm.image = res?.data?.url ?? res?.url
   else ElMessage.error('上传失败')
 }
 async function saveBanner() {
@@ -374,7 +374,7 @@ async function loadAnnouncements() {
     if (annFilter.status !== undefined) params.status = annFilter.status
     if (annFilter.keyword) params.keyword = annFilter.keyword
     const res = await request.get('/content/announcements', { params })
-    announcements.value = res.list || []
+    announcements.value = (res as any)?.data?.list ?? []
   } catch { /* ignore */ } finally { annLoading.value = false }
 }
 function openAnnDialog(row) {
@@ -422,7 +422,7 @@ async function loadIntros() {
   introLoading.value = true
   try {
     const res = await request.get('/content/intros')
-    intros.value = res.list || []
+    intros.value = (res as any)?.data?.list ?? []
   } catch { /* ignore */ } finally { introLoading.value = false }
 }
 function openIntroDialog(row) {
