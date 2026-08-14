@@ -811,14 +811,13 @@ async function fetchSealsByCategory(catId: string) {
       seals.value = results.flat()
       const pkgResults = await Promise.all(businessCategories.value.map((c) => fetchCategoryPackages(c.id, c.name)))
       packages.value = pkgResults.flat()
-      if (!activeSceneId.value && businessCategories.value.length) {
-        // 只取真正的业务场景（排除测试/个人/电子等干扰场景）
-        const realBusiness = businessCategories.value.filter((c: any) => {
-          const name = (c.name || '').toLowerCase()
-          return !name.includes('测试') && !name.includes('电子') && !name.includes('个人') && !name.includes('备案')
-        })
-        activeSceneId.value = (realBusiness[0] || businessCategories.value[0]).id
-      }
+      // 默认选中第一个有数据的业务场景（按 sort 升序），避免选中空测试场景
+      const sorted = [...businessCategories.value].sort((a: any, b: any) => (a.sort || 0) - (b.sort || 0))
+      const withData = sorted.find((c: any) =>
+        seals.value.some((s: any) => s._sceneName === c.name) ||
+        packages.value.some((p: any) => p._sceneName === c.name)
+      )
+      activeSceneId.value = (withData || sorted[0] || businessCategories.value[0])?.id
     } else if (isElectronic.value) {
       // 电子印章场景：父分类下无印章，实际印章挂在 6 个子分类下
       // 走 /seals 全量后过滤 name 以'电子'开头，避免依赖父子关联字段
@@ -1141,10 +1140,12 @@ function triggerSealUpload() {
   if (input) input.click()
 }
 
-// 业务场景（8 大场景）：sceneType==='scene'
+// 8 大业务场景（企业刻章 Tab 只展示这些，排除电子/个人/测试/备案等干扰场景）
+const BUSINESS_SCENE_NAMES = ['新办企业全套章', '企业公章', '财务专用章', '合同专用章', '法定代表人章', '发票专用章', '个体户刻章', '其他印章']
+
+// 业务场景（8 大场景）：sceneType==='scene' 且属于企业业务场景白名单
 const businessCategories = computed(() => {
-  const scenes = categories.value.filter((c) => c.sceneType === 'scene')
-  // 后端 getSealCategories 当前未返回 sceneType 字段，退化为全部业务分类以避免印章列表全空
+  const scenes = categories.value.filter((c) => c.sceneType === 'scene' && BUSINESS_SCENE_NAMES.includes(c.name))
   return scenes.length ? scenes : categories.value
 })
 
@@ -1174,14 +1175,8 @@ watch(defaultCategory, (newVal, oldVal) => {
 watch(categories, async (newCats) => {
   if (!newCats?.length) return
   if (routeType.value !== 'enterprise') return
-  // 只取真正的业务场景（排除测试/个人/电子等干扰场景）
-  const realBusiness = businessCategories.value.filter((c: any) => {
-    const name = (c.name || '').toLowerCase()
-    return !name.includes('测试') && !name.includes('电子') && !name.includes('个人') && !name.includes('备案')
-  })
-  if (realBusiness.length) {
-    activeSceneId.value = realBusiness[0].id
-  }
+  // activeSceneId 由 fetchSealsByCategory('__ALL_BUSINESS__') 在数据加载后按“有数据”决策，
+  // 此处不抢设，避免覆盖数据感知的默认场景
 }, { immediate: false })
 
 // Tab 切换：enterprise 路由直接拉对应场景数据
