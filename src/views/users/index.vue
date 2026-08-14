@@ -45,7 +45,7 @@ const pagination = ref({ page: 1, pageSize: 20, total: 0 })
 const query = reactive({ keyword: '', page: 1, pageSize: 20 })
 
 function formatDate(d: string) { return dayjs(d).format('YYYY-MM-DD HH:mm') }
-async function fetchUsers() { loading.value = true; try { const res: any = await getUsers(query); list.value = res.list; pagination.value = res.pagination } finally { loading.value = false } }
+async function fetchUsers() { loading.value = true; try { const res: any = await getUsers(query); list.value = res.list; pagination.value = res.pagination; if (res.pagination?.page) query.page = res.pagination.page } finally { loading.value = false } }
 async function handleToggleStatus(row: any) {
   const newStatus = row.status === 1 ? 0 : 1
   try {
