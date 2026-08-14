@@ -374,7 +374,7 @@ async function loadAnnouncements() {
     if (annFilter.status !== undefined) params.status = annFilter.status
     if (annFilter.keyword) params.keyword = annFilter.keyword
     const res = await request.get('/content/announcements', { params })
-    announcements.value = (res as any)?.data?.list ?? []
+    announcements.value = (res as any)?.list ?? []
   } catch { /* ignore */ } finally { annLoading.value = false }
 }
 function openAnnDialog(row) {
@@ -422,7 +422,7 @@ async function loadIntros() {
   introLoading.value = true
   try {
     const res = await request.get('/content/intros')
-    intros.value = (res as any)?.data?.list ?? []
+    intros.value = (res as any)?.list ?? []
   } catch { /* ignore */ } finally { introLoading.value = false }
 }
 function openIntroDialog(row) {
