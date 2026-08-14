@@ -190,9 +190,9 @@
         </el-table-column>
 
         <!-- 时间 -->
-        <el-table-column label="上传时间" prop="createdAt" width="170" sortable>
+        <el-table-column label="上传时间" prop="created_at" width="170" sortable>
           <template #default="{ row }">
-            {{ formatDate(row.createdAt) }}
+            {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
 
@@ -346,8 +346,8 @@ async function loadData() {
 
     tableData.value = list
     pagination.total = total
-    pagination.page = res.pagination?.page || page.value
-    pagination.pageSize = res.pagination?.pageSize || pageSize.value
+    pagination.page = (res as any).data?.pagination?.page ?? res.pagination?.page ?? page.value
+    pagination.pageSize = (res as any).data?.pagination?.pageSize ?? res.pagination?.pageSize ?? pageSize.value
   } catch (err: any) {
     ElMessage.error('加载失败: ' + (err.message || ''))
   } finally {
