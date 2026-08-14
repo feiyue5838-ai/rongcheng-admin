@@ -112,12 +112,12 @@
           <el-table-column label="分配状态" width="100" align="center">
             <template #default="{ row }">
               <el-tag :type="getStatusTag(row.status)" size="small">
-                {{ row.statusText }}
+                {{ getStatusText(row.status) }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="assignedAt" label="分配时间" width="170">
-            <template #default="{ row }">{{ formatDate(row.assignedAt) }}</template>
+            <template #default="{ row }">{{ formatDate(row.assigned_at) }}</template>
           </el-table-column>
           <el-table-column label="操作" width="160" align="center">
             <template #default="{ row }">
@@ -194,8 +194,13 @@ const completeRules = {
 }
 
 function getStatusTag(status: any) {
-  const map: Record<number,string> = { 1: 'warning', 2: '', 3: 'success' }
+  const map: Record<number,string> = { 1: 'warning', 2: '', 3: 'success', 4: 'success' }
   return map[status] || 'info'
+}
+
+function getStatusText(status: any) {
+  const map: Record<number,string> = { 1: '待接单', 2: '制作中', 3: '已发货', 4: '已完成' }
+  return map[status] || String(status)
 }
 
 async function loadOutlets() {
@@ -227,7 +232,7 @@ async function loadData() {
     stats.value = {
       pending: allOrders.filter((o: any) => (o as any).status === 1).length,
       processing: allOrders.filter((o: any) => (o as any).status === 2).length,
-      completed: allOrders.filter((o: any) => (o as any).status === 3).length,
+      completed: allOrders.filter((o: any) => (o as any).status === 4).length,
       todayTotal: allOrders.length,
     }
   } catch (err: any) { /* ignore */ } finally {
