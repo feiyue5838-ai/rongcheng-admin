@@ -386,10 +386,15 @@
   <!-- ===== 子分类管理弹窗 ===== -->
   <el-dialog
     v-model="subsDialogVisible"
-    title="<el-icon><FolderOpened /></el-icon> 子分类管理"
     width="760px"
     :close-on-click-modal="false"
   >
+    <template #header>
+      <div style="display:flex;align-items:center;gap:6px;font-weight:600">
+        <el-icon><FolderOpened /></el-icon>
+        <span>子分类管理</span>
+      </div>
+    </template>
     <el-form label-width="80px">
       <el-form-item label="所属分类" :required="true">
         <el-select v-model="subsCatId" placeholder="选择分类" style="width:100%" filterable @change="onSubsCatChange">
@@ -470,6 +475,35 @@ const templates = ref<any[]>([])
 const templatesTotal = ref(0)
 const subTypesMap = ref<Record<string, { key: string; name: string }[]>>({})
 
+// templateType key → 中文标签（兜底用，subTypesMap 为空时生效）
+const TEMPLATE_TYPE_LABELS: Record<string, string> = {
+  company: "公司公告", idcard: "身份证类", invoice: "发票收据",
+  administrative_licensing: "行政许可", land_expropriation: "土地征收",
+  prosecutorial: "检察公告", tax_notice: "税务通知",
+  admin_punish_gov: "政府行政处罚", customs_notice: "海关通知",
+  estate: "房产公告", labor_arb: "劳动仲裁", stamp_cert: "印章证书",
+  debt: "债权债务", env_acceptance: "环保验收", env_impact: "环境影响评价",
+  license_qualification: "资质许可", personal: "个人证件",
+  planning_permit: "规划许可", seal: "印章公告",
+  admin_punishment: "行政处罚", admin_regulation: "行政监管",
+  arbitration_service: "仲裁服务", bankruptcy_liquidation: "破产清算",
+  civil_dispute: "民事纠纷", clean_production: "清洁生产",
+  compensation_claim: "赔偿请求", contract_agreement: "合同协议",
+  debt_collect: "催款公告", emission_permit: "排放许可",
+  judicial_auction: "司法拍卖", lost: "遗失声明",
+  notary_testament: "公证遗嘱", search_people: "寻人启事",
+  vehicle: "车辆公告", corporate: "企业公告", notary: "公证公告",
+  other: "其他", property: "物业公告", stock: "股权公告",
+  asset: "资产公告", debt_cleanup: "债务清算", debt_transfer: "债务转让",
+  employee: "员工公告", engineering_lease: "工程租赁",
+  finance_release: "财务发布", general: "一般公告",
+  government: "政府公告", judicial: "司法公告",
+  labor_dismissal: "劳动解聘", labor_wage: "劳动工资",
+  loan_default: "贷款违约", online: "网络公告",
+  procurement_supplier: "采购供应", product: "产品公告",
+  recruitment_general: "招聘公告", unit: "单位公告",
+}
+
 // ===== 筛选 =====
 const filterText = ref('')
 const filterCatId = ref('')
@@ -494,31 +528,52 @@ const categoryNameMap = computed(() => {
 })
 
 // 当前分类的子分类下拉选项（工具栏用）
-// 全部分类时显示所有子分组（去重，带分类名标注）
+// 优先从 subTypesMap 取（有子分组数据时）；否则从已加载模板的 templateType 动态生成
 const currentSubOptions = computed(() => {
-  if (!filterCatId.value) {
-    // 全部分类：聚合所有子分组，去重 key，标注所属分类
+  const catName = filterCatId.value ? (categoryNameMap.value[filterCatId.value] || '') : ''
+  // 有子分组数据时走原有逻辑
+  if (catName && subTypesMap.value[catName]?.length) {
+    return subTypesMap.value[catName].map(s => ({ ...s, label: s.name }))
+  }
+  if (!filterCatId.value && Object.values(subTypesMap.value).some(a => a.length)) {
     const all = []
     const seen = new Set()
-    for (const [catName, subs] of Object.entries(subTypesMap.value)) {
+    for (const [cName, subs] of Object.entries(subTypesMap.value)) {
       for (const s of (subs as any[])) {
-        if (!seen.has(s.key)) {
-          seen.add(s.key)
-          all.push({ ...s, label: `${s.name} (${catName})` })
-        }
+        if (!seen.has(s.key)) { seen.add(s.key); all.push({ ...s, label: `${s.name} (${cName})` }) }
       }
     }
     return all.sort((a, b) => a.name.localeCompare(b.name, 'zh'))
   }
-  const catName = categoryNameMap.value[filterCatId.value] || ''
-  return (subTypesMap.value[catName] || []).map(s => ({ ...s, label: s.name }))
+  // 无子分组数据：从已加载模板动态生成（去重，带中文标签）
+  const usedKeys = new Set<string>()
+  const result: { key: string; name: string; label: string }[] = []
+  for (const t of templates.value) {
+    if (t.templateType && !usedKeys.has(t.templateType)) {
+      usedKeys.add(t.templateType)
+      const label = TEMPLATE_TYPE_LABELS[t.templateType] || t.templateType
+      result.push({ key: t.templateType, name: label, label })
+    }
+  }
+  return result.sort((a, b) => a.name.localeCompare(b.name, 'zh'))
 })
 
-// 模板编辑弹窗的子分类选项
+// 模板编辑弹窗的子分类选项（优先 subTypesMap；无数据时从已加载模板动态生成）
 const currentTemplateSubOptions = computed(() => {
-  if (!templateForm.value.categoryId) return []
-  const catName = categoryNameMap.value[templateForm.value.categoryId] || ''
-  return subTypesMap.value[catName] || []
+  if (templateForm.value.categoryId) {
+    const catName = categoryNameMap.value[templateForm.value.categoryId] || ''
+    if (subTypesMap.value[catName]?.length) return subTypesMap.value[catName]
+  }
+  // 无子分组数据：动态从已加载模板生成
+  const usedKeys = new Set<string>()
+  const result: { key: string; name: string }[] = []
+  for (const t of templates.value) {
+    if (t.templateType && !usedKeys.has(t.templateType)) {
+      usedKeys.add(t.templateType)
+      result.push({ key: t.templateType, name: TEMPLATE_TYPE_LABELS[t.templateType] || t.templateType })
+    }
+  }
+  return result.sort((a, b) => a.name.localeCompare(b.name, 'zh'))
 })
 
 // ===== 表格数据 =====
@@ -683,8 +738,7 @@ async function saveUnified() {
       // 添加分类
       await createNewspaperCategory({
         name: unifiedForm.value.name.trim(),
-        desc: unifiedForm.value.desc || null,
-        color: unifiedForm.value.color || '#5B6FE8',
+        icon: unifiedForm.value.desc || null,
         sort: unifiedForm.value.sort ?? 0,
       })
       ElMessage.success('分类添加成功')
@@ -703,7 +757,7 @@ async function saveUnified() {
       }
       await updateNewspaperCategory(unifiedForm.value.catId, {
         name: cat.name,
-        sub_types: [...existing, newSub],
+        subTypes: [...existing, newSub],
       })
       ElMessage.success('子分类添加成功')
     }
@@ -767,7 +821,7 @@ async function saveSubs() {
   try {
     await updateNewspaperCategory(subsCatId.value, {
       name: cat.name,
-      sub_types: editSubs.value,
+      subTypes: editSubs.value,
     })
     ElMessage.success('保存成功')
     await reloadAll()
@@ -883,7 +937,8 @@ function subTypeName(key: string, catName?: string): string {
     const found = (arr as any[]).find(s => s.key === key)
     if (found) return found.name
   }
-  return key
+  // 3. 中文映射兜底
+  return TEMPLATE_TYPE_LABELS[key] || key
 }
 
 // ===== 数据加载 =====
