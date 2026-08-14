@@ -228,7 +228,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getUnassignedOrdersAPI, getAssignedOrdersAPI, assignOrderAPI, getOutletsAPI, getOrderStatistics } from '@/api'
+import { getUnassignedOrdersAPI, getAssignedOrdersAPI, assignOrderAPI, getOutletsAPI, getOrderStatistics, getAvailableOutlets } from '@/api'
 import { formatDate } from '@/utils/format'
 
 const activeTab = ref('pending')
@@ -317,6 +317,8 @@ async function loadData() {
       const res = await getAssignedOrdersAPI({ page: page.value, pageSize: pageSize.value, keyword: keyword.value, module: module.value })
       tableData.value = (res as any).data?.list ?? (res as any).list ?? []
       total.value = (res as any).data?.pagination?.total ?? (res as any).pagination?.total ?? 0
+      // 已分配 Tab：同步统计卡
+      loadStats()
     }
   } catch (err) {
     tableData.value = []
@@ -352,8 +354,9 @@ async function openAssignDialog(order: any) {
   assignForm.remark = ''
   currentOutletName.value = ''
   try {
-    const res: any = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
-    const all = (res as any).data?.list ?? (res as any).list ?? []
+    // 按订单模块过滤有资质的网点（仅显示匹配业务类型的）
+    const res: any = await getAvailableOutlets({ addressJson: order.addressJson, businessType: order.module || 'seal' })
+    const all = (res as any).data ?? []
     const recommendedIds = new Set((order.recommendedOutlets || []).map((o: any) => o.id))
     const recommended = all.filter((o: any) => recommendedIds.has(o.id))
     const others = all.filter((o: any) => !recommendedIds.has(o.id))
