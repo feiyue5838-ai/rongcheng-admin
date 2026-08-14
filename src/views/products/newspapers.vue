@@ -287,13 +287,13 @@
           <el-input v-model="sectionForm.category" placeholder="如：头版、副刊" />
         </el-form-item>
         <el-form-item label="刊例价(元)">
-          <el-input-number v-model="sectionForm.list_price" :min="0" :precision="2" style="width: 100%" />
+          <el-input-number v-model="sectionForm.listPrice" :min="0" :precision="2" style="width: 100%" />
         </el-form-item>
         <el-form-item label="截稿时间">
-          <el-input v-model="sectionForm.deadline_time" placeholder="如：17:00" />
+          <el-input v-model="sectionForm.deadlineTime" placeholder="如：17:00" />
         </el-form-item>
         <el-form-item label="见报周期">
-          <el-select v-model="sectionForm.publish_cycle" placeholder="选择见报周期" clearable style="width: 100%">
+          <el-select v-model="sectionForm.publishCycle" placeholder="选择见报周期" clearable style="width: 100%">
             <el-option label="次日见报" value="次日见报" />
             <el-option label="隔日见报" value="隔日见报" />
             <el-option label="3日内见报" value="3日内见报" />
@@ -578,9 +578,9 @@ const sections = ref<any[]>([])
 const sectionForm = reactive<any>({
   name: '',
   category: '',
-  list_price: 0,
-  deadline_time: '',
-  publish_cycle: '',
+  listPrice: 0,
+  deadlineTime: '',
+  publishCycle: '',
   sort: 0,
   status: 1,
   remark: '',
@@ -914,7 +914,7 @@ async function handleExpandChange(row: any) {
   if (sections.value.find(s => s._newspaperId === row.id)) return
   try {
     const res: any = await getNewspaperSections(row.id)
-    const list = (res as any).list || []
+    const list: any[] = Array.isArray(res) ? res : ((res as any)?.list || [])
     list.forEach((s: any) => { s._newspaperId = row.id })
     sections.value = [...sections.value.filter(s => s._newspaperId !== row.id), ...list]
   } catch (e: any) {
@@ -930,7 +930,7 @@ function openAddSection(row: any) {
   currentNewspaperId.value = row.id
   sectionIsEdit.value = false
   sectionDialogTitle.value = `添加版面 - ${row.name}`
-  Object.assign(sectionForm, { name: '', category: '', list_price: 0, deadline_time: '', publish_cycle: '', sort: 0, status: 1, remark: '' })
+  Object.assign(sectionForm, { name: '', category: '', listPrice: 0, deadlineTime: '', publishCycle: '', sort: 0, status: 1, remark: '' })
   sectionDialogVisible.value = true
 }
 
@@ -941,10 +941,9 @@ function openEditSection(row: any, section: any) {
   sectionDialogTitle.value = `编辑版面 - ${row.name}`
   Object.assign(sectionForm, {
     name: section.name,
-    category: section.category || '',
-    list_price: section.listPrice || 0,
-    deadline_time: section.deadlineTime || '',
-    publish_cycle: section.publishCycle || '',
+    listPrice: section.listPrice || 0,
+    deadlineTime: section.deadlineTime || '',
+    publishCycle: section.publishCycle || '',
     sort: section.sort || 0,
     status: section.status ?? 1,
     remark: section.remark || '',
@@ -967,7 +966,7 @@ async function saveSection() {
     sectionDialogVisible.value = false
     const rowId = currentNewspaperId.value
     const res: any = await getNewspaperSections(rowId)
-    const list = (res as any).list || []
+    const list: any[] = Array.isArray(res) ? res : ((res as any)?.list || [])
     list.forEach((s: any) => { s._newspaperId = rowId })
     sections.value = [...sections.value.filter(s => s._newspaperId !== rowId), ...list]
   } catch (e: any) {
