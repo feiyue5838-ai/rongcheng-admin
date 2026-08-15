@@ -73,7 +73,7 @@
           </div>
         </template>
         <el-alert type="info" :closable="false" style="margin-bottom:16px;">
-          合作价格 = 平台结算给服务商的分成单价。刻章：<strong>个/枚</strong>，登报：<strong>期</strong>，代理记账：<strong>家</strong>。
+          合作价格 = 平台结算给履约供应商的分成单价。刻章：<strong>个/枚</strong>，登报：<strong>期</strong>，代理记账：<strong>家</strong>。
           结算时优先使用网点专属价格，未配置则使用全局结算规则。
         </el-alert>
         <div style="margin-bottom:16px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
@@ -92,7 +92,7 @@
           <el-button @click="resetPricingFilter">重置</el-button>
         </div>
         <el-table :data="pricingTable" stripe v-loading="pricingLoading">
-          <el-table-column prop="outletName" label="服务商" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="outletName" label="履约供应商" min-width="160" show-overflow-tooltip />
           <el-table-column label="业务类型" width="130">
             <template #default="{ row }">
               {{ getBusinessTypeLabel(row.businessType) }} ({{ row.unit }})
@@ -356,8 +356,8 @@
     <!-- 合作价格编辑弹窗 -->
     <el-dialog v-model="pricingDialogVisible" :title="pricingForm.id ? '编辑合作价格' : '新增合作价格'" width="520px" :close-on-click-modal="false">
       <el-form :model="pricingForm" :rules="pricingFormRules" label-width="100px">
-        <el-form-item label="服务商" prop="outletId">
-          <el-select v-model="pricingForm.outletId" placeholder="请选择服务商" filterable style="width:100%;" @change="onPricingOutletChange">
+        <el-form-item label="履约供应商" prop="outletId">
+          <el-select v-model="pricingForm.outletId" placeholder="请选择履约供应商" filterable style="width:100%;" @change="onPricingOutletChange">
             <el-option v-for="o in pricingOutlets" :key="o.id" :label="o.name" :value="o.id" />
           </el-select>
         </el-form-item>
@@ -725,7 +725,7 @@ const pricingForm = reactive({
   remark: '',
 })
 const pricingFormRules = {
-  outletId: [{ required: true, message: '请选择服务商', trigger: 'change' }],
+  outletId: [{ required: true, message: '请选择履约供应商', trigger: 'change' }],
   businessType: [{ required: true, message: '请选择业务类型', trigger: 'change' }],
   priceType: [{ required: true, message: '请选择计费方式', trigger: 'change' }],
   priceValue: [{ required: true, message: '请输入单价', trigger: 'blur' }],
@@ -761,7 +761,7 @@ function onBusinessTypeChange(key) {
 }
 
 async function onSubmitPricing() {
-  if (!pricingForm.outletId) { ElMessage.warning('请选择服务商'); return }
+  if (!pricingForm.outletId) { ElMessage.warning('请选择履约供应商'); return }
   if (!pricingForm.businessType) { ElMessage.warning('请选择业务类型'); return }
   if (!pricingForm.priceValue && pricingForm.priceValue !== 0) { ElMessage.warning('请输入单价'); return }
   try {

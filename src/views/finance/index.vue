@@ -120,7 +120,7 @@
       </div>
         <el-card shadow="never" style="margin-top:12px">
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <el-select v-model="filterSettlementOutletId" placeholder="全部服务商" clearable filterable style="width:180px" @change="loadRecords">
+            <el-select v-model="filterSettlementOutletId" placeholder="全部合作方" clearable filterable style="width:180px" @change="loadRecords">
               <el-option v-for="o in settlementOutletOptions" :key="o.value" :label="o.label" :value="o.value" />
             </el-select>
             <el-select v-model="filterStatus" placeholder="状态" clearable style="width:140px" @change="loadRecords">
@@ -177,7 +177,7 @@
             <button v-for="r in quickRanges" :key="r.key" class="quick-btn" :class="{ active: quickRange === r.key }" @click="onQuickFilter(r.key)">{{ r.label }}</button>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <el-select v-model="filterParams.outletId" placeholder="全部服务商" clearable filterable style="width:180px" @change="onFilterChange">
+            <el-select v-model="filterParams.outletId" placeholder="全部合作方" clearable filterable style="width:180px" @change="onFilterChange">
               <el-option v-for="o in outletOptions" :key="o.value" :label="o.label" :value="o.value" />
             </el-select>
             <el-select v-model="filterParams.module" placeholder="全部业务" clearable style="width:140px" @change="onFilterChange">
@@ -207,7 +207,7 @@
           <el-table-column prop="transactionNo" label="交易单号" width="190" />
           <el-table-column prop="orderNo" label="关联订单" width="190" />
           <el-table-column prop="userName" label="用户" width="120" />
-          <el-table-column prop="outletName" label="服务商" width="160" show-overflow-tooltip />
+          <el-table-column prop="outletName" label="履约供应商" width="160" show-overflow-tooltip />
           <el-table-column prop="businessType" label="业务" width="100" />
           <el-table-column label="类型" width="100">
             <template #default="{ row }"><el-tag :type="tradeTypeTagType(row.tradeType)" size="small">{{ tradeTypeText(row.tradeType) }}</el-tag></template>
@@ -378,7 +378,7 @@
         <el-descriptions-item label="交易单号">{{ transDetailRow.transactionNo }}</el-descriptions-item>
         <el-descriptions-item label="关联订单">{{ transDetailRow.orderNo }}</el-descriptions-item>
         <el-descriptions-item label="用户">{{ transDetailRow.userName }} {{ transDetailRow.userPhone }}</el-descriptions-item>
-        <el-descriptions-item label="服务商">{{ transDetailRow.outletName || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="履约供应商">{{ transDetailRow.outletName || '—' }}</el-descriptions-item>
         <el-descriptions-item label="业务">{{ transDetailRow.businessType }}</el-descriptions-item>
         <el-descriptions-item label="交易类型">{{ tradeTypeText(transDetailRow.tradeType) }}</el-descriptions-item>
         <el-descriptions-item label="支付方式">{{ transDetailRow.payMethod }}</el-descriptions-item>
@@ -827,7 +827,7 @@ async function onExport() {
     const res = await exportTransactionFlows(params)
     const list = Array.isArray(res) ? res : (res?.items || [])
     if (!list.length) { ElMessage.info('暂无数据可导出'); return }
-    const headers = ['交易时间', '交易单号', '关联订单', '用户', '服务商', '业务', '类型', '支付方式', '交易金额', '手续费', '实收', '状态']
+    const headers = ['交易时间', '交易单号', '关联订单', '用户', '履约供应商', '业务', '类型', '支付方式', '交易金额', '手续费', '实收', '状态']
     const rows = list.map(r => [
       r.createdAt || '', r.transactionNo || '', r.orderNo || '', r.userName || '', r.outletName || '',
       r.businessType || '', tradeTypeText(r.tradeType), r.payMethod || '',

@@ -284,7 +284,7 @@ export const applyRefund = (data: { orderId: string; amount?: number; reason?: s
 export const reviewRefund = (id: string, data: { status: 2 | 4; reviewNote?: string }) => request.post(`/refund/${id}/review`, data);
 export const executeRefund = (id: string) => request.post(`/refund/${id}/execute`);
 
-// ===== 交易流水服务商筛选 =====
+// ===== 交易流水合作方筛选 =====
 export const getOutletsWithFlows = () => request.get('/transaction/outlets-with-flows');
 
 

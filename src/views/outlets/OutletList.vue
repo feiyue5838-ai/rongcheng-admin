@@ -2,9 +2,9 @@
   <div class="Outlet-list">
     <!-- 页面标题 -->
     <div class="page-header">
-      <h2>服务商管理</h2>
+      <h2>履约供应商管理</h2>
       <el-button type="primary" @click="openCreateDialog">
-        <el-icon><Plus /></el-icon> 新增服务商
+        <el-icon><Plus /></el-icon> 新增履约供应商
       </el-button>
     </div>
 
@@ -14,7 +14,7 @@
         <div class="stat-icon"><el-icon><LocationFilled /></el-icon></div>
         <div class="stat-info">
           <div class="stat-value">{{ total }}</div>
-          <div class="stat-label">服务商总数</div>
+          <div class="stat-label">履约供应商总数</div>
         </div>
       </div>
       <div class="stat-card stat-active">
@@ -44,7 +44,7 @@
     <div class="filter-row" style="background: #fff; padding: 14px 16px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 12px;">
       <el-input
         v-model="keyword"
-        placeholder="搜索服务商名称/联系人/电话"
+        placeholder="搜索履约供应商名称/联系人/电话"
         clearable
         prefix-icon="Search"
         style="width: 220px; margin-right: 12px"
@@ -89,7 +89,7 @@
 
     <!-- 表格 -->
     <el-table :data="tableData" stripe v-loading="loading">
-      <el-table-column prop="name" label="服务商名称" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="name" label="履约供应商名称" min-width="160" show-overflow-tooltip />
       <el-table-column prop="contact" label="联系人" width="100" />
       <el-table-column prop="phone" label="联系电话" width="130" />
       <el-table-column label="所在地区" width="180" show-overflow-tooltip>
@@ -137,7 +137,7 @@
 
     <!-- 汇总 -->
     <div class="list-summary" v-if="!loading">
-      共 {{ total }} 个服务商
+      共 {{ total }} 个履约供应商
     </div>
 
     <!-- 分页 -->
@@ -157,13 +157,13 @@
     <!-- 新增/编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="isEdit ? '编辑服务商' : '新增服务商'"
+      :title="isEdit ? '编辑履约供应商' : '新增履约供应商'"
       width="520px"
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="服务商名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入服务商名称" maxlength="50" />
+        <el-form-item label="履约供应商名称" prop="name">
+          <el-input v-model="form.name" placeholder="请输入履约供应商名称" maxlength="50" />
         </el-form-item>
         <el-form-item label="联系人" prop="contact">
           <el-input v-model="form.contact" placeholder="请输入联系人姓名" maxlength="20" />
@@ -248,8 +248,8 @@
     <el-dialog v-model="passwordDialogVisible" title="重置密码" width="420px" @closed="passwordResult = ''; showPwd = false">
       <!-- 确认阶段 -->
       <div v-if="!passwordResult">
-        <p>确定要重置服务商「<strong>{{ currentOutlet?.name }}</strong>」的登录密码吗？</p>
-        <p style="color:#666;margin-top:8px">重置后请将新密码告知服务商管理人员。</p>
+        <p>确定要重置履约供应商「<strong>{{ currentOutlet?.name }}</strong>」的登录密码吗？</p>
+        <p style="color:#666;margin-top:8px">重置后请将新密码告知履约供应商管理人员。</p>
       </div>
       <!-- 结果阶段 -->
       <div v-else style="text-align:center;padding:16px 0">
@@ -744,7 +744,7 @@ async function uploadPermit(option: any) {
 }
 
 const rules = {
-  name: [{ required: true, message: '请输入服务商名称', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入履约供应商名称', trigger: 'blur' }],
   contact: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
   phone: [
     { required: true, message: '请输入联系电话', trigger: 'blur' },
@@ -847,7 +847,7 @@ async function onConfirmReset() {
 
 async function onDelete(row: any) {
   try {
-    await ElMessageBox.confirm(`确定要删除服务商「${row.name}」吗？`, '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm(`确定要删除履约供应商「${row.name}」吗？`, '删除确认', { type: 'warning' })
     await deleteOutletAPI(row.id)
     ElMessage.success('删除成功')
     loadData()
@@ -972,7 +972,7 @@ onMounted(loadData)
   margin-top: 4px;
 }
 
-// 服务商总数 — 紫蓝
+// 履约供应商总数 — 紫蓝
 .stat-total { background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%); border: 1px solid rgba(91, 111, 232, 0.15); .stat-icon { background: rgba(91, 111, 232, 0.12); } .stat-value { color: #3d4fc4; } }
 // 营业中 — 清新绿
 .stat-active { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); border: 1px solid rgba(82, 196, 26, 0.15); .stat-icon { background: rgba(82, 196, 26, 0.12); } .stat-value { color: #389e0d; } }

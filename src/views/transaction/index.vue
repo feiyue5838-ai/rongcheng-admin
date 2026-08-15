@@ -71,9 +71,9 @@
             @change="onDateRangeChange"
           />
         </el-form-item>
-        <el-form-item label="服务商">
-          <el-select v-model="filterParams.outletId" placeholder="全部服务商" clearable filterable style="width: 180px;" @change="onFilterChange">
-            <el-option label="全部服务商" value="" />
+        <el-form-item label="履约供应商">
+          <el-select v-model="filterParams.outletId" placeholder="全部合作方" clearable filterable style="width: 180px;" @change="onFilterChange">
+            <el-option label="全部合作方" value="" />
             <el-option v-for="o in outletOptions" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
         </el-form-item>
@@ -155,7 +155,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="服务商" prop="outletName" min-width="140">
+        <el-table-column label="履约供应商" prop="outletName" min-width="140">
           <template #default="{ row }">
             <span>{{ row.outletName || '—' }}</span>
           </template>
@@ -295,7 +295,7 @@ const filterParams = reactive({
   outletId: '',
 })
 
-// 服务商（网点）选项
+// 合作供应商（网点）选项
 const outletOptions = ref<any[]>([])
 async function loadOutlets() {
   try {
@@ -307,7 +307,7 @@ async function loadOutlets() {
     }))
     console.log('[outlets] loaded count=', outletOptions.value.length, outletOptions.value)
   } catch (e) {
-    console.error('加载服务商列表失败', e)
+    console.error('加载履约供应商列表失败', e)
   }
 }
 

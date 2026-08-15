@@ -23,7 +23,7 @@
         <el-sub-menu v-if="showStoreMgmt" index="storeMgmt">
           <template #title><el-icon><Shop /></el-icon><span>网点管理</span></template>
           <el-menu-item v-if="canAccess('/outlets/overview')" index="/outlets/overview">全网点总览</el-menu-item>
-          <el-menu-item v-if="canAccess('/outlets')" index="/outlets">服务商列表</el-menu-item>
+          <el-menu-item v-if="canAccess('/outlets')" index="/outlets">履约供应商列表</el-menu-item>
           <el-menu-item v-if="canAccess('/outlets/dashboard')" index="/outlets/dashboard">网点看板</el-menu-item>
           <el-menu-item v-if="canAccess('/outlets/assign')" index="/outlets/assign">订单分配</el-menu-item>
           <el-menu-item v-if="canAccess('/outlets/receipts')" index="/outlets/receipts">交付回执</el-menu-item>
