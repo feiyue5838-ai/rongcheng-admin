@@ -201,6 +201,13 @@
               </div>
               <div style="color: #909399; font-size: 12px; margin-top: 4px;">留空则小程序展示默认隐私文案</div>
             </el-form-item>
+            <el-form-item label="材料真实性承诺书">
+              <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%;">
+                <Toolbar :editor="materialEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
+                <Editor v-model="aboutForm.materialCommitment" :defaultConfig="editorConfig" mode="default" style="height: 360px; overflow-y: hidden" @onCreated="materialCreated" />
+              </div>
+              <div style="color: #909399; font-size: 12px; margin-top: 4px;">留空则小程序展示默认承诺书文案</div>
+            </el-form-item>
           </el-form>
         </div>
       </el-tab-pane>
@@ -299,11 +306,14 @@ const editorConfig = {
 }
 const termsEditorRef = shallowRef(null)
 const privacyEditorRef = shallowRef(null)
+const materialEditorRef = shallowRef(null)
 function termsCreated(editor) { termsEditorRef.value = editor }
 function privacyCreated(editor) { privacyEditorRef.value = editor }
+function materialCreated(editor) { materialEditorRef.value = editor }
 onBeforeUnmount(() => {
   if (termsEditorRef.value) termsEditorRef.value.destroy()
   if (privacyEditorRef.value) privacyEditorRef.value.destroy()
+  if (materialEditorRef.value) materialEditorRef.value.destroy()
 })
 
 const activeTab = ref('banners')
@@ -467,7 +477,8 @@ const aboutForm = reactive({
   version: 'v1.0.0 正式版',
   companyName: '成都蓉城信息服务有限公司',
   termsContent: '',
-  privacyContent: ''
+  privacyContent: '',
+  materialCommitment: ''
 })
 const aboutSaving = ref(false)
 
@@ -484,12 +495,19 @@ async function loadAbout() {
   try {
     const res = await request.get('/content/about')
     if (res) Object.assign(aboutForm, res)
+    try {
+      const mc = await request.get('/content/material-commitment')
+      if (mc) aboutForm.materialCommitment = mc.content || ''
+    } catch { /* ignore */ }
   } catch { /* ignore */ }
 }
 async function saveAbout() {
   aboutSaving.value = true
   try {
     await request.put('/content/about', aboutForm)
+    try {
+      await request.put('/content/material-commitment', { content: aboutForm.materialCommitment || '' })
+    } catch (e) { ElMessage.error('承诺书保存失败：' + (e.message || '未知错误')) }
     ElMessage.success('保存成功')
   } catch (e) { ElMessage.error(e.message || '保存失败') } finally { aboutSaving.value = false }
 }
