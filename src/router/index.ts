@@ -40,6 +40,7 @@ const router = createRouter({
         { path: 'v2/orders/unassigned', name: 'V2UnassignedPool', component: () => import('@/views/v2/UnassignedPool.vue'), meta: { title: '待派单池' } },
         { path: 'v2/orders/detail', name: 'V2SupplyDetail', component: () => import('@/views/v2/SupplyDetail.vue'), meta: { title: '供应链视图' } },
         { path: 'v2/settlements', name: 'V2Settlements', component: () => import('@/views/v2/Settlements.vue'), meta: { title: 'V2.0 结算管理' } },
+        { path: 'v2/refunds', name: 'V2RefundManage', component: () => import('@/views/v2/RefundManage.vue'), meta: { title: 'V2.0 退款管理' } },
         { path: 'orders/seal', name: 'SealOrders', component: () => import('@/views/orders/seal.vue'), meta: { title: '刻章订单' } },
         { path: 'orders/newspaper', name: 'NewspaperOrders', component: () => import('@/views/orders/newspaper.vue'), meta: { title: '登报订单' } },
         { path: 'orders/bookkeeping', name: 'BookkeepingOrders', component: () => import('@/views/orders/bookkeeping.vue'), meta: { title: '代理记账订单' } },

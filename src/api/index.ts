@@ -396,7 +396,7 @@ export const v2PaySettlement = (id: string, data?: any) => v2Request.post(`/v2/a
 export const v2GetRefunds = (params: any) => v2Request.get('/v2/admin/refunds', { params })
 
 // 退款审核通过 POST /api/v2/admin/refunds/:id/approve
-export const v2ApproveRefund = (id: string) => v2Request.post(`/v2/admin/refunds/${id}/approve`)
+export const v2ApproveRefund = (id: string, data?: any) => v2Request.post(`/v2/admin/refunds/${id}/approve`, data || {})
 
 // 退款驳回 POST /api/v2/admin/refunds/:id/reject
 export const v2RejectRefund = (id: string, data: { remark?: string }) => v2Request.post(`/v2/admin/refunds/${id}/reject`, data || {})
