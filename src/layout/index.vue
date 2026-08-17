@@ -39,7 +39,10 @@
         <!-- 订单管理 sub-menu -->
         <el-sub-menu v-if="showOrders" index="orders">
           <template #title><el-icon><Document /></el-icon><span>订单管理</span></template>
-          <el-menu-item v-if="canAccess('/orders/seal')" index="/orders/seal">刻章订单</el-menu-item>
+                    <el-menu-item v-if="canAccess('/v2/orders')" index="/v2/orders">供应链订单(V2.0)</el-menu-item>
+          <el-menu-item v-if="canAccess('/v2/orders/unassigned')" index="/v2/orders/unassigned">待派单池(V2.0)</el-menu-item>
+          <el-menu-item v-if="canAccess('/v2/settlements')" index="/v2/settlements">结算管理(V2.0)</el-menu-item>
+<el-menu-item v-if="canAccess('/orders/seal')" index="/orders/seal">刻章订单</el-menu-item>
           <el-menu-item v-if="canAccess('/orders/newspaper')" index="/orders/newspaper">登报订单</el-menu-item>
           <el-menu-item v-if="canAccess('/orders/bookkeeping')" index="/orders/bookkeeping">代理记账订单</el-menu-item>
           <el-menu-item v-if="canAccess('/after-sales/orders')" index="/after-sales/orders">售后订单</el-menu-item>

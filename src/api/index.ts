@@ -315,3 +315,92 @@ export const updateFaqStatus = (id: string, status: number) => request.put(`/faq
 export const updateFaqCategoryStatus = (id: string, status: number) => request.put(`/faqs/admin/category/${id}/status`, { status })
 export const getFaqPhone = () => request.get('/faqs/admin/phone')
 export const setFaqPhone = (phone: string) => request.put('/faqs/admin/phone', { phone })
+
+// ==================== V2.0 接口（/api/v2） ====================
+// V2.0 接口响应为双层包装 {code,message,data:{code,message,data}}（controller 级 + 全局拦截器各一层）
+// 此处用独立 axios 实例自动解两层，避免影响现有 V1 接口的单层解包逻辑
+
+const v2Request = axios.create({
+  baseURL: '/api',
+  timeout: 15000,
+})
+
+v2Request.interceptors.request.use((config) => {
+  const adminToken = localStorage.getItem('admin_token')
+  if (adminToken) config.headers.Authorization = `Bearer ${adminToken}`
+  return config
+})
+
+// 解两层包装：外 {code,message,data} → 内 {code,message,data} → 实际数据
+v2Request.interceptors.response.use(
+  (response) => {
+    const outer = response.data
+    if (outer && typeof outer === 'object' && outer.code === 0 && 'data' in outer) {
+      const inner = outer.data
+      if (inner && typeof inner === 'object' && inner.code === 0 && 'data' in inner) {
+        return inner.data
+      }
+      return inner
+    }
+    return outer
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('admin_token')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  },
+)
+
+// ---------- 管理端 V2.0 订单/供应链 ----------
+// 看板统计 GET /api/v2/admin/dashboard
+export const v2GetDashboard = () => v2Request.get('/v2/admin/dashboard')
+
+// 订单列表（统一五维状态）GET /api/v2/admin/orders?orderStatus=&module=&keyword=&page=&pageSize=
+export const v2GetOrders = (params: any) => v2Request.get('/v2/admin/orders', { params })
+
+// 订单详情（供应链视图）GET /api/v2/admin/orders/:orderNo
+export const v2GetOrderDetail = (orderNo: string) => v2Request.get(`/v2/admin/orders/${orderNo}`)
+
+// 待派单池 GET /api/v2/admin/orders/unassigned
+export const v2GetUnassigned = (params: any) => v2Request.get('/v2/admin/orders/unassigned', { params })
+
+// 派单 POST /api/v2/admin/orders/:orderNo/assign
+export const v2AssignOrder = (orderNo: string, data: { supplierId: string; remark?: string }) =>
+  v2Request.post(`/v2/admin/orders/${orderNo}/assign`, data)
+
+// 改派 POST /api/v2/admin/orders/:orderNo/reassign
+export const v2ReassignOrder = (orderNo: string, data: { supplierId: string; cancelRemark?: string }) =>
+  v2Request.post(`/v2/admin/orders/${orderNo}/reassign`, data)
+
+// ---------- 管理端 V2.0 结算 ----------
+// 结算单列表 GET /api/v2/admin/settlements
+export const v2GetSettlements = (params: any) => v2Request.get('/v2/admin/settlements', { params })
+
+// 生成结算单 POST /api/v2/admin/settlements/generate
+export const v2GenerateSettlement = (data: { supplierId: string; periodStart: string; periodEnd: string }) =>
+  v2Request.post('/v2/admin/settlements/generate', data)
+
+// 结算单详情 GET /api/v2/admin/settlements/:id
+export const v2GetSettlementDetail = (id: string) => v2Request.get(`/v2/admin/settlements/${id}`)
+
+// 确认结算单 PUT /api/v2/admin/settlements/:id/confirm
+export const v2ConfirmSettlement = (id: string) => v2Request.put(`/v2/admin/settlements/${id}/confirm`)
+
+// 结算付款 POST /api/v2/admin/settlements/:id/pay
+export const v2PaySettlement = (id: string, data?: any) => v2Request.post(`/v2/admin/settlements/${id}/pay`, data || {})
+
+// ---------- 管理端 V2.0 退款 ----------
+// 退款列表 GET /api/v2/admin/refunds
+export const v2GetRefunds = (params: any) => v2Request.get('/v2/admin/refunds', { params })
+
+// 退款审核通过 POST /api/v2/admin/refunds/:id/approve
+export const v2ApproveRefund = (id: string) => v2Request.post(`/v2/admin/refunds/${id}/approve`)
+
+// 退款驳回 POST /api/v2/admin/refunds/:id/reject
+export const v2RejectRefund = (id: string, data: { remark?: string }) => v2Request.post(`/v2/admin/refunds/${id}/reject`, data || {})
+
+// ---------- 管理端 V2.0 供应商 ----------
+// 供应商列表 GET /api/v2/admin/suppliers
+export const v2GetSuppliers = (params: any) => v2Request.get('/v2/admin/suppliers', { params })
