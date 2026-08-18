@@ -8,3 +8,5 @@ dist/
 # backup files
 *.bak
 components.d.ts
+
+dev-m3.log
