@@ -432,7 +432,7 @@ async function loadRules() {
   loadingRules.value = true
   try {
     const res = await getSettlementRules()
-    rules.value = res.data || []
+    const _r2 = res?.data ?? res; rules.value = Array.isArray(_r2) ? _r2 : (_r2 && Array.isArray(_r2.items) ? _r2.items : [])
   } catch (e) { console.error(e) }
   finally { loadingRules.value = false }
 }

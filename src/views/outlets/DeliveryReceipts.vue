@@ -341,7 +341,8 @@ async function loadData() {
     }
 
     const res: any = await getDeliveryReceiptsAPI(params)
-    const list = (res as any).data?.list ?? (res as any).list ?? []
+    const rawList = (res as any).data?.list ?? (res as any).list ?? []
+    const list = Array.isArray(rawList) ? rawList : []
     const total = (res as any).pagination?.total ?? (res as any).total ?? 0
 
     tableData.value = list

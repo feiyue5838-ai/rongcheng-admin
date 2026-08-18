@@ -132,7 +132,7 @@ async function loadRules() {
   loadingRules.value = true
   try {
     const res = await getSettlementRules()
-    rules.value = (res && res.data) || (Array.isArray(res) ? res : [])
+    const _r = (res && res.data) || res; rules.value = Array.isArray(_r) ? _r : (_r && Array.isArray(_r.items) ? _r.items : [])
   } catch (e) {
     ElMessage.error('加载规则失败')
   } finally {
