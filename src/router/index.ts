@@ -80,13 +80,14 @@ const router = createRouter({
         { path: 'outlets/receipts', name: 'DeliveryReceipts', component: () => import('@/views/outlets/DeliveryReceipts.vue'), meta: { title: '交付回执' } },
         { path: 'outlets/overview', name: 'OutletOverview', component: () => import('@/views/outlets/OutletOverview.vue'), meta: { title: '全网点总览' } },
   { path: 'finance', name: 'Finance', component: () => import('@/views/finance/index.vue'), meta: { title: '财务总览' } },
-        { path: 'finance/rules', name: 'FinanceRules', component: () => import('@/views/finance/rules.vue'), meta: { title: '规则配置' } },
+        // 结算规则已废弃（V2.0 使用固定结算比例），旧页面 redirect 到财务总览
+        { path: 'finance/rules', redirect: () => ({ path: '/finance' }) },
         { path: 'finance/settlement', redirect: () => ({ path: '/v2/settlements' }) },
         { path: 'finance/transaction', redirect: to => ({ path: '/finance', query: { tab: 'transaction' } }) },
         { path: 'finance/refund', redirect: to => ({ path: '/finance', query: { tab: 'refund' } }) },
         { path: 'settlement', redirect: () => ({ path: '/v2/settlements' }) },
-        { path: 'rules', redirect: to => ({ path: '/finance', query: { tab: 'rules' } }) },
-        { path: 'pricing', redirect: to => ({ path: '/finance', query: { tab: 'rules', sub: 'pricing' } }) },
+        { path: 'rules', redirect: () => ({ path: '/finance' }) },
+        { path: 'pricing', redirect: () => ({ path: '/finance' }) },
         { path: 'transaction', redirect: to => ({ path: '/finance', query: { tab: 'transaction' } }) },
         { path: 'refund', redirect: to => ({ path: '/finance', query: { tab: 'refund' } }) },
         // legacy /stores aliases kept for old bookmarks (store->outlet rename)

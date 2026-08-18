@@ -33,7 +33,7 @@
         <el-sub-menu v-if="showFinance" index="finance">
           <template #title><el-icon><Money /></el-icon><span>财务中心</span></template>
           <el-menu-item v-if="canAccess('/finance')" index="/finance">财务总览</el-menu-item>
-          <el-menu-item v-if="canAccess('/finance/rules')" index="/finance/rules">规则配置</el-menu-item>
+          <el-menu-item v-if="canAccess('/v2/settlements')" index="/v2/settlements">结算管理(V2.0)</el-menu-item>
         </el-sub-menu>
 
         <!-- 订单管理 sub-menu -->
