@@ -52,7 +52,7 @@
     <div class="finance-tabs">
       <div class="tab-bar">
         <button class="tab-btn" :class="{ active: mainTab === 'overview' }" @click="switchMain('overview')">财务总览</button>
-        <button class="tab-btn" :class="{ active: mainTab === 'settlement' }" @click="switchMain('settlement')">结算管理</button>
+        <button class="tab-btn" :class="{ active: mainTab === 'settlement' }" @click="goV2Settlements()">结算管理</button>
         <button class="tab-btn" :class="{ active: mainTab === 'transaction' }" @click="switchMain('transaction')">交易流水</button>
         <button class="tab-btn" :class="{ active: mainTab === 'refund' }" @click="switchMain('refund')">退款管理</button>
       </div>
@@ -72,7 +72,7 @@
         <el-card shadow="never" class="panel">
           <template #header><div class="panel-title">待办事项</div></template>
           <div class="todo-items">
-            <div v-if="overview.pendingOutlet > 0" class="todo-item" @click="switchMain('settlement')">
+            <div v-if="overview.pendingOutlet > 0" class="todo-item" @click="goV2Settlements()">
               <div class="todo-icon" style="background:#fff3e0"><span style="font-size:20px">💰</span></div>
               <div class="todo-info"><div class="todo-num">{{ overview.pendingOutlet }}</div><div class="todo-label">笔结算待确认</div></div>
             </div>
@@ -80,7 +80,7 @@
               <div class="todo-icon" style="background:#fff1f0"><span style="font-size:20px">↩️</span></div>
               <div class="todo-info"><div class="todo-num">{{ overview.pendingCount }}</div><div class="todo-label">笔退款待处理</div></div>
             </div>
-            <div v-for="item in outletPending" :key="item.outletId" class="todo-item" @click="switchMain('settlement')">
+            <div v-for="item in outletPending" :key="item.outletId" class="todo-item" @click="goV2Settlements()">
               <div class="todo-icon" style="background:#f0f5ff"><span style="font-size:20px">🏪</span></div>
               <div class="todo-info"><div class="todo-num">¥{{ fmt(item.pendingAmount) }}</div><div class="todo-label">{{ item.outletName }} 待结算</div></div>
             </div>
@@ -436,7 +436,7 @@ function switchMain(tab) {
   mainTab.value = tab
   router.push({ query: tab === 'overview' ? {} : { tab } })
   if (tab === 'overview') { loadOverview(); loadModuleMonth() }
-  else if (tab === 'settlement') { loadSettlementOutletOpts(); loadRecords() }
+  else if (tab === 'settlement') { goV2Settlements() }
   else if (tab === 'transaction') { loadOutletOpts(); loadTransStats(); loadData() }
   else if (tab === 'refund') loadRefundList()
 }
