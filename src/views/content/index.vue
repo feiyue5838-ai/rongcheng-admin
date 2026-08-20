@@ -280,10 +280,30 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/api'
 import { formatDate } from '@/utils/format'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
+import type { IDomEditor } from '@wangeditor/editor'
 import '@wangeditor/editor/dist/css/style.css'
 
+type ContentRow = {
+  id: number | null
+  title: string
+  image?: string
+  link?: string
+  subtitle?: string
+  content?: string
+  sort: number
+  status: number
+  [key: string]: any
+}
+type ContentListResponse = ContentRow[] | { list?: ContentRow[] }
+type UploadResponse = { data?: { url?: string }; url?: string }
+type ApiContent = { content?: string }
+
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback
+}
+
 // 富文本图片上传走后台接口
-function uploadImageToServer(file, insertFn) {
+function uploadImageToServer(file: File, insertFn: (url: string, alt: string, href: string) => void) {
   const token = localStorage.getItem('admin_token')
   const form = new FormData()
   form.append('file', file)
@@ -304,12 +324,12 @@ const editorConfig = {
     uploadImage: { customUpload: uploadImageToServer }
   }
 }
-const termsEditorRef = shallowRef(null)
-const privacyEditorRef = shallowRef(null)
-const materialEditorRef = shallowRef(null)
-function termsCreated(editor) { termsEditorRef.value = editor }
-function privacyCreated(editor) { privacyEditorRef.value = editor }
-function materialCreated(editor) { materialEditorRef.value = editor }
+const termsEditorRef = shallowRef<IDomEditor | null>(null)
+const privacyEditorRef = shallowRef<IDomEditor | null>(null)
+const materialEditorRef = shallowRef<IDomEditor | null>(null)
+function termsCreated(editor: IDomEditor) { termsEditorRef.value = editor }
+function privacyCreated(editor: IDomEditor) { privacyEditorRef.value = editor }
+function materialCreated(editor: IDomEditor) { materialEditorRef.value = editor }
 onBeforeUnmount(() => {
   if (termsEditorRef.value) termsEditorRef.value.destroy()
   if (privacyEditorRef.value) privacyEditorRef.value.destroy()
@@ -318,7 +338,7 @@ onBeforeUnmount(() => {
 
 const activeTab = ref('banners')
 
-function beforeUpload(file) {
+function beforeUpload(file: File) {
   if (file.size > 2 * 1024 * 1024) { ElMessage.error('图片不能超过 2MB'); return false }
   return true
 }
@@ -328,7 +348,7 @@ const uploadHeaders = () => {
 }
 
 // ==================== Banner ====================
-const banners = ref([])
+const banners = ref<ContentRow[]>([])
 const bannerLoading = ref(false)
 const bannerSaving = ref(false)
 const bannerVisible = ref(false)
@@ -337,17 +357,18 @@ const bannerForm = reactive({ id: null, title: '', image: '', link: '', sort: 0,
 async function loadBanners() {
   bannerLoading.value = true
   try {
-    const res = await request.get('/content/banners')
+    const res = await request.get('/content/banners') as unknown as ContentListResponse
     banners.value = Array.isArray(res) ? res : (res.list || [])
   } catch { /* ignore */ } finally { bannerLoading.value = false }
 }
-function openBannerDialog(row) {
+function openBannerDialog(row?: ContentRow) {
   if (row) Object.assign(bannerForm, row)
   else Object.assign(bannerForm, { id: null, title: '', image: '', link: '', sort: 0, status: 1 })
   bannerVisible.value = true
 }
-function bannerUploadSuccess(res) {
-  if (res?.data?.url ?? res?.url) bannerForm.image = res?.data?.url ?? res?.url
+function bannerUploadSuccess(res: UploadResponse) {
+  const imageUrl = res?.data?.url ?? res?.url
+  if (imageUrl) bannerForm.image = imageUrl
   else ElMessage.error('上传失败')
 }
 async function saveBanner() {
@@ -358,19 +379,19 @@ async function saveBanner() {
     ElMessage.success('保存成功')
     bannerVisible.value = false
     loadBanners()
-  } catch (e) { ElMessage.error(e.message || '保存失败') } finally { bannerSaving.value = false }
+  } catch (e) { ElMessage.error(errorMessage(e, '保存失败')) } finally { bannerSaving.value = false }
 }
-async function deleteBanner(row) {
+async function deleteBanner(row: ContentRow) {
   await ElMessageBox.confirm(`确定删除 Banner「${row.title}」吗？`, '提示', { type: 'warning' })
   try {
     await request.delete(`/content/banners/${row.id}`)
     ElMessage.success('删除成功')
     loadBanners()
-  } catch (e) { ElMessage.error(e.message || '删除失败') }
+  } catch (e) { ElMessage.error(errorMessage(e, '删除失败')) }
 }
 
 // ==================== 公告 ====================
-const announcements = ref([])
+const announcements = ref<ContentRow[]>([])
 const annLoading = ref(false)
 const annFilter = reactive({ status: undefined, keyword: '' })
 const annSaving = ref(false)
@@ -380,14 +401,14 @@ const annForm = reactive({ id: null, title: '', content: '', publishedAt: null, 
 async function loadAnnouncements() {
   annLoading.value = true
   try {
-    const params = {}
+    const params: { status?: number; keyword?: string } = {}
     if (annFilter.status !== undefined) params.status = annFilter.status
     if (annFilter.keyword) params.keyword = annFilter.keyword
     const res = await request.get('/content/announcements', { params })
     announcements.value = (res as any)?.list ?? []
   } catch { /* ignore */ } finally { annLoading.value = false }
 }
-function openAnnDialog(row) {
+function openAnnDialog(row?: ContentRow) {
   if (row) Object.assign(annForm, row)
   else Object.assign(annForm, { id: null, title: '', content: '', publishedAt: null, expiredAt: null, status: 1 })
   annVisible.value = true
@@ -400,29 +421,29 @@ async function saveAnnouncement() {
     ElMessage.success('保存成功')
     annVisible.value = false
     loadAnnouncements()
-  } catch (e) { ElMessage.error(e.message || '保存失败') } finally { annSaving.value = false }
+  } catch (e) { ElMessage.error(errorMessage(e, '保存失败')) } finally { annSaving.value = false }
 }
-async function toggleAnnStatus(row, newStatus) {
+async function toggleAnnStatus(row: ContentRow, newStatus: number) {
   const action = newStatus === 1 ? '发布' : '下架'
   await ElMessageBox.confirm(`确定${action}公告「${row.title}」吗？`, '提示', { type: 'warning' })
   try {
     await request.put(`/content/announcements/${row.id}`, { status: newStatus })
     ElMessage.success(`${action}成功`)
     loadAnnouncements()
-  } catch (e) { ElMessage.error(e.message || `${action}失败`) }
+  } catch (e) { ElMessage.error(errorMessage(e, `${action}失败`)) }
 }
 
-async function deleteAnnouncement(row) {
+async function deleteAnnouncement(row: ContentRow) {
   await ElMessageBox.confirm(`确定删除公告「${row.title}」吗？`, '提示', { type: 'warning' })
   try {
     await request.delete(`/content/announcements/${row.id}`)
     ElMessage.success('删除成功')
     loadAnnouncements()
-  } catch (e) { ElMessage.error(e.message || '删除失败') }
+  } catch (e) { ElMessage.error(errorMessage(e, '删除失败')) }
 }
 
 // ==================== 业务介绍 ====================
-const intros = ref([])
+const intros = ref<ContentRow[]>([])
 const introLoading = ref(false)
 const introSaving = ref(false)
 const introVisible = ref(false)
@@ -435,12 +456,12 @@ async function loadIntros() {
     intros.value = (res as any)?.list ?? []
   } catch { /* ignore */ } finally { introLoading.value = false }
 }
-function openIntroDialog(row) {
+function openIntroDialog(row?: ContentRow) {
   if (row) Object.assign(introForm, row)
   else Object.assign(introForm, { id: null, title: '', subtitle: '', image: '', sort: 0, status: 1 })
   introVisible.value = true
 }
-function introUploadSuccess(res) {
+function introUploadSuccess(res: UploadResponse) {
   if (res.url) introForm.image = res.url
   else ElMessage.error('上传失败')
 }
@@ -452,15 +473,15 @@ async function saveIntro() {
     ElMessage.success('保存成功')
     introVisible.value = false
     loadIntros()
-  } catch (e) { ElMessage.error(e.message || '保存失败') } finally { introSaving.value = false }
+  } catch (e) { ElMessage.error(errorMessage(e, '保存失败')) } finally { introSaving.value = false }
 }
-async function deleteIntro(row) {
+async function deleteIntro(row: ContentRow) {
   await ElMessageBox.confirm(`确定删除「${row.title}」吗？`, '提示', { type: 'warning' })
   try {
     await request.delete(`/content/intros/${row.id}`)
     ElMessage.success('删除成功')
     loadIntros()
-  } catch (e) { ElMessage.error(e.message || '删除失败') }
+  } catch (e) { ElMessage.error(errorMessage(e, '删除失败')) }
 }
 
 // ==================== 关于我们 ====================
@@ -482,11 +503,11 @@ const aboutForm = reactive({
 })
 const aboutSaving = ref(false)
 
-function aboutUploadSuccess(res) {
+function aboutUploadSuccess(res: UploadResponse) {
   if (res.url) aboutForm.image = res.url
   else ElMessage.error('上传失败')
 }
-function logoUploadSuccess(res) {
+function logoUploadSuccess(res: UploadResponse) {
   if (res.url) aboutForm.logoUrl = res.url
   else ElMessage.error('上传失败')
 }
@@ -496,7 +517,7 @@ async function loadAbout() {
     const res = await request.get('/content/about')
     if (res) Object.assign(aboutForm, res)
     try {
-      const mc = await request.get('/content/material-commitment')
+      const mc = await request.get('/content/material-commitment') as unknown as ApiContent
       if (mc) aboutForm.materialCommitment = mc.content || ''
     } catch { /* ignore */ }
   } catch { /* ignore */ }
@@ -507,13 +528,13 @@ async function saveAbout() {
     await request.put('/content/about', aboutForm)
     try {
       await request.put('/content/material-commitment', { content: aboutForm.materialCommitment || '' })
-    } catch (e) { ElMessage.error('承诺书保存失败：' + (e.message || '未知错误')) }
+    } catch (e) { ElMessage.error('承诺书保存失败：' + errorMessage(e, '未知错误')) }
     ElMessage.success('保存成功')
-  } catch (e) { ElMessage.error(e.message || '保存失败') } finally { aboutSaving.value = false }
+  } catch (e) { ElMessage.error(errorMessage(e, '保存失败')) } finally { aboutSaving.value = false }
 }
 
 // 首次切到某 tab 时才加载（减少无意义请求）
-function onTabChange(name) {
+function onTabChange(name: string | number) {
   if (name === 'banners' && banners.value.length === 0) loadBanners()
   else if (name === 'announcements' && announcements.value.length === 0) loadAnnouncements()
   else if (name === 'intros' && intros.value.length === 0) loadIntros()

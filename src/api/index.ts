@@ -96,7 +96,7 @@ export const getAdminScene = (id: string) => request.get(`/seals/admin/scenes/${
 export const createScene = (data: any) => request.post('/seals/admin/scenes', data)
 export const updateScene = (id: string, data: any) => request.put(`/seals/admin/scenes/${id}`, data)
 export const deleteScene = (id: string) => request.delete(`/seals/admin/scenes/${id}`)
-export const setSceneSeals = (id: string, sealIds: string[]) => request.put(`/seals/admin/scenes/${id}/seals`, { sealIds })
+export const setSceneSeals = (id: string, sealIds: string[]) => request.put(`/seals/admin/scenes/${id}/seals`, { seal_ids: sealIds })
 export const setScenePackages = (id: string, packages: any[]) => request.put(`/seals/admin/scenes/${id}/packages`, { packages })
 
 // ==================== 刻章备案查询 ====================
@@ -183,6 +183,8 @@ export const deleteOutletAPI = (id: string) => request.delete(`/outlets/${id}`)
 export const resetOutletPasswordAPI = (id: string) => request.post(`/outlets/${id}/reset-password`)
 export const getOutletOrdersAPI = (outletId: string, params: object) => request.get(`/outlets/${outletId}/orders`, { params })
 export const getOutletOverviewAPI = () => request.get('/outlets/admin/overview')
+export const acceptOutletOrderAdminAPI = (outletId: string, orderId: string) => request.put(`/outlets/${outletId}/orders/${orderId}/accept`)
+export const shipOutletOrderAdminAPI = (outletId: string, orderId: string, data: { expressCompany: string; trackingNo: string; remark?: string; receipts: Array<{ type?: string; url: string; remark?: string }> }) => request.put(`/outlets/${outletId}/orders/${orderId}/ship`, data)
 export const setOutletBusinessTypesAPI = (id: string, businessTypeIds: string[]) =>
   request.put(`/outlets/${id}/business-types`, { businessTypeIds })
 

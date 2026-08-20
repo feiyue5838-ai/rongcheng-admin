@@ -122,6 +122,7 @@ const pathLabels: Record<string, string> = {
   '/system/menu-roles': '菜单权限',
   '/faq': '常见问题',
   '/finance': '财务中心',
+  '/v2/settlements': '结算管理(V2.0)',
 }
 const tableData = ref<any[]>([])
 const dialogVisible = ref(false)

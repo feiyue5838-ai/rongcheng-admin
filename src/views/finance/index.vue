@@ -72,19 +72,19 @@
         <el-card shadow="never" class="panel">
           <template #header><div class="panel-title">待办事项</div></template>
           <div class="todo-items">
-            <div v-if="overview.pendingOutlet > 0" class="todo-item" @click="goV2Settlements()">
+            <div v-if="overview.pendingCount > 0" class="todo-item" @click="goV2Settlements()">
               <div class="todo-icon" style="background:#fff3e0"><span style="font-size:20px">💰</span></div>
-              <div class="todo-info"><div class="todo-num">{{ overview.pendingOutlet }}</div><div class="todo-label">笔结算待确认</div></div>
+              <div class="todo-info"><div class="todo-num">{{ overview.pendingCount }}</div><div class="todo-label">笔结算待确认</div></div>
             </div>
-            <div v-if="overview.pendingCount > 0" class="todo-item" @click="switchMain('refund')">
+            <div v-if="overview.pendingRefundCount > 0" class="todo-item" @click="switchMain('refund')">
               <div class="todo-icon" style="background:#fff1f0"><span style="font-size:20px">↩️</span></div>
-              <div class="todo-info"><div class="todo-num">{{ overview.pendingCount }}</div><div class="todo-label">笔退款待处理</div></div>
+              <div class="todo-info"><div class="todo-num">{{ overview.pendingRefundCount }}</div><div class="todo-label">笔退款待处理</div></div>
             </div>
             <div v-for="item in outletPending" :key="item.outletId" class="todo-item" @click="goV2Settlements()">
               <div class="todo-icon" style="background:#f0f5ff"><span style="font-size:20px">🏪</span></div>
               <div class="todo-info"><div class="todo-num">¥{{ fmt(item.pendingAmount) }}</div><div class="todo-label">{{ item.outletName }} 待结算</div></div>
             </div>
-            <div v-if="overview.pendingOutlet === 0 && overview.pendingCount === 0 && outletPending.length === 0" class="todo-empty">
+            <div v-if="overview.pendingCount === 0 && overview.pendingRefundCount === 0 && outletPending.length === 0" class="todo-empty">
               <span style="font-size:40px"><el-icon><Promotion /></el-icon></span>
               <div style="margin-top:8px;color:#909399">暂无待办事项，所有业务已处理完毕</div>
             </div>
@@ -364,7 +364,11 @@ function switchMain(tab) {
   router.push({ query: tab === 'overview' ? {} : { tab } })
   if (tab === 'overview') { loadOverview(); loadModuleMonth() }
   else if (tab === 'settlement') { goV2Settlements() }
-  else if (tab === 'transaction') { loadOutletOpts(); loadTransStats(); loadData() }
+  else if (tab === 'transaction') {
+    loadOutletOpts()
+    if (dateRange2.value?.length === 2) { loadTransStats(); loadData() }
+    else onQuickFilter(quickRange.value)
+  }
   else if (tab === 'refund') loadRefundList()
 }
 
@@ -565,7 +569,7 @@ const transDetailRow = ref(null)
 async function loadOutletOpts() {
   try {
     const res = await getOutletsWithFlows()
-    const data = res || {}
+    const data = res?.data ?? res ?? {}
     const list = Array.isArray(data) ? data : (data?.items || [])
     outletOptions.value = (list || []).map((o) => ({ label: o.outletName, value: o.outletId }))
   } catch (e) { console.error(e) }
@@ -579,7 +583,14 @@ async function loadSettlementOutletOpts() {
 }
 
 async function loadTransStats() {
-  try { const res = await getTransactionStats(); transStats.value = (res?.data && typeof res?.data === 'object') ? res.data : (res || {}) }
+  try {
+    const params = {
+      ...(dateRange2.value?.[0] && { startDate: dateRange2.value[0] }),
+      ...(dateRange2.value?.[1] && { endDate: dateRange2.value[1] }),
+    }
+    const res = await getTransactionStats(params)
+    transStats.value = (res?.data && typeof res?.data === 'object') ? res.data : (res || {})
+  }
   catch (e) { console.error(e) }
 }
 
@@ -597,7 +608,7 @@ async function loadData() {
       ...(dateRange2.value && dateRange2.value[1] && { endDate: dateRange2.value[1] }),
     }
     const res = await getTransactionFlows(params)
-    const data = res || {}
+    const data = res?.data ?? res ?? {}
     tableData.value = data?.items || (Array.isArray(data) ? data : [])
     transTotal.value = data?.total || 0
   } catch (e) { console.error(e) }
@@ -609,8 +620,8 @@ function onQuickFilter(key) {
   const now = new Date()
   let start, end = fmtLocalDate(now)
   if (key === 'today') start = end
-  else if (key === 'yesterday') { const y = new Date(now); y.setDate(y.getDate()-1); start = fmtLocalDate(y) }
-  else if (key === 'week') { const w = new Date(now); w.setDate(w.getDate()-7); start = fmtLocalDate(w) }
+  else if (key === 'yesterday') { const y = new Date(now); y.setDate(y.getDate()-1); start = fmtLocalDate(y); end = start }
+  else if (key === 'week') { const w = new Date(now); w.setDate(w.getDate()-6); start = fmtLocalDate(w) }
   else if (key === 'month') start = fmtLocalDate(new Date(now.getFullYear(), now.getMonth(), 1))
   else if (key === 'lastMonth') {
     const lm = new Date(now.getFullYear(), now.getMonth()-1, 1)
@@ -624,12 +635,12 @@ function onQuickFilter(key) {
 }
 
 function onFilterChange() { transPage.value = 1; loadData() }
-function onDateRangeChange() { transPage.value = 1; loadData() }
+function onDateRangeChange() { transPage.value = 1; loadData(); loadTransStats() }
 
 function onReset() {
   filterParams.outletId = ''; filterParams.module = ''; filterParams.tradeType = ''; filterParams.status = ''; filterParams.keyword = ''
-  dateRange2.value = []; quickRange.value = 'today'; transPage.value = 1
-  loadData(); loadTransStats()
+  transPage.value = 1
+  onQuickFilter('today')
 }
 
 async function onExport() {
@@ -645,7 +656,8 @@ async function onExport() {
       ...(dateRange2.value && dateRange2.value[1] && { endDate: dateRange2.value[1] }),
     }
     const res = await exportTransactionFlows(params)
-    const list = Array.isArray(res) ? res : (res?.items || [])
+    const data = res?.data ?? res ?? []
+    const list = Array.isArray(data) ? data : (data?.items || [])
     if (!list.length) { ElMessage.info('暂无数据可导出'); return }
     const headers = ['交易时间', '交易单号', '关联订单', '用户', '履约供应商', '业务', '类型', '支付方式', '交易金额', '手续费', '实收', '状态']
     const rows = list.map(r => [

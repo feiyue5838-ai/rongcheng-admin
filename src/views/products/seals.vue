@@ -400,12 +400,12 @@
             <el-upload
               :show-file-list="false"
               :auto-upload="false"
-              accept=".jpg,.jpeg,.png,.gif,.webp,.pdf"
+              accept=".jpg,.jpeg,.png,.gif,.webp"
               class="seal-image-uploader"
               :on-change="(file: any) => {
-                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
                 if (!allowedTypes.includes(file.raw?.type)) {
-                  ElMessage.error('仅支持 jpg/png/gif/webp/pdf 格式')
+                  ElMessage.error('仅支持 jpg/png/gif/webp 格式')
                   return
                 }
                 uploadPkg(file.raw)
@@ -1108,11 +1108,10 @@ async function toggleStatus(row: any) {
 }
 
 async function beforeUpload(file: File) {
-  // 与后端保持一致：jpg/png/gif/webp/pdf
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
   const isAllowed = allowedTypes.includes(file.type)
   if (!isAllowed) {
-    ElMessage.error('只支持 JPG/PNG/GIF/WebP/PDF 格式')
+    ElMessage.error('只支持 JPG/PNG/GIF/WebP 格式')
     return false
   }
   const isLt2M = file.size / 1024 / 1024 < 2

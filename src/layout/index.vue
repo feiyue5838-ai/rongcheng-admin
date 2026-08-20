@@ -41,7 +41,6 @@
           <template #title><el-icon><Document /></el-icon><span>订单管理</span></template>
                     <el-menu-item v-if="canAccess('/v2/orders')" index="/v2/orders">供应链订单(V2.0)</el-menu-item>
           <el-menu-item v-if="canAccess('/v2/orders/unassigned')" index="/v2/orders/unassigned">待派单池(V2.0)</el-menu-item>
-          <el-menu-item v-if="canAccess('/v2/settlements')" index="/v2/settlements">结算管理(V2.0)</el-menu-item>
           <el-menu-item v-if="canAccess('/v2/refunds')" index="/v2/refunds">退款管理(V2.0)</el-menu-item>
 <el-menu-item v-if="canAccess('/orders/seal')" index="/orders/seal">刻章订单</el-menu-item>
           <el-menu-item v-if="canAccess('/orders/newspaper')" index="/orders/newspaper">登报订单</el-menu-item>
@@ -160,9 +159,10 @@ const showStoreMgmt = computed(() =>
   canAccess('/outlets/assign') || canAccess('/outlets/receipts'),
 )
 const showFinance = computed(() =>
-  canAccess('/finance'),
+  canAccess('/finance') || canAccess('/v2/settlements'),
 )
 const showOrders = computed(() =>
+  canAccess('/v2/orders') || canAccess('/v2/orders/unassigned') || canAccess('/v2/refunds') ||
   canAccess('/orders/seal') || canAccess('/orders/newspaper') || canAccess('/orders/bookkeeping') ||
   canAccess('/after-sales/orders') || canAccess('/after-sales/refund-records'),
 )

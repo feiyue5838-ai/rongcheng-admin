@@ -155,6 +155,19 @@
         <el-form-item label="快递单号" prop="expressNo">
           <el-input v-model="completeForm.expressNo" placeholder="请输入快递单号" />
         </el-form-item>
+        <el-form-item label="交付凭证" required>
+          <el-upload
+            v-model:file-list="receiptFiles"
+            list-type="picture-card"
+            :auto-upload="true"
+            :http-request="uploadReceipt"
+            :limit="6"
+            multiple
+          >
+            <el-icon><Plus /></el-icon>
+          </el-upload>
+          <div style="font-size:12px;color:#999;margin-top:4px">至少上传一张交付凭证，最多 6 张</div>
+        </el-form-item>
         <el-form-item label="交货备注">
           <el-input v-model="completeForm.remark" type="textarea" :rows="2" placeholder="选填" />
         </el-form-item>
@@ -170,10 +183,9 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getOutletsAPI, getOutletAPI, getOutletOrdersAPI } from '@/api'
-import { acceptOrderAPI, completeOrderAPI } from '@/api/outlet'
+import { getOutletsAPI, getOutletAPI, getOutletOrdersAPI, acceptOutletOrderAdminAPI, shipOutletOrderAdminAPI, uploadImage } from '@/api'
 import { formatDate } from '@/utils/format'
-import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding } from '@element-plus/icons-vue'
+import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding, Plus } from '@element-plus/icons-vue'
 
 const loading = ref(false)
 const outlets = ref<any[]>([])
@@ -186,6 +198,7 @@ const acceptDialogVisible = ref(false)
 const completeDialogVisible = ref(false)
 const actionLoading = ref(false)
 const completeFormRef = ref<any>(null)
+const receiptFiles = ref<any[]>([])
 
 const completeForm = reactive({ expressCompany: '', expressNo: '', remark: '' })
 const completeRules = {
@@ -253,7 +266,7 @@ async function onConfirmAccept() {
   }
   actionLoading.value = true
   try {
-    await acceptOrderAPI((currentOrder.value as any)?.orderId)
+    await acceptOutletOrderAdminAPI(selectedOutlet.value, (currentOrder.value as any).orderId)
     ElMessage.success('接单成功')
     acceptDialogVisible.value = false
     loadData()
@@ -267,7 +280,19 @@ async function onConfirmAccept() {
 function onComplete(order: any) {
   currentOrder.value = order
   Object.assign(completeForm, { expressCompany: '', expressNo: '', remark: '' })
+  receiptFiles.value = []
   completeDialogVisible.value = true
+}
+
+async function uploadReceipt(option: any) {
+  try {
+    const response: any = await uploadImage(option.file)
+    const url = response?.data?.url ?? response?.url
+    if (!url) throw new Error('上传未返回文件地址')
+    option.onSuccess({ url }, option.file)
+  } catch (error) {
+    option.onError(error)
+  }
 }
 
 async function onConfirmComplete() {
@@ -278,12 +303,21 @@ async function onConfirmComplete() {
   }
   const valid = await completeFormRef.value?.validate().catch(() => false)
   if (!valid) return
+  const receipts = receiptFiles.value
+    .map((file: any) => file.response?.url)
+    .filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
+    .map((url: string) => ({ url, type: 'certificate' }))
+  if (receipts.length === 0) {
+    ElMessage.warning('请至少上传一张交付凭证')
+    return
+  }
   actionLoading.value = true
   try {
-    await completeOrderAPI((currentOrder.value as any)?.orderId, {
+    await shipOutletOrderAdminAPI(selectedOutlet.value, (currentOrder.value as any).orderId, {
       expressCompany: completeForm.expressCompany,
-      expressNo: completeForm.expressNo,
+      trackingNo: completeForm.expressNo,
       remark: completeForm.remark,
+      receipts,
     })
     ElMessage.success('交货成功')
     completeDialogVisible.value = false

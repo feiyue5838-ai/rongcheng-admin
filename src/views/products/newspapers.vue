@@ -873,7 +873,7 @@ async function saveNewspaper() {
       description: form.description,
       sort: form.sort,
       status: form.status ?? 1,
-      enable_sections: form.enable_sections ?? 1,
+      enableSections: form.enable_sections ?? 1,
     }
     if (isEdit.value) {
       await updateNewspaper(form.id, data)

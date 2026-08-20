@@ -279,7 +279,7 @@ async function savePackages() {
   try {
     // 整体替换：把本地 packageList 发回后端
     const payload = packageList.value.map(p => ({
-      id: p.id, name: p.name, price: p.price, sealIds: p.sealIds, badge: p.badge, isNew: p.isNew,
+      id: p.id, name: p.name, price: p.price, seal_ids: p.sealIds, badge: p.badge, isNew: p.isNew,
     }))
     await setScenePackages(currentSceneId.value, payload)
     ElMessage.success('套餐已保存')

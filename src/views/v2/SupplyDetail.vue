@@ -68,12 +68,12 @@
         <template #header>
           <span>供应链履约</span>
           <el-button
-            v-if="detail.order.fulfillmentStatus === 'pending_assignment'"
+            v-if="detail.order.orderStatus === 'paid' && detail.order.paymentStatus === 'paid' && detail.order.fulfillmentStatus === 'pending_assignment'"
             type="primary" size="small" style="margin-left: 8px"
             @click="assignDialogVisible = true"
           >派单</el-button>
           <el-button
-            v-if="detail.order.fulfillmentStatus === 'assigned' || detail.order.fulfillmentStatus === 'accepted'"
+            v-if="detail.order.fulfillmentStatus === 'assigned'"
             type="warning" size="small" style="margin-left: 8px"
             @click="reassignDialogVisible = true"
           >改派</el-button>
@@ -244,10 +244,16 @@ async function doReassign() {
   }
 }
 
-onMounted(() => {
-  load()
-  loadSuppliers()
-  if (route.query.assign === '1') assignDialogVisible.value = true
+onMounted(async () => {
+  await Promise.all([load(), loadSuppliers()])
+  if (
+    route.query.assign === '1' &&
+    detail.value?.order?.orderStatus === 'paid' &&
+    detail.value?.order?.paymentStatus === 'paid' &&
+    detail.value?.order?.fulfillmentStatus === 'pending_assignment'
+  ) {
+    assignDialogVisible.value = true
+  }
 })
 </script>
 

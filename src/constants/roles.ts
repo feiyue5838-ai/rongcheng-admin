@@ -96,6 +96,8 @@ export function hasAccess(role: string, path: string): boolean {
     '/reviews': ['superadmin', 'content_admin'],
     '/questions': ['superadmin', 'content_admin'],
     '/content': ['superadmin', 'content_admin'],
+    '/finance': ['superadmin'],
+    '/v2/settlements': ['superadmin'],
     '/system/admins': ['superadmin'],
     '/system/logs': ['superadmin'],
     '/system/configs': ['superadmin'],

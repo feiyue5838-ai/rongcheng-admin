@@ -245,8 +245,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getDeliveryReceiptsAPI, getOutletsAPI, getDeliveryReceiptStatsAPI } from '@/api'
+
+const route = useRoute()
 import { formatDate } from '@/utils/format'
 import {
   Search, Document, Picture, ZoomIn, Download, ArrowDown, ArrowUp,
@@ -272,7 +275,7 @@ const loadStats = async () => {
 
 // ---------- 数据 ----------
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<Record<string, any>[]>([])
 const selected = ref([])
 const previewVisible = ref(false)
 const previewUrl = ref('')
@@ -334,7 +337,7 @@ async function loadData() {
     if (filters.type) params.type = filters.type
     if (filters.region) params.region = filters.region
     if (filters.province) params.province = filters.province
-    if (filters.outletId) params.outletId = filters.outletId
+    if (filters.outletId) params.outlet_id = filters.outletId
     if (dateRange.value?.length === 2) {
       params.startDate = dateRange.value[0]
       params.endDate = dateRange.value[1]
@@ -419,6 +422,8 @@ function previewImage(row: any) {
 
 // ---------- 初始化 ----------
 onMounted(async () => {
+  const queryOutletId = Array.isArray(route.query.outletId) ? route.query.outletId[0] : route.query.outletId
+  if (typeof queryOutletId === 'string' && queryOutletId) filters.outletId = queryOutletId
   loadStats()
   await loadOutlets()
   loadData()

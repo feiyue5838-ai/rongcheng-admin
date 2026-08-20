@@ -70,7 +70,7 @@
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="goDetail(row.orderNo)">供应链视图</el-button>
-            <el-button v-if="row.fulfillmentStatus === 'pending_assignment'" link type="warning" size="small" @click="openAssign(row)">派单</el-button>
+            <el-button v-if="row.orderStatus === 'paid' && row.paymentStatus === 'paid' && row.fulfillmentStatus === 'pending_assignment'" link type="warning" size="small" @click="openAssign(row)">派单</el-button>
           </template>
         </el-table-column>
       </el-table>
