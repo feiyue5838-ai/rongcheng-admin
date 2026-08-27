@@ -10,3 +10,17 @@ dist/
 components.d.ts
 
 dev-m3.log
+
+# audit/fix artifacts
+.audit-*
+*.tmpdir
+.backend_pid
+.vite_pid
+P0ÐÞ¸´/
+P1ÐÞ¸´/
+P2ÐÞ¸´/
+P2ÐÞ¸´2/
+P2ÐÞ¸´3/
+ÏµÍ³¸ÄÔì°ü/
+SysFix/
+*.log
