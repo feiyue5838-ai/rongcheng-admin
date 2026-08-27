@@ -1,4 +1,4 @@
-node_modules/
+ï»¿node_modules/
 dist/
 .DS_Store
 *.local
@@ -16,11 +16,12 @@ dev-m3.log
 *.tmpdir
 .backend_pid
 .vite_pid
-P0ÐÞ¸´/
-P1ÐÞ¸´/
-P2ÐÞ¸´/
-P2ÐÞ¸´2/
-P2ÐÞ¸´3/
-ÏµÍ³¸ÄÔì°ü/
+P0*/
+P1*/
+P2*/
 SysFix/
 *.log
+
+.tmp-*
+.tools/
+.workbuddy/
