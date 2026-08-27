@@ -7,7 +7,7 @@
     <div class="page-card">
 
       <!-- tab 切换 -->
-      <el-tabs v-model="activeTab" @tab-change="loadData" class="assign-tabs">
+      <el-tabs v-model="activeTab" @tab-change="search" class="assign-tabs">
         <el-tab-pane label="待分配订单" name="pending">
           <template #label>
             待分配 <el-badge :value="pendingCount" :hidden="!pendingCount" type="warning" />
@@ -71,17 +71,17 @@
           clearable
           prefix-icon="Search"
           style="width:240px"
-          @keyup.enter="loadData"
+          @keyup.enter="search"
         />
-        <el-select v-model="module" placeholder="全部模块" clearable style="width:140px" @change="loadData">
+        <el-select v-model="module" placeholder="全部模块" clearable style="width:140px" @change="search">
           <el-option label="刻章" value="seal" />
           <el-option label="登报" value="newspaper" />
           <el-option label="代理记账" value="bookkeeping" />
         </el-select>
-        <el-button type="primary" @click="loadData">
+        <el-button type="primary" @click="search">
           <el-icon style="margin-right:4px"><Search /></el-icon>搜索
         </el-button>
-        <el-button @click="keyword=''; module=''; loadData()">重置</el-button>
+        <el-button @click="keyword=''; module=''; search()">重置</el-button>
       </div>
 
       <!-- 待分配订单 -->
@@ -228,7 +228,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getUnassignedOrdersAPI, getAssignedOrdersAPI, assignOrderAPI, getOutletsAPI, getOrderStatistics, getAvailableOutlets } from '@/api'
+import { getUnassignedOrdersAPI, getAssignedOrdersAPI, assignOrderAPI, getOrderStatistics, getAvailableOutlets } from '@/api'
 import { formatDate } from '@/utils/format'
 
 const activeTab = ref('pending')
@@ -302,6 +302,12 @@ function formatAddress(addressJson: any) {
   }
 }
 
+// 筛选/搜索/切 Tab：重置页码后再加载
+function search() {
+  page.value = 1
+  loadData()
+}
+
 async function loadData() {
   loading.value = true
   try {
@@ -355,8 +361,7 @@ async function openAssignDialog(order: any) {
   currentOutletName.value = ''
   try {
     // 按订单模块过滤有资质的网点（仅显示匹配业务类型的）
-    const res: any = await getAvailableOutlets({ addressJson: order.addressJson, businessType: order.module || 'seal' })
-    const all = (res as any).data ?? []
+    const all = await getAvailableOutlets({ addressJson: order.addressJson, businessType: order.module || 'seal' })
     const recommendedIds = new Set((order.recommendedOutlets || []).map((o: any) => o.id))
     const recommended = all.filter((o: any) => recommendedIds.has(o.id))
     const others = all.filter((o: any) => !recommendedIds.has(o.id))

@@ -4,14 +4,14 @@
     <el-card shadow="never" class="filter-card">
       <el-form :inline="true" :model="query">
         <el-form-item label="模块">
-          <el-select v-model="query.module" placeholder="全部模块" clearable style="width: 140px" @change="fetchRecords">
+          <el-select v-model="query.module" placeholder="全部模块" clearable style="width: 140px" @change="onFilterChange">
             <el-option label="刻章" value="seal" />
             <el-option label="登报" value="newspaper" />
             <el-option label="代理记账" value="bookkeeping" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 140px" @change="fetchRecords">
+          <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 140px" @change="onFilterChange">
             <el-option label="退款中" :value="8" />
             <el-option label="已退款" :value="9" />
           </el-select>
@@ -29,7 +29,7 @@
           />
         </el-form-item>
         <el-form-item label=" ">
-          <el-button type="primary" @click="fetchRecords">查询</el-button>
+          <el-button type="primary" @click="onFilterChange">查询</el-button>
           <el-button @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
@@ -134,6 +134,13 @@ function resetQuery() {
 function onDateChange(val: string[]) {
   query.startDate = val?.[0] || ''
   query.endDate = val?.[1] || ''
+  query.page = 1
+}
+
+// 筛选变更：重置页码后再加载
+function onFilterChange() {
+  query.page = 1
+  fetchRecords()
 }
 
 function getRefundFee(row: any) {

@@ -18,7 +18,7 @@
             <span />
             <el-button type="primary" @click="openCatDialog()">新增分类</el-button>
           </div>
-          <el-table :data="categories" v-loading="loading" stripe border>
+          <el-table :data="categories" v-loading="loading" stripe border empty-text="暂无分类">
             <el-table-column prop="name" label="分类名称" min-width="140" />
             <el-table-column prop="icon" label="图标" min-width="200" show-overflow-tooltip />
             <el-table-column prop="sort" label="排序" width="80" />
@@ -30,8 +30,8 @@
             <el-table-column label="操作" width="240" fixed="right">
               <template #default="{ row }">
                 <el-button size="small" @click="openCatDialog(row)">编辑</el-button>
-                <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleCat(row)">{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
-                <el-button size="small" type="danger" @click="delCat(row)">删除</el-button>
+                <el-button size="small" :loading="actionKey === `category-status-${row.id}`" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleCat(row)">{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
+                <el-button size="small" type="danger" :loading="actionKey === `category-delete-${row.id}`" @click="delCat(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -45,9 +45,9 @@
                 <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
               </el-select>
             </div>
-            <el-button type="primary" @click="openFaqDialog()">新增问答</el-button>
+            <el-button type="primary" :disabled="categories.length === 0" @click="openFaqDialog()">新增问答</el-button>
           </div>
-          <el-table :data="filteredFaqs" v-loading="loading" stripe border>
+          <el-table :data="filteredFaqs" v-loading="loading" stripe border empty-text="暂无问答">
             <el-table-column prop="question" label="问题" min-width="220" show-overflow-tooltip />
             <el-table-column prop="answer" label="答案" min-width="320" show-overflow-tooltip />
             <el-table-column label="分类" width="120">
@@ -62,8 +62,8 @@
             <el-table-column label="操作" width="230" fixed="right">
               <template #default="{ row }">
                 <el-button size="small" @click="openFaqDialog(row)">编辑</el-button>
-                <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleFaq(row)">{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
-                <el-button size="small" type="danger" @click="delFaq(row)">删除</el-button>
+                <el-button size="small" :loading="actionKey === `faq-status-${row.id}`" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleFaq(row)">{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
+                <el-button size="small" type="danger" :loading="actionKey === `faq-delete-${row.id}`" @click="delFaq(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -113,28 +113,50 @@ import {
   setFaqPhone,
 } from '@/api'
 
+type FaqItem = {
+  id: number
+  categoryId: number
+  question: string
+  answer: string
+  sort: number
+  status: number
+}
+
+type FaqCategory = {
+  id: number
+  name: string
+  icon: string
+  sort: number
+  status: number
+  faqs?: FaqItem[]
+}
+
+type FaqAdminResponse = {
+  categories?: FaqCategory[]
+  phone?: string
+}
+
 const loading = ref(false)
 const saving = ref(false)
 const phoneSaving = ref(false)
+const actionKey = ref('')
 const phone = ref('')
-const categories = ref<any[]>([])
+const categories = ref<FaqCategory[]>([])
 const filterCat = ref<number | undefined>()
 const activeTab = ref('category')
 
-const allFaqs = ref<any[]>([])
+const allFaqs = ref<FaqItem[]>([])
 const filteredFaqs = computed(() => {
   if (!filterCat.value) return allFaqs.value
   return allFaqs.value.filter((f) => f.categoryId === filterCat.value)
 })
 
-function filterFaqs() {
-  // 纯前端筛选，不需要重新请求
-}
+function filterFaqs() { /* computed 会自动完成前端筛选 */ }
 
 const catVisible = ref(false)
-const catForm = ref<any>({ id: null, name: '', icon: '', sort: 0 })
+const catForm = ref<{ id: number | null; name: string; icon: string; sort: number }>({ id: null, name: '', icon: '', sort: 0 })
 const faqVisible = ref(false)
-const faqForm = ref<any>({ id: null, categoryId: undefined, question: '', answer: '', sort: 0 })
+const faqForm = ref<{ id: number | null; categoryId?: number; question: string; answer: string; sort: number }>({ id: null, categoryId: undefined, question: '', answer: '', sort: 0 })
 
 function catName(id: number) {
   const c = categories.value.find((x) => x.id === id)
@@ -144,74 +166,108 @@ function catName(id: number) {
 async function load() {
   loading.value = true
   try {
-    const data: any = await getFaqAdminList()
-    categories.value = data.categories || []
-    allFaqs.value = categories.value.flatMap((c: any) => c.faqs || [])
-    phone.value = data.phone || ''
+    const data = await getFaqAdminList() as unknown as FaqAdminResponse
+    categories.value = Array.isArray(data?.categories) ? data.categories : []
+    allFaqs.value = categories.value.flatMap((category) => Array.isArray(category.faqs) ? category.faqs : [])
+    phone.value = typeof data?.phone === 'string' ? data.phone : ''
+    if (filterCat.value && !categories.value.some((category) => category.id === filterCat.value)) {
+      filterCat.value = undefined
+    }
   } finally {
     loading.value = false
   }
 }
 
-function openCatDialog(row?: any) {
+function openCatDialog(row?: FaqCategory) {
   catForm.value = row ? { ...row } : { id: null, name: '', icon: '', sort: 0 }
   catVisible.value = true
 }
 async function saveCat() {
-  if (!catForm.value.name) return ElMessage.warning('请输入分类名称')
+  const name = catForm.value.name.trim()
+  if (!name) return ElMessage.warning('请输入分类名称')
   saving.value = true
   try {
-    if (catForm.value.id) await updateFaqCategory(catForm.value.id, { name: catForm.value.name, icon: catForm.value.icon, sort: catForm.value.sort })
-    else await addFaqCategory({ name: catForm.value.name, icon: catForm.value.icon, sort: catForm.value.sort })
+    const payload = { name, icon: catForm.value.icon.trim(), sort: catForm.value.sort }
+    if (catForm.value.id) await updateFaqCategory(String(catForm.value.id), payload)
+    else await addFaqCategory(payload)
     ElMessage.success('保存成功')
     catVisible.value = false
-    load()
+    await load()
   } finally { saving.value = false }
 }
-async function toggleCat(row: any) {
-  await updateFaqCategoryStatus(row.id, row.status === 1 ? 0 : 1)
-  load()
+async function toggleCat(row: FaqCategory) {
+  const nextStatus = row.status === 1 ? 0 : 1
+  actionKey.value = `category-status-${row.id}`
+  try {
+    await updateFaqCategoryStatus(String(row.id), nextStatus)
+    ElMessage.success(nextStatus === 1 ? '分类已启用' : '分类已禁用')
+    await load()
+  } finally { actionKey.value = '' }
 }
-async function delCat(row: any) {
-  await ElMessageBox.confirm('删除分类将同时删除其下所有问答，确定？', '提示', { type: 'warning' })
-  await deleteFaqCategory(row.id)
-  ElMessage.success('已删除')
-  load()
+async function delCat(row: FaqCategory) {
+  const confirmed = await ElMessageBox.confirm(
+    `删除分类「${row.name}」将同时删除其下 ${row.faqs?.length || 0} 条问答，确定继续？`,
+    '删除分类', { type: 'warning', confirmButtonText: '确定删除' }
+  ).then(() => true).catch(() => false)
+  if (!confirmed) return
+  actionKey.value = `category-delete-${row.id}`
+  try {
+    await deleteFaqCategory(String(row.id))
+    ElMessage.success('分类已删除')
+    await load()
+  } finally { actionKey.value = '' }
 }
 
-function openFaqDialog(row?: any) {
+function openFaqDialog(row?: FaqItem) {
   faqForm.value = row ? { ...row } : { id: null, categoryId: categories.value[0]?.id, question: '', answer: '', sort: 0 }
   faqVisible.value = true
 }
 async function saveFaq() {
   if (!faqForm.value.categoryId) return ElMessage.warning('请选择分类')
-  if (!faqForm.value.question) return ElMessage.warning('请输入问题')
-  if (!faqForm.value.answer) return ElMessage.warning('请输入答案')
+  const question = faqForm.value.question.trim()
+  const answer = faqForm.value.answer.trim()
+  if (!question) return ElMessage.warning('请输入问题')
+  if (!answer) return ElMessage.warning('请输入答案')
   saving.value = true
   try {
-    if (faqForm.value.id) await updateFaq(faqForm.value.id, { categoryId: faqForm.value.categoryId, question: faqForm.value.question, answer: faqForm.value.answer, sort: faqForm.value.sort })
-    else await addFaq({ categoryId: faqForm.value.categoryId, question: faqForm.value.question, answer: faqForm.value.answer, sort: faqForm.value.sort })
+    const payload = { categoryId: faqForm.value.categoryId, question, answer, sort: faqForm.value.sort }
+    if (faqForm.value.id) await updateFaq(String(faqForm.value.id), payload)
+    else await addFaq(payload)
     ElMessage.success('保存成功')
     faqVisible.value = false
-    load()
+    await load()
   } finally { saving.value = false }
 }
-async function toggleFaq(row: any) {
-  await updateFaqStatus(row.id, row.status === 1 ? 0 : 1)
-  load()
+async function toggleFaq(row: FaqItem) {
+  const nextStatus = row.status === 1 ? 0 : 1
+  actionKey.value = `faq-status-${row.id}`
+  try {
+    await updateFaqStatus(String(row.id), nextStatus)
+    ElMessage.success(nextStatus === 1 ? '问答已启用' : '问答已禁用')
+    await load()
+  } finally { actionKey.value = '' }
 }
-async function delFaq(row: any) {
-  await ElMessageBox.confirm('确定删除该问答？', '提示', { type: 'warning' })
-  await deleteFaq(row.id)
-  ElMessage.success('已删除')
-  load()
+async function delFaq(row: FaqItem) {
+  const confirmed = await ElMessageBox.confirm(`确定删除问答「${row.question}」？`, '删除问答', {
+    type: 'warning', confirmButtonText: '确定删除'
+  }).then(() => true).catch(() => false)
+  if (!confirmed) return
+  actionKey.value = `faq-delete-${row.id}`
+  try {
+    await deleteFaq(String(row.id))
+    ElMessage.success('问答已删除')
+    await load()
+  } finally { actionKey.value = '' }
 }
 
 async function savePhone() {
-  if (!phone.value) return ElMessage.warning('请输入电话')
+  const normalizedPhone = phone.value.trim()
+  if (!normalizedPhone) return ElMessage.warning('请输入电话')
+  if (!/^[0-9+()\-\s]{5,30}$/.test(normalizedPhone)) return ElMessage.warning('请输入有效的电话号码')
   phoneSaving.value = true
   try {
-    await setFaqPhone(phone.value)
+    await setFaqPhone(normalizedPhone)
+    phone.value = normalizedPhone
     ElMessage.success('电话已保存')
   } finally { phoneSaving.value = false }
 }

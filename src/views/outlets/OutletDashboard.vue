@@ -117,7 +117,7 @@
             </template>
           </el-table-column>
           <el-table-column prop="assignedAt" label="分配时间" width="170">
-            <template #default="{ row }">{{ formatDate(row.assigned_at) }}</template>
+            <template #default="{ row }">{{ formatDate(row.assignedAt) }}</template>
           </el-table-column>
           <el-table-column label="操作" width="160" align="center">
             <template #default="{ row }">
@@ -182,11 +182,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getOutletsAPI, getOutletAPI, getOutletOrdersAPI, acceptOutletOrderAdminAPI, shipOutletOrderAdminAPI, uploadImage } from '@/api'
 import { formatDate } from '@/utils/format'
 import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding, Plus } from '@element-plus/icons-vue'
 
+const router = useRouter()
 const loading = ref(false)
 const outlets = ref<any[]>([])
 const selectedOutlet = ref('')
@@ -207,12 +209,13 @@ const completeRules = {
 }
 
 function getStatusTag(status: any) {
-  const map: Record<number,string> = { 1: 'warning', 2: '', 3: 'success', 4: 'success' }
+  // 后端 assignment 状态：1 待接单 / 2 制作中 / 3 已完成 / 4 已拒绝 / 5 已取消 / 6 已换网点
+  const map: Record<number,string> = { 1: 'warning', 2: '', 3: 'success', 4: 'danger', 5: 'info', 6: 'info' }
   return map[status] || 'info'
 }
 
 function getStatusText(status: any) {
-  const map: Record<number,string> = { 1: '待接单', 2: '制作中', 3: '已发货', 4: '已完成' }
+  const map: Record<number,string> = { 1: '待接单', 2: '制作中', 3: '已完成', 4: '已拒绝', 5: '已取消', 6: '已换网点' }
   return map[status] || String(status)
 }
 
@@ -242,11 +245,18 @@ async function loadData() {
     recentOrders.value = ((ordersRes as any).data?.list ?? (ordersRes as any).list ?? []).slice(0, 10)
     // 从全部订单计算统计数据（取 100 条近似）
     const allOrders = (ordersRes as any).data?.list ?? (ordersRes as any).list ?? []
+    const isToday = (t?: string) => {
+      if (!t) return false
+      const d = new Date(t)
+      const now = new Date()
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+    }
     stats.value = {
       pending: allOrders.filter((o: any) => (o as any).status === 1).length,
       processing: allOrders.filter((o: any) => (o as any).status === 2).length,
-      completed: allOrders.filter((o: any) => (o as any).status === 4).length,
-      todayTotal: allOrders.length,
+      // 后端 assignment 状态 3 即为已完成（发货后置 3），4 为已拒绝
+      completed: allOrders.filter((o: any) => (o as any).status === 3).length,
+      todayTotal: allOrders.filter((o: any) => isToday(o.createdAt)).length,
     }
   } catch (err: any) { /* ignore */ } finally {
     loading.value = false
@@ -330,20 +340,20 @@ async function onConfirmComplete() {
 }
 
 function goToOutletOrders() {
-  window.location.href = `/outlets/assign?outletId=${selectedOutlet.value}`
+  router.push({ path: '/outlets/assign', query: { outletId: selectedOutlet.value } })
 }
 
 function goToDeliveryReceipts() {
-  window.location.href = `/outlets/receipts?outletId=${selectedOutlet.value}`
+  router.push({ path: '/outlets/receipts', query: { outletId: selectedOutlet.value } })
 }
 
 function goToOutletList() {
-  window.location.href = '/outlets'
+  router.push('/outlets')
 }
 
 onMounted(async () => {
+  // loadOutlets 内部已对首个网点执行 loadData，避免挂载时重复请求
   await loadOutlets()
-  if (selectedOutlet.value) loadData()
 })
 </script>
 

@@ -223,6 +223,11 @@
         <el-form-item label="印章名称" required>
           <el-input v-model="form.name" placeholder="如：公章" />
         </el-form-item>
+        <el-form-item label="电子印章类型" required v-if="isElectronic">
+          <el-select v-model="form.electronicType" placeholder="选择电子印章类型" style="width:100%" @change="onElectronicTypeChange">
+            <el-option v-for="type in ELECTRONIC_SUB_TYPES" :key="type.label" :label="type.label" :value="type.label" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="类型" required v-if="isPersonal">
           <el-select v-model="form.sealCategoryId" placeholder="选择印章类型">
             <el-option v-for="c in personalCategories" :key="c.id" :label="c.name" :value="c.id" />
@@ -511,14 +516,17 @@ const defaultCategory = computed(() => {
   return '__ALL_BUSINESS__'
 })
 
-// 个人印章子分类：动态取真实 seal_categories id（避免写入无效外键导致保存失败）
+// seal_categories 全量，用于查找个人 / 电子等真实分类 id
+const sealCategories = ref<any[]>([])
+
+// 个人印章子分类：只使用接口返回的真实 seal_categories id
 const personalCategories = computed(() => {
-  const pc = categories.value.find((c: any) => c.name === '个人印章')
-  const prc = categories.value.find((c: any) => c.name === '个人签名章')
+  const pc = sealCategories.value.find((c: any) => c.name === '个人印章')
+  const prc = sealCategories.value.find((c: any) => c.name === '个人签名章')
   return [
-    { id: pc?.id || '__personal__', name: '个人印章' },
-    { id: prc?.id || '__professional__', name: '个人职业印章' },
-  ]
+    pc && { id: pc.id, name: '个人印章' },
+    prc && { id: prc.id, name: '个人职业印章' },
+  ].filter(Boolean)
 })
 
 // 对话框「分类」下拉候选：企业=8 大业务场景；电子=单一电子场景（禁用）；个人走子分类（不展示本下拉）
@@ -547,6 +555,22 @@ function getSealSubType(name: string): string {
   return ''
 }
 
+function getElectronicCategory(type: string) {
+  return sealCategories.value.find((category: any) => category.name === type)
+}
+
+function normalizeElectronicSealName(name: string, type: string): string {
+  const currentType = getSealSubType(name)
+  const suffix = (currentType ? name.slice(currentType.length) : name).trim()
+  return suffix ? `${type}${suffix}` : type
+}
+
+function onElectronicTypeChange(type: string) {
+  if (!type) return
+  form.sealCategoryId = getElectronicCategory(type)?.id || ''
+  form.name = normalizeElectronicSealName(form.name || '', type)
+}
+
 // 路由类型：all / enterprise / single
 const routeType = computed(() => {
   const cat = defaultCategory.value
@@ -567,6 +591,8 @@ const categories = ref<any[]>([])
 const seals = ref<any[]>([])
 const packages = ref<any[]>([])
 const loading = ref(false)
+let initialized = false
+let suppressSceneWatcher = false
 
 const activeSceneId = ref('')        // enterprise 路由：当前选中的场景
 const activeSingleTab = ref('')       // single 路由：Tab name（等于 defaultCategory）
@@ -577,7 +603,7 @@ const dialogVisible = ref(false)
 const sealUploadRef = ref<any>(null)
 const saving = ref(false)
 const isEdit = ref(false)
-const form = reactive<any>({ name: '', sceneId: '', sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
+const form = reactive<any>({ name: '', electronicType: '', sceneId: '', sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
 // 全国地级以上城市级联数据（用于城市差异化定价选择器）
 // 全国三级行政区划（省 → 市 → 区），数据来自 @/data/region-data（2024 最新）
 const PROVINCE_CITY_OPTIONS = Object.keys(provinceToCities).map((prov) => ({
@@ -714,7 +740,15 @@ async function loadPkgSealOptions(sceneId?: string) {
           return n === '个人印章' || n === '个人签名章'
         })
       } else if (isElectronic.value) {
-        pkgSealOptions.value = list.filter((s: any) => s.name && s.name.startsWith('电子'))
+        const electronicCategoryIds = new Set(
+          ELECTRONIC_SUB_TYPES
+            .map((type) => getElectronicCategory(type.label)?.id)
+            .filter(Boolean)
+        )
+        pkgSealOptions.value = list.filter((s: any) =>
+          electronicCategoryIds.has(s.sealCategories?.id) ||
+          (!s.sealCategories?.id && s.name && s.name.startsWith('电子'))
+        )
       } else {
         pkgSealOptions.value = list
       }
@@ -731,11 +765,15 @@ const filteredSeals = computed(() => {
     const scene = businessCategories.value.find((c) => c.id === activeSceneId.value)
     list = list.filter((s) => s._sceneName === scene?.name)
   } else if (isPersonal.value) {
-    list = activePersonalSubTab.value === '个人印章'
+    list = activePersonalSubTab.value === 'personal'
       ? list.filter((s) => s.sealCategories?.name === '个人印章')
       : list.filter((s) => s.sealCategories?.name === '个人签名章')
   } else if (isElectronic.value) {
-    list = list.filter((s) => getSealSubType(s.name) === activeSingleSubTab.value)
+    const categoryId = getElectronicCategory(activeSingleSubTab.value)?.id
+    list = list.filter((s) =>
+      (categoryId && s.sealCategories?.id === categoryId) ||
+      (!s.sealCategories?.id && getSealSubType(s.name) === activeSingleSubTab.value)
+    )
   }
   return [...list].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
 })
@@ -773,9 +811,11 @@ const professionalSealCount = computed(() => seals.value.filter((s) => s.sealCat
 // 单路由（个人 + 电子）子 Tab 计数
 // 电子印章 Tab 数量（基于动态 electronicSubTypesMap）
 function singleSubCount(label: string): number {
-  const st = ELECTRONIC_SUB_TYPES.find(st => st.label === label)
-  if (!st) return 0
-  return seals.value.filter(s => s.name.startsWith(st.prefix)).length
+  const categoryId = getElectronicCategory(label)?.id
+  return seals.value.filter((s) =>
+    (categoryId && s.sealCategories?.id === categoryId) ||
+    (!s.sealCategories?.id && getSealSubType(s.name) === label)
+  ).length
 }
 
 // seal_categories 中 name='个人印章'/'电子印章' 的项 → 补充 personalScene/electronicScene
@@ -795,6 +835,7 @@ async function fetchAllCategories() {
   }
   const cats = Array.isArray(catRes) ? catRes : (catRes?.data || [])
   const scenes = Array.isArray(sceneRes) ? sceneRes : (sceneRes?.data || [])
+  sealCategories.value = cats
   const personalCat = cats.find((c: any) => c.name === '个人印章')
   const electronicCat = cats.find((c: any) => c.name === '电子印章')
   const merged: any[] = [...scenes]
@@ -817,15 +858,25 @@ async function fetchSealsByCategory(catId: string) {
         seals.value.some((s: any) => s._sceneName === c.name) ||
         packages.value.some((p: any) => p._sceneName === c.name)
       )
-      activeSceneId.value = (withData || sorted[0] || businessCategories.value[0])?.id
+      const nextSceneId = (withData || sorted[0] || businessCategories.value[0])?.id
+      // 聚合数据已全部加载，跳过 activeSceneId watcher 的重复拉取（避免覆盖与角标归零）
+      suppressSceneWatcher = nextSceneId !== activeSceneId.value
+      activeSceneId.value = nextSceneId
     } else if (isElectronic.value) {
-      // 电子印章场景：父分类下无印章，实际印章挂在 6 个子分类下
-      // 走 /seals 全量后过滤 name 以'电子'开头，避免依赖父子关联字段
+      // 电子印章按真实 sealCategoryId 归类；旧数据无分类时用名称前缀兜底
       const all: any = await getSeals()
       const list = Array.isArray(all) ? all : (all?.items || [])
       const cat = categories.value.find((c) => c.id === catId)
+      const electronicCategoryIds = new Set(
+        ELECTRONIC_SUB_TYPES
+          .map((type) => getElectronicCategory(type.label)?.id)
+          .filter(Boolean)
+      )
       seals.value = list
-        .filter((s: any) => s.name && s.name.startsWith('电子'))
+        .filter((s: any) =>
+          electronicCategoryIds.has(s.sealCategories?.id) ||
+          (!s.sealCategories?.id && s.name && s.name.startsWith('电子'))
+        )
         .map((s: any) => ({ ...s, categoryName: s.sealCategories?.name || '—', _sceneName: cat?.name || '电子印章' }))
       packages.value = []
     } else if (isPersonal.value) {
@@ -906,7 +957,17 @@ function showDialog(type: string, row?: any) {
     if (isPersonal.value) ctxSceneId = personalScene.value?.id || ''
     else if (isElectronic.value) ctxSceneId = electronicScene.value?.id || ''
     else ctxSceneId = activeSceneId.value || ''
-    Object.assign(form, { ...row, sceneId: ctxSceneId, sealCategoryId: row.sealCategories?.id || '' })
+    const electronicType = isElectronic.value
+      ? (ELECTRONIC_SUB_TYPES.find((type) => type.label === row.sealCategories?.name)?.label || getSealSubType(row.name || '') || activeSingleSubTab.value)
+      : ''
+    Object.assign(form, {
+      ...row,
+      electronicType,
+      sceneId: ctxSceneId,
+      sealCategoryId: isElectronic.value
+        ? (getElectronicCategory(electronicType)?.id || row.sealCategories?.id || '')
+        : (row.sealCategories?.id || ''),
+    })
     getRegionPricesRows()
     pricingMode.value = Object.keys(form.region_prices || {}).length > 0 ? 'regional' : 'nationwide'
   } else {
@@ -915,7 +976,18 @@ function showDialog(type: string, row?: any) {
     if (isPersonal.value) defaultSceneId = personalScene.value?.id || ''
     else if (isElectronic.value) defaultSceneId = electronicScene.value?.id || ''
     else defaultSceneId = activeSceneId.value || ''
-    Object.assign(form, { name: '', sceneId: defaultSceneId, sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
+    const electronicType = isElectronic.value ? activeSingleSubTab.value : ''
+    Object.assign(form, {
+      name: isElectronic.value ? activeSingleSubTab.value : '',
+      electronicType,
+      sceneId: defaultSceneId,
+      sealCategoryId: isElectronic.value ? (getElectronicCategory(electronicType)?.id || '') : '',
+      price: 0,
+      region_prices: {},
+      description: '',
+      sort: 0,
+      image: '',
+    })
     regionPricesRows.value = []
     pricingMode.value = 'nationwide'
   }
@@ -925,8 +997,16 @@ function showDialog(type: string, row?: any) {
 async function saveSeal() {
   if (!form.name) { ElMessage.warning('请填写印章名称'); return }
   if (routeType.value === 'enterprise' && !form.sceneId) { ElMessage.warning('请选择印章所属分类'); return }
+  if (isPersonal.value && !form.sealCategoryId) { ElMessage.warning('请选择印章类型'); return }
+  if (isElectronic.value && (!form.electronicType || !form.sealCategoryId)) {
+    ElMessage.warning('请选择有效的电子印章类型')
+    return
+  }
   saving.value = true
   try {
+    const sealName = isElectronic.value
+      ? normalizeElectronicSealName(form.name, form.electronicType)
+      : form.name
     // 从行编辑数据还原 region_prices 对象（全国价模式强制清空，仅用基准价）
     const region_prices: Record<string, number> = {}
     if (pricingMode.value === 'regional') {
@@ -938,7 +1018,7 @@ async function saveSeal() {
     if (isEdit.value) {
       // 编辑：categoryId=场景（重建关联，允许改所属场景）；sealCategoryId=个人子分类（写回 seal.seal_categoriesId）
       await updateSeal(form.id, {
-        name: form.name,
+        name: sealName,
         price: form.price,
         region_prices,
         description: form.description,
@@ -949,7 +1029,7 @@ async function saveSeal() {
       })
     } else {
       await createSeal({
-        name: form.name,
+        name: sealName,
         price: form.price,
         region_prices,
         description: form.description,
@@ -1086,8 +1166,8 @@ async function uploadPkg(file: File) {
     if (!pkgForm.images) pkgForm.images = []
     pkgForm.images.push(url)
     ElMessage.success('上传成功')
-  } catch (err: any) {
-    ElMessage.error('上传失败')
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   }
 }
 
@@ -1127,8 +1207,8 @@ async function uploadSeal(options: any) {
     const res: any = await (uploadImage as any)(options.file)
     form.image = res.url
     ElMessage.success('上传成功')
-  } catch (err) {
-    ElMessage.error('上传失败')
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   }
 }
 
@@ -1148,9 +1228,6 @@ const businessCategories = computed(() => {
   return scenes.length ? scenes : categories.value
 })
 
-// seal_categories 全量（17 条），用于查找个人 / 电子分类的 id
-const sealCategories = ref<any[]>([])
-
 // 初始化
 onMounted(async () => {
   await fetchAllCategories()
@@ -1159,15 +1236,18 @@ onMounted(async () => {
   if (routeType.value === 'single') {
     activeSingleTab.value = defaultCategory.value
   }
+  initialized = true
 })
 
-// 路由切换：重置 Tab 状态，watch(activeSceneId) 会统一处理数据加载
-watch(defaultCategory, (newVal, oldVal) => {
+// 路由切换：重置 Tab 状态，并在初始化完成后加载新分类数据
+watch(defaultCategory, async (newVal, oldVal) => {
   if (newVal === oldVal) return
   activeSceneId.value = ''
   activeSingleTab.value = newVal
-  activePersonalSubTab.value = '个人印章'
+  activePersonalSubTab.value = 'personal'
   activeSingleSubTab.value = '电子公章'
+  if (!initialized || !newVal) return
+  await fetchSealsByCategory(newVal)
 })
 
 // 分类数据加载完成：触发印章列表加载（解决 onMounted 时 categories 尚未就绪的竞态）
@@ -1180,6 +1260,7 @@ watch(categories, async (newCats) => {
 
 // Tab 切换：enterprise 路由直接拉对应场景数据
 watch(activeSceneId, async (newId, oldId) => {
+  if (suppressSceneWatcher) { suppressSceneWatcher = false; return }
   if (!newId || newId === oldId) return
   if (routeType.value !== 'enterprise') return
   // 清空旧数据，立即显示新 Tab 内容（避免旧数据残影）

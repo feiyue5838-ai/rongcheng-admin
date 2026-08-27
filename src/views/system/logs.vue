@@ -153,6 +153,8 @@ function openDetail(row: any) {
 
 function formatJson(obj: any): string {
   if (!obj) return '(空)'
+  // 后端对超长日志按分区返回字符串预览，直接展示以避免二次 JSON 转义。
+  if (typeof obj === 'string') return obj
   return JSON.stringify(obj, null, 2)
 }
 

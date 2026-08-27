@@ -195,8 +195,8 @@ const currentQuestion = ref<any>({})
 
 const detailVisible = ref(false)
 
-function formatDate(d: string) {
-  return dayjs(d).format('YYYY-MM-DD HH:mm')
+function formatDate(d?: string | null) {
+  return d ? dayjs(d).format('YYYY-MM-DD HH:mm') : '-'
 }
 
 function truncateText(text: string, maxLen: number) {
@@ -277,7 +277,7 @@ async function handleAudit(row: any, status: 'approved' | 'rejected') {
     ElMessage.success(`已${actionText}`)
     fetchQuestions()
   } catch (e: any) {
-    if (e !== 'cancel') {
+    if (e !== 'cancel' && e !== 'close') {
       ElMessage.error(e?.response?.data?.message || '操作失败')
     }
   }
@@ -323,7 +323,7 @@ async function handleDelete(row: any) {
     ElMessage.success('删除成功')
     fetchQuestions()
   } catch (e: any) {
-    if (e !== 'cancel') {
+    if (e !== 'cancel' && e !== 'close') {
       ElMessage.error(e?.response?.data?.message || '删除失败')
     }
   }
@@ -345,7 +345,7 @@ async function handleDeleteReply(replyId: string) {
       currentQuestion.value.questionReplies = currentQuestion.value.questionReplies.filter((r: any) => r.id !== replyId)
     }
   } catch (e: any) {
-    if (e !== 'cancel') {
+    if (e !== 'cancel' && e !== 'close') {
       ElMessage.error(e?.response?.data?.message || '删除失败')
     }
   }

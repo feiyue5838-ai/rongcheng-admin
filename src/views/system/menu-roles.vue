@@ -77,10 +77,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMenuRoleConfigs, createMenuRoleConfig, updateMenuRoleConfig, deleteMenuRoleConfig, resetMenuRoleConfigs } from '@/api'
+import { createMenuRoleConfig, updateMenuRoleConfig, deleteMenuRoleConfig, resetMenuRoleConfigs } from '@/api'
 import { ROLE_LABELS } from '@/constants/roles'
+import { useAuthStore } from '@/stores/auth'
 
 const roleLabels = ROLE_LABELS
+const authStore = useAuthStore()
 
 const pathLabels: Record<string, string> = {
   '/dashboard': '工作台',
@@ -136,8 +138,8 @@ const form = ref({
 })
 
 async function loadData() {
-  const res: any = await getMenuRoleConfigs()
-  tableData.value = Array.isArray(res) ? res : (res.data ?? res)
+  const configs = await authStore.loadMenuConfigs()
+  if (configs) tableData.value = configs
 }
 
 function handleAdd() {

@@ -65,11 +65,11 @@
         <el-option label="全部省份" value="" />
         <el-option v-for="p in filteredProvinces" :key="p.code" :label="p.name" :value="p.name" />
       </el-select>
-      <el-select v-model="city" placeholder="全部城市" clearable style="width: 120px; margin-right: 12px" @change="loadData">
+      <el-select v-model="city" placeholder="全部城市" clearable style="width: 120px; margin-right: 12px" @change="onFilterChange">
         <el-option label="全部城市" value="" />
         <el-option v-for="c in filteredCities" :key="c.code" :label="c.name" :value="c.name" />
       </el-select>
-      <el-select v-model="status" placeholder="全部状态" clearable style="width: 110px; margin-right: 12px" @change="loadData">
+      <el-select v-model="status" placeholder="全部状态" clearable style="width: 110px; margin-right: 12px" @change="onFilterChange">
         <el-option label="全部" value="" />
         <el-option label="营业中" :value="1" />
         <el-option label="已歇业" :value="0" />
@@ -78,7 +78,7 @@
         <el-option label="已暂停" :value="4" />
         <el-option label="已终止" :value="5" />
       </el-select>
-            <el-select v-model="businessType" placeholder="全部类型" clearable style="width: 120px; margin-right: 12px" @change="loadData">
+            <el-select v-model="businessType" placeholder="全部类型" clearable style="width: 120px; margin-right: 12px" @change="onFilterChange">
         <el-option label="全部类型" value="" />
         <el-option label="刻章" value="seal" />
         <el-option label="登报" value="newspaper" />
@@ -805,11 +805,13 @@ async function onSubmit() {
         .filter(f => f.url || f.response?.url)
         .map(f => f.url || f.response?.url),
     }
-    if (form.settlementCycle !== null) {
-      payload.settlement_cycle = form.settlementCycle
-      payload.settlement_weekly_start_day = form.settlementCycle === 'weekly' ? form.settlementWeeklyStartDay : 1
+    // 后端 OutletService 只读 camelCase 字段（settlementCycle / settlementWeeklyStartDay），
+    // 此前提交 snake_case 会被静默丢弃，结算周期设置永不生效。
+    if (form.settlementCycle != null && form.settlementCycle !== '') {
+      payload.settlementCycle = form.settlementCycle
+      payload.settlementWeeklyStartDay = form.settlementCycle === 'weekly' ? form.settlementWeeklyStartDay : 1
     } else {
-      payload.settlement_cycle = null
+      payload.settlementCycle = null
     }
     if (isEdit.value) {
       await updateOutletAPI(currentOutlet.value.id, payload)
@@ -852,8 +854,14 @@ async function onDelete(row: any) {
     ElMessage.success('删除成功')
     loadData()
   } catch (err: any) {
-    if (err !== 'cancel') ElMessage.error(err?.response?.data?.message || '删除失败')
+    if (err !== 'cancel' && err !== 'close') ElMessage.error(err?.response?.data?.message || '删除失败')
   }
+}
+
+// 筛选变更：重置页码后再加载
+function onFilterChange() {
+  currentPage.value = 1
+  loadData()
 }
 
 async function loadData(page?: number) {

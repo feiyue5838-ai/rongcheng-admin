@@ -3,6 +3,7 @@
  */
 export const ADMIN_ROLES = {
   superadmin: 'superadmin',
+  finance: 'finance',
   outlet_admin: 'outlet_admin',
   order_admin: 'order_admin',
   product_admin: 'product_admin',
@@ -13,6 +14,7 @@ export type AdminRole = typeof ADMIN_ROLES[keyof typeof ADMIN_ROLES]
 
 export const ROLE_LABELS: Record<string, string> = {
   superadmin: '超级管理员',
+  finance: '财务',
   outlet_admin: '网点管理员',
   order_admin: '订单管理员',
   product_admin: '产品管理员',
@@ -55,7 +57,11 @@ export function hasAccess(role: string, path: string): boolean {
     if (exact) return exact.roles.includes('*') || exact.roles.includes(role)
 
     // 前缀匹配
-    const prefix = cachedConfigs.find(c => c.enabled && c.pathType === 'prefix' && path.startsWith(c.path))
+    // 多个前缀同时命中时，优先采用更具体（路径更长）的配置，
+    // 避免权限结果依赖后端返回顺序。
+    const prefix = cachedConfigs
+      .filter(c => c.enabled && c.pathType === 'prefix' && path.startsWith(c.path))
+      .sort((a, b) => b.path.length - a.path.length)[0]
     if (prefix) return prefix.roles.includes('*') || prefix.roles.includes(role)
 
     // 父路径匹配
@@ -81,6 +87,10 @@ export function hasAccess(role: string, path: string): boolean {
     '/orders/newspaper': ['superadmin', 'order_admin', 'outlet_admin'],
     '/orders/bookkeeping': ['superadmin', 'order_admin', 'outlet_admin'],
     '/orders': ['superadmin', 'order_admin', 'outlet_admin'],
+    '/v2/orders': ['superadmin', 'order_admin'],
+    '/v2/orders/unassigned': ['superadmin', 'order_admin'],
+    '/v2/orders/detail': ['superadmin', 'order_admin'],
+    '/v2/refunds': ['superadmin', 'order_admin'],
     '/after-sales/orders': ['superadmin', 'order_admin'],
     '/after-sales/refund-records': ['superadmin', 'order_admin'],
     '/products/seals/enterprise': ['superadmin', 'product_admin'],
@@ -94,14 +104,17 @@ export function hasAccess(role: string, path: string): boolean {
     '/products/bookkeeping-packages': ['superadmin', 'product_admin'],
     '/users': ['superadmin', 'content_admin'],
     '/reviews': ['superadmin', 'content_admin'],
+    '/points': ['superadmin', 'content_admin'],
     '/questions': ['superadmin', 'content_admin'],
+    '/faq': ['superadmin', 'content_admin'],
     '/content': ['superadmin', 'content_admin'],
-    '/finance': ['superadmin'],
-    '/v2/settlements': ['superadmin'],
+    '/finance': ['superadmin', 'finance'],
+    '/v2/settlements': ['superadmin', 'finance'],
     '/system/admins': ['superadmin'],
     '/system/logs': ['superadmin'],
     '/system/configs': ['superadmin'],
     '/system/dispatch-rules': ['superadmin'],
+    '/system/menu-roles': ['superadmin'],
   }
   const allowed = DEFAULTS[path]
   return allowed ? (allowed.includes('*') || allowed.includes(role)) : false

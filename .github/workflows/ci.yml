@@ -1,0 +1,28 @@
+# CI 门禁（系统性改造第 4 步）—— GitHub Actions 模板
+# 仓库若托管在 GitHub/Gitee Actions 可直接启用；
+# 本地提交前检查用 scripts/ci-check.ps1。
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build:
+    name: 类型检查 + Lint + 构建
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: 安装依赖
+        run: npm ci
+      - name: 类型检查
+        run: npx vue-tsc --noEmit
+      - name: ESLint
+        run: npm run lint
+      - name: 生产构建
+        run: npm run build

@@ -27,8 +27,8 @@
           <el-descriptions-item label="履约状态">
             <el-tag :type="fulfillmentTag(detail.order.fulfillmentStatus)">{{ fulfillmentStatusMap[detail.order.fulfillmentStatus] || detail.order.fulfillmentStatus }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="总金额">¥{{ detail.order.totalAmount }}</el-descriptions-item>
-          <el-descriptions-item label="实付金额">¥{{ detail.order.payAmount }}</el-descriptions-item>
+          <el-descriptions-item label="总金额">¥{{ Number(detail.order.totalAmount || 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="实付金额">¥{{ Number(detail.order.payAmount || 0).toFixed(2) }}</el-descriptions-item>
           <el-descriptions-item label="下单时间">{{ fmt(detail.order.createdAt) }}</el-descriptions-item>
           <el-descriptions-item label="支付时间">{{ fmt(detail.order.paidAt) }}</el-descriptions-item>
           <el-descriptions-item label="完成时间">{{ fmt(detail.order.completedAt) }}</el-descriptions-item>
@@ -164,13 +164,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
 import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers } from '@/api'
 
 const route = useRoute()
-const orderNo = route.query.orderNo as string
+const orderNo = ref('')
 const loading = ref(false)
 const submitting = ref(false)
 const detail = ref<any>(null)
@@ -194,12 +194,13 @@ const moduleLabel = (m: string) => ({ seal: '刻章', newspaper: '登报', bookk
 const moduleType = (m: string) => ({ seal: 'primary', newspaper: 'success', bookkeeping: 'warning' } as any)[m] || 'info'
 const statusTag = (s: string) => ({ pending_payment: 'warning', paid: 'success', completed: 'info', cancelled: 'danger', processing: 'primary' } as any)[s] || 'info'
 const fulfillmentTag = (s: string) => ({ pending_assignment: 'warning', assigned: 'primary', accepted: 'primary', processing: 'primary', completed: 'success', cancelled: 'danger' } as any)[s] || 'info'
-const fmt = (d?: string) => (d ? new Date(d).toLocaleString('zh-CN', { hour12: false }) : '-')
+// 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
+const fmt = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
 
 async function load() {
   loading.value = true
   try {
-    detail.value = await v2GetOrderDetail(orderNo) as any
+    detail.value = await v2GetOrderDetail(orderNo.value) as any
   } catch (e: any) {
     ElMessage.error(e?.message || '加载失败')
   } finally {
@@ -210,7 +211,8 @@ async function load() {
 async function loadSuppliers() {
   try {
     const res: any = await v2GetSuppliers({ pageSize: 100 })
-    suppliers.value = res.list || []
+    // 仅启用供应商可派单/改派（停用的选了也会被后端拒绝，直接不展示）
+    suppliers.value = (res.list || []).filter((s: any) => s.status === 1)
   } catch { /* 忽略 */ }
 }
 
@@ -218,7 +220,7 @@ async function doAssign() {
   if (!assignForm.supplierId) { ElMessage.warning('请选择供应商'); return }
   submitting.value = true
   try {
-    await v2AssignOrder(orderNo, { supplierId: assignForm.supplierId, remark: assignForm.remark })
+    await v2AssignOrder(orderNo.value, { supplierId: assignForm.supplierId, remark: assignForm.remark })
     ElMessage.success('派单成功')
     assignDialogVisible.value = false
     load()
@@ -233,7 +235,7 @@ async function doReassign() {
   if (!reassignForm.supplierId) { ElMessage.warning('请选择供应商'); return }
   submitting.value = true
   try {
-    await v2ReassignOrder(orderNo, { supplierId: reassignForm.supplierId, cancelRemark: reassignForm.cancelRemark })
+    await v2ReassignOrder(orderNo.value, { supplierId: reassignForm.supplierId, cancelRemark: reassignForm.cancelRemark })
     ElMessage.success('改派成功')
     reassignDialogVisible.value = false
     load()
@@ -244,16 +246,36 @@ async function doReassign() {
   }
 }
 
+watch(
+  [() => route.query.orderNo, () => route.query.assign],
+  async ([nextOrderNo, assign]) => {
+    if (!nextOrderNo) {
+      detail.value = null
+      ElMessage.error('缺少订单号')
+      return
+    }
+    orderNo.value = String(nextOrderNo)
+    assignDialogVisible.value = false
+    reassignDialogVisible.value = false
+    assignForm.supplierId = ''
+    assignForm.remark = ''
+    reassignForm.supplierId = ''
+    reassignForm.cancelRemark = ''
+    await load()
+    if (
+      assign === '1' &&
+      detail.value?.order?.orderStatus === 'paid' &&
+      detail.value?.order?.paymentStatus === 'paid' &&
+      detail.value?.order?.fulfillmentStatus === 'pending_assignment'
+    ) {
+      assignDialogVisible.value = true
+    }
+  },
+  { immediate: true },
+)
+
 onMounted(async () => {
-  await Promise.all([load(), loadSuppliers()])
-  if (
-    route.query.assign === '1' &&
-    detail.value?.order?.orderStatus === 'paid' &&
-    detail.value?.order?.paymentStatus === 'paid' &&
-    detail.value?.order?.fulfillmentStatus === 'pending_assignment'
-  ) {
-    assignDialogVisible.value = true
-  }
+  await loadSuppliers()
 })
 </script>
 

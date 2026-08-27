@@ -113,7 +113,7 @@
         <el-form-item>
           <el-button type="primary" @click="onFilterChange">查询</el-button>
           <el-button @click="onReset">重置</el-button>
-          <el-button type="success" @click="onExport"><el-icon><Download /></el-icon> 导出</el-button>
+          <el-button type="success" :loading="exporting" @click="onExport"><el-icon><Download /></el-icon> 导出</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -277,6 +277,7 @@ const stats = ref<any>({})
 const tableData = ref<any[]>([])
 const total = ref(0)
 const loading = ref(false)
+const exporting = ref(false)
 const detailVisible = ref(false)
 const currentRow = ref<any>(null)
 
@@ -300,12 +301,13 @@ const outletOptions = ref<any[]>([])
 async function loadOutlets() {
   try {
     const resp = await getOutletsWithFlows()
-    const list = resp.data || []
+    // api 层已解两层包装，resp 即数组
+    const list = Array.isArray(resp) ? resp : []
     outletOptions.value = list.map((o: any) => ({
       label: o.outletName || o.outlet_name || '未知',
       value: o.outletId || o.outlet_id || o.id || '',
     }))
-    console.log('[outlets] loaded count=', outletOptions.value.length, outletOptions.value)
+
   } catch (e) {
     console.error('加载履约供应商列表失败', e)
   }
@@ -329,7 +331,8 @@ const quickFilters = [
 async function loadStats() {
   try {
     const resp = await getTransactionStats()
-    stats.value = resp.data || {}
+    // api 层已解两层包装，resp 即统计对象
+    stats.value = resp || {}
   } catch (e) {
     console.error('加载统计数据失败', e)
   }
@@ -350,8 +353,9 @@ async function loadData() {
       keyword: filterParams.keyword || undefined,
       outletId: filterParams.outletId || undefined,
     })
-    tableData.value = resp.data?.items || []
-    total.value = resp.data?.total || 0
+    // api 层已解两层包装，resp 即 {items,total}
+    tableData.value = resp?.items ?? resp?.list ?? []
+    total.value = resp?.total ?? 0
   } catch (e: any) {
     ElMessage.error('加载数据失败')
   } finally {
@@ -363,7 +367,11 @@ async function loadData() {
 function onQuickFilter(value: string) {
   filterParams.quickRange = value
   const now = new Date()
-  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  // 用本地时间拼日期，避免 toISOString 的 UTC 偏移导致凌晨时段错算到前一天
+  const fmt = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  }
   if (value === 'today') {
     filterParams.startDate = fmt(now)
     filterParams.endDate = fmt(now)
@@ -420,10 +428,44 @@ function onReset() {
   loadData()
 }
 
-// 导出
+// ============ 导出（后端 /transaction/export 当前返回 {data:[...], filename} JSON，客户端转 CSV 下载；待后端改二进制后切回 blob） ============
+const EXPORT_CSV_HEADERS = ['交易时间', '交易单号', '关联订单', '用户', '手机号', '履约供应商', '业务', '交易类型', '支付方式', '交易金额', '手续费', '实收金额', '状态']
+const EXPORT_CSV_FIELDS: Array<[keyof any, (v: any) => any]> = [
+  ['createdAt', v => formatDateTime(v)],
+  ['transactionNo', v => v ?? ''],
+  ['orderNo', v => v ?? ''],
+  ['userName', v => v ?? '匿名用户'],
+  ['userPhone', v => v ?? ''],
+  ['outletName', v => v ?? ''],
+  ['businessType', v => v ?? ''],
+  ['tradeType', v => getTradeTypeText(v)],
+  ['payMethod', v => getPayMethodText(v)],
+  ['amount', v => v ?? 0],
+  ['fee', v => v ?? 0],
+  ['netAmount', v => v ?? 0],
+  ['statusText', v => v ?? ''],
+]
+
+function downloadCSV(filename: string, rows: any[]) {
+  const esc = (v: any) => {
+    const s = v === null || v === undefined ? '' : String(v)
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+  }
+  const csv = '\uFEFF' + [EXPORT_CSV_HEADERS, ...rows.map(r => EXPORT_CSV_FIELDS.map(([k, fmt]) => esc(fmt(r[k]))))]
+    .map(row => row.join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 async function onExport() {
+  exporting.value = true
   try {
-    const resp = await exportTransactionFlows({
+    const resp: any = await exportTransactionFlows({
       startDate: filterParams.startDate || undefined,
       endDate: filterParams.endDate || undefined,
       module: filterParams.module || undefined,
@@ -432,10 +474,15 @@ async function onExport() {
       keyword: filterParams.keyword || undefined,
       outletId: filterParams.outletId || undefined,
     })
-    ElMessage.success('导出成功')
-    // Blob 后续可触发下载
+    const items = Array.isArray(resp) ? resp : (Array.isArray(resp?.data) ? resp.data : [])
+    if (!items.length) { ElMessage.warning('没有可导出的数据'); return }
+    const filename = resp?.filename || `交易流水_${new Date().toISOString().slice(0, 10)}.csv`
+    downloadCSV(filename, items)
+    ElMessage.success(`已导出 ${items.length} 条记录`)
   } catch (e) {
     ElMessage.error('导出失败')
+  } finally {
+    exporting.value = false
   }
 }
 
@@ -448,8 +495,8 @@ function showDetail(row: any) {
 // 查看订单详情（跳转）
 function showOrderDetail(orderId: string) {
   if (!orderId) return
-  // 跳转到对应订单详情页
-  window.open(`/#/orders/detail/${orderId}`, '_blank')
+  // 路由为 createWebHistory，订单详情路径是 /orders/:id（hash 形式不会被解析）
+  window.open(`/orders/${orderId}`, '_blank')
 }
 
 // ============ 辅助函数 ============

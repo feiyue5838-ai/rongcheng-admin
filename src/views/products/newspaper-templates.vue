@@ -167,7 +167,7 @@
 
         <el-table-column label="内容预览" min-width="200">
           <template #default="{ row }">
-            <el-tooltip :content="row.content || '（空）'" placement="top" :show-after="300" raw-content>
+            <el-tooltip :content="row.content || '（空）'" placement="top" :show-after="300">
               <span class="preview-text">{{ row.content || '（空）' }}</span>
             </el-tooltip>
           </template>
@@ -457,7 +457,7 @@ import { ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getNewspapers,
-  getTemplates,
+  getAdminTemplates,
   getNewspaperCategories,
   getTemplateMeta,
   createTemplate,
@@ -518,7 +518,14 @@ const selectedRows = ref<any[]>([])
 const statTotal = computed(() => templatesTotal.value || templates.value.length)
 const statOn = computed(() => templates.value.filter(t => t.status === 1).length)
 const statOff = computed(() => templates.value.filter(t => t.status === 0).length)
-const statNew = ref(0) // 暂无接口，先写死
+const statNew = computed(() => {
+  const now = new Date()
+  return templates.value.filter((template) => {
+    if (!template.createdAt) return false
+    const createdAt = new Date(template.createdAt)
+    return createdAt.getFullYear() === now.getFullYear() && createdAt.getMonth() === now.getMonth()
+  }).length
+})
 
 // ===== categoryNameMap =====
 const categoryNameMap = computed(() => {
@@ -655,7 +662,7 @@ async function submitTemplateForm() {
       categoryId: templateForm.value.categoryId,
       templateType: templateForm.value.templateType || null,
       newspaperId: templateForm.value.newspaperId || null,
-      content: templateForm.value.content || null,
+      content: templateForm.value.content || '',
       sampleData: templateForm.value.sampleData || null,
       desc: templateForm.value.desc || null,
       color: templateForm.value.color || null,
@@ -670,8 +677,8 @@ async function submitTemplateForm() {
     }
     templateDialogVisible.value = false
     await reloadTemplates()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '保存失败')
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   } finally {
     templateSubmitting.value = false
   }
@@ -684,8 +691,8 @@ async function doDelete(row: any) {
     await deleteTemplate(row.id)
     ElMessage.success('删除成功')
     await reloadTemplates()
-  } catch (e: any) {
-    ElMessage.error(e?.data?.message || e?.message || '删除失败')
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   } finally {
     deletingId.value = ''
   }
@@ -695,8 +702,7 @@ async function updateStatus(row: any) {
   try {
     await updateTemplate(row.id, { status: row.status })
     ElMessage.success('状态已更新')
-  } catch (e: any) {
-    ElMessage.error('更新失败')
+  } catch {
     row.status = row.status === 1 ? 0 : 1 // 回滚
   }
 }
@@ -763,8 +769,8 @@ async function saveUnified() {
     }
     unifiedDialogVisible.value = false
     await reloadAll()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '保存失败')
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   } finally {
     unifiedSubmitting.value = false
   }
@@ -826,8 +832,8 @@ async function saveSubs() {
     ElMessage.success('保存成功')
     await reloadAll()
     syncEditSubs()
-  } catch (e: any) {
-    ElMessage.error('保存失败: ' + (e.message || e))
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   } finally {
     subsSaving.value = false
   }
@@ -862,8 +868,8 @@ async function confirmBatchCat() {
     batchCatDialogVisible.value = false
     selectedRows.value = []
     await reloadTemplates()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '批量修改失败')
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   }
 }
 
@@ -876,8 +882,8 @@ async function batchDelete() {
     ElMessage.success('批量删除成功')
     selectedRows.value = []
     await reloadTemplates()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '批量删除失败')
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   }
 }
 
@@ -971,7 +977,7 @@ async function reloadNewspapers() {
 async function reloadTemplates() {
   loading.value = true
   try {
-    const tRaw = await getTemplates()
+    const tRaw = await getAdminTemplates({ page: 1, pageSize: 500 })
     const list = normalize(tRaw)
     templates.value = list
     templatesTotal.value = (tRaw as any)?.total ?? list.length
@@ -987,7 +993,7 @@ async function reloadAll() {
       getNewspapers(),
       getNewspaperCategories(),
       getTemplateMeta(),
-      getTemplates({ page: 1, pageSize: 500 }),
+      getAdminTemplates({ page: 1, pageSize: 500 }),
     ])
     // getNewspapers 返回 {list,total}，getTemplateMeta 返回 {businessTypes, subTypes}（均无包装）
     const nRes = nRaw as any
@@ -1001,7 +1007,6 @@ async function reloadAll() {
     templates.value = normalize(tRaw)
     templatesTotal.value = (tRaw as any)?.total ?? templates.value.length
   } catch (e: any) {
-    ElMessage.error('加载数据失败: ' + (e?.message || '未知错误'))
     console.error('reloadAll error:', e)
   } finally {
     loading.value = false

@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="page-header">
-      <h2>V2.0 供应链订单</h2>
+      <h2>供应链订单</h2>
       <div class="header-actions">
         <el-button type="primary" @click="goUnassigned">待派单池 ({{ unassignedCount }})</el-button>
         <el-button @click="load">刷新</el-button>
@@ -12,27 +12,27 @@
     <el-card shadow="never" style="margin-bottom: 16px">
       <el-form inline>
         <el-form-item label="业务类型">
-          <el-select v-model="filters.module" clearable placeholder="全部" style="width: 140px" @change="load">
+          <el-select v-model="filters.module" clearable placeholder="全部" style="width: 140px" @change="search">
             <el-option label="刻章" value="seal" />
             <el-option label="登报" value="newspaper" />
             <el-option label="记账" value="bookkeeping" />
           </el-select>
         </el-form-item>
         <el-form-item label="订单状态">
-          <el-select v-model="filters.orderStatus" clearable placeholder="全部" style="width: 160px" @change="load">
+          <el-select v-model="filters.orderStatus" clearable placeholder="全部" style="width: 160px" @change="search">
             <el-option v-for="(label, key) in orderStatusMap" :key="key" :label="label" :value="key" />
           </el-select>
         </el-form-item>
         <el-form-item label="履约状态">
-          <el-select v-model="filters.fulfillmentStatus" clearable placeholder="全部" style="width: 170px" @change="load">
+          <el-select v-model="filters.fulfillmentStatus" clearable placeholder="全部" style="width: 170px" @change="search">
             <el-option v-for="(label, key) in fulfillmentStatusMap" :key="key" :label="label" :value="key" />
           </el-select>
         </el-form-item>
         <el-form-item label="关键词">
-          <el-input v-model="filters.keyword" placeholder="订单号" clearable style="width: 180px" @keyup.enter="load" @clear="load" />
+          <el-input v-model="filters.keyword" placeholder="订单号/备注" clearable style="width: 180px" @keyup.enter="search" @clear="search" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="load">查询</el-button>
+          <el-button type="primary" @click="search">查询</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -62,7 +62,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="totalAmount" label="金额" width="100" align="right">
-          <template #default="{ row }">¥{{ row.totalAmount }}</template>
+          <template #default="{ row }">¥{{ Number(row.totalAmount || 0).toFixed(2) }}</template>
         </el-table-column>
         <el-table-column prop="createdAt" label="下单时间" width="170">
           <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
@@ -128,7 +128,14 @@ const statusTag = (s: string) =>
   ({ pending_payment: 'warning', paid: 'success', completed: 'info', cancelled: 'danger', processing: 'primary' } as any)[s] || 'info'
 const fulfillmentTag = (s: string) =>
   ({ pending_assignment: 'warning', assigned: 'primary', accepted: 'primary', processing: 'primary', completed: 'success', cancelled: 'danger' } as any)[s] || 'info'
-const formatDate = (d?: string) => (d ? new Date(d).toLocaleString('zh-CN', { hour12: false }) : '-')
+// 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
+const formatDate = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
+
+/** 筛选/查询入口：重置到第 1 页，避免在高页码下改筛选导致空列表 */
+function search() {
+  page.value = 1
+  load()
+}
 
 async function load() {
   loading.value = true

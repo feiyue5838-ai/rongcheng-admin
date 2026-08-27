@@ -33,20 +33,24 @@
         <el-sub-menu v-if="showFinance" index="finance">
           <template #title><el-icon><Money /></el-icon><span>财务中心</span></template>
           <el-menu-item v-if="canAccess('/finance')" index="/finance">财务总览</el-menu-item>
+          <el-menu-item v-if="canAccess('/finance')" index="/finance?tab=transaction">交易流水</el-menu-item>
           <el-menu-item v-if="canAccess('/v2/settlements')" index="/v2/settlements">结算管理(V2.0)</el-menu-item>
         </el-sub-menu>
 
         <!-- 订单管理 sub-menu -->
         <el-sub-menu v-if="showOrders" index="orders">
           <template #title><el-icon><Document /></el-icon><span>订单管理</span></template>
-                    <el-menu-item v-if="canAccess('/v2/orders')" index="/v2/orders">供应链订单(V2.0)</el-menu-item>
-          <el-menu-item v-if="canAccess('/v2/orders/unassigned')" index="/v2/orders/unassigned">待派单池(V2.0)</el-menu-item>
-          <el-menu-item v-if="canAccess('/v2/refunds')" index="/v2/refunds">退款管理(V2.0)</el-menu-item>
-<el-menu-item v-if="canAccess('/orders/seal')" index="/orders/seal">刻章订单</el-menu-item>
-          <el-menu-item v-if="canAccess('/orders/newspaper')" index="/orders/newspaper">登报订单</el-menu-item>
-          <el-menu-item v-if="canAccess('/orders/bookkeeping')" index="/orders/bookkeeping">代理记账订单</el-menu-item>
-          <el-menu-item v-if="canAccess('/after-sales/orders')" index="/after-sales/orders">售后订单</el-menu-item>
-          <el-menu-item v-if="canAccess('/after-sales/refund-records')" index="/after-sales/refund-records">退款记录</el-menu-item>
+          <el-menu-item v-if="canAccess('/v2/orders')" index="/v2/orders">供应链订单</el-menu-item>
+          <el-menu-item v-if="canAccess('/v2/orders/unassigned')" index="/v2/orders/unassigned">待派单池</el-menu-item>
+          <el-menu-item v-if="canAccess('/v2/refunds')" index="/v2/refunds">退款管理</el-menu-item>
+          <el-sub-menu v-if="showLegacyOrders" index="legacyOrders">
+            <template #title><span>历史订单</span></template>
+            <el-menu-item v-if="canAccess('/orders/seal')" index="/orders/seal">历史刻章订单</el-menu-item>
+            <el-menu-item v-if="canAccess('/orders/newspaper')" index="/orders/newspaper">历史登报订单</el-menu-item>
+            <el-menu-item v-if="canAccess('/orders/bookkeeping')" index="/orders/bookkeeping">历史记账订单</el-menu-item>
+            <el-menu-item v-if="canAccess('/after-sales/orders')" index="/after-sales/orders">历史售后订单</el-menu-item>
+            <el-menu-item v-if="canAccess('/after-sales/refund-records')" index="/after-sales/refund-records">历史退款记录</el-menu-item>
+          </el-sub-menu>
         </el-sub-menu>
 
         <!-- 产品管理 sub-menu -->
@@ -76,6 +80,7 @@
           <template #title><el-icon><User /></el-icon><span>用户管理</span></template>
           <el-menu-item v-if="canAccess('/users')" index="/users">用户列表</el-menu-item>
           <el-menu-item v-if="canAccess('/reviews')" index="/reviews">评价管理</el-menu-item>
+          <el-menu-item v-if="canAccess('/points')" index="/points">积分兑奖</el-menu-item>
           <el-menu-item v-if="canAccess('/questions')" index="/questions">问答管理</el-menu-item>
         </el-sub-menu>
 
@@ -144,7 +149,11 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const activeMenu = computed(() => route.path)
+const activeMenu = computed(() =>
+  route.path === '/finance' && route.query.tab === 'transaction'
+    ? '/finance?tab=transaction'
+    : route.path,
+)
 const currentRoute = computed(() => {
   const titles: Record<string, string> = { settlement: '结算管理', transaction: '交易流水', refund: '退款管理' }
   return (route.query.tab && titles[route.query.tab as string]) || (route.meta.title as string) || ''
@@ -166,6 +175,10 @@ const showOrders = computed(() =>
   canAccess('/orders/seal') || canAccess('/orders/newspaper') || canAccess('/orders/bookkeeping') ||
   canAccess('/after-sales/orders') || canAccess('/after-sales/refund-records'),
 )
+const showLegacyOrders = computed(() =>
+  canAccess('/orders/seal') || canAccess('/orders/newspaper') || canAccess('/orders/bookkeeping') ||
+  canAccess('/after-sales/orders') || canAccess('/after-sales/refund-records'),
+)
 const showProducts = computed(() =>
   canAccess('/products/seals/enterprise') || canAccess('/products/scenes') ||
   canAccess('/products/packages') ||
@@ -183,14 +196,15 @@ const showBookkeepingMgmt = computed(() =>
   canAccess('/products/bookkeeping-packages'),
 )
 const showUserMgmt = computed(() =>
-  canAccess('/users') || canAccess('/reviews') || canAccess('/questions'),
+  canAccess('/users') || canAccess('/reviews') || canAccess('/questions') || canAccess('/points'),
 )
 const showContentOps = computed(() =>
   canAccess('/faq') || canAccess('/content'),
 )
 const showSystem = computed(() =>
   canAccess('/system/admins') || canAccess('/system/logs') ||
-  canAccess('/system/configs') || canAccess('/system/dispatch-rules'),
+  canAccess('/system/configs') || canAccess('/system/dispatch-rules') ||
+  canAccess('/system/menu-roles'),
 )
 
 function handleCommand(command: string) {

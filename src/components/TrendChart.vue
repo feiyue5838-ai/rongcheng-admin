@@ -61,12 +61,10 @@ async function loadEchartsInit() {
     ?? (ec as any).default?.default?.init
     ?? (ec as any).init
   if (typeof fn === 'function') {
-    console.log('[TrendChart] echarts init found, type:', fn.name || 'anonymous')
     return fn
   }
   // 兜底：遍历所有导出找 init
   const keys = Object.keys(ec as object)
-  console.log('[TrendChart] echarts exports:', keys.slice(0, 20))
   for (const k of keys) {
     const v = (ec as any)[k]
     if (v && typeof v.init === 'function') return v.init
@@ -76,23 +74,18 @@ async function loadEchartsInit() {
 }
 
 async function initChart() {
-  console.log('[TrendChart] initChart called, ref:', !!chartRef.value)
   if (!chartRef.value) {
-    console.log('[TrendChart] chartRef not ready, waiting...')
     await new Promise(r => setTimeout(r, 200))
     if (!chartRef.value) {
-      console.log('[TrendChart] still no ref, abort')
       return
     }
   }
 
   if (!isEchartsReady) {
-    console.log('[TrendChart] loading echarts...')
     try {
       const initFn = await loadEchartsInit()
       chartInstance = (initFn as any).call(null, chartRef.value)
       isEchartsReady = true
-      console.log('[TrendChart] chart instance created:', !!chartInstance, 'typeof:', typeof chartInstance)
     } catch (e) {
       console.error('[TrendChart] echarts load error:', e)
       return
@@ -100,7 +93,6 @@ async function initChart() {
   }
 
   if (!chartInstance) {
-    console.log('[TrendChart] no chart instance, abort')
     return
   }
 
@@ -109,11 +101,9 @@ async function initChart() {
 
 function renderChart() {
   if (!chartInstance) {
-    console.log('[TrendChart] renderChart: no instance')
     return
   }
   if (!props.data?.length) {
-    console.log('[TrendChart] renderChart: no data')
     return
   }
 
@@ -175,10 +165,7 @@ function renderChart() {
       }
     ]
   }
-
-  console.log('[TrendChart] setOption called, data.length:', props.data.length)
   chartInstance.setOption(option, true)
-  console.log('[TrendChart] setOption done, instance:', !!chartInstance)
 }
 
 function resizeChart() {
@@ -187,7 +174,13 @@ function resizeChart() {
   }
 }
 
-watch(() => props.data, () => {
+watch(() => props.data, async (val) => {
+  if (val?.length && !chartInstance) {
+    // 首次挂载时数据为空导致 initChart 中止，数据到达后补一次初始化
+    await nextTick()
+    await initChart()
+    return
+  }
   nextTick(() => renderChart())
 }, { deep: true })
 
@@ -197,7 +190,6 @@ watch(selectedRange, (v) => {
 })
 
 onMounted(() => {
-  console.log('[TrendChart] onMounted, chartRef:', !!chartRef.value)
   initChart()
   window.addEventListener('resize', resizeChart)
 })

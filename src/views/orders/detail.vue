@@ -3,10 +3,18 @@
     <div class="page-header">
       <h2>订单详情</h2>
       <div>
-        <el-button @click="$router.push('/orders/seal')">返回列表</el-button>
+        <el-button @click="$router.push(returnListPath)">返回列表</el-button>
         <el-button type="primary" @click="refresh">刷新</el-button>
       </div>
     </div>
+
+    <el-alert
+      title="历史订单仅供查看，请在供应链订单中处理新订单"
+      type="info"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 16px"
+    />
 
     <div v-loading="loading" style="min-height: 200px">
       <div v-if="order" class="order-detail">
@@ -86,7 +94,7 @@
           <el-tag :type="m.status === 1 ? 'success' : m.status === 2 ? 'danger' : 'warning'">
             {{ m.status === 1 ? '已通过' : m.status === 2 ? '已驳回' : '待审核' }}
           </el-tag>
-          <el-select v-if="m.status === 0" v-model="m._auditStatus" size="small" style="width: 100px" @change="doAuditMaterial(m)">
+          <el-select v-if="!legacyReadOnly && m.status === 0" v-model="m._auditStatus" size="small" style="width: 100px" @change="doAuditMaterial(m)">
             <el-option label="通过" :value="1" />
             <el-option label="驳回" :value="2" />
           </el-select>
@@ -110,7 +118,7 @@
         </template>
         <div v-else style="color: #999">
           未分配网点
-          <el-button type="primary" link @click="showAssignDialog">去分配</el-button>
+          <el-button v-if="!legacyReadOnly" type="primary" link @click="showAssignDialog">去分配</el-button>
         </div>
       </el-card>
 
@@ -147,7 +155,7 @@
       </el-card>
 
       <!-- 管理员操作 -->
-      <el-card shadow="hover" v-if="order.status !== 6 && order.status !== 9">
+      <el-card shadow="hover" v-if="!legacyReadOnly && order.status !== 6 && order.status !== 9">
         <template #header><span>管理操作</span></template>
         <el-form inline label-width="100px">
           <el-form-item label="订单状态">
@@ -290,7 +298,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { getOrderDetail, updateOrder, assignOrderAPI, getOutletsAPI, auditMaterial, refundOrder } from '@/api'
+import { getOrderDetail, updateOrder, assignOrderAPI, getOutletsAPI, auditMaterial, refundOrder, deliverOrderAdmin } from '@/api'
 import { ElMessage, ElIcon } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
@@ -313,6 +321,13 @@ const MATERIAL_LABEL: Record<string, string> = {
 const route = useRoute()
 const loading = ref(true)
 const order = ref<any>(null)
+const legacyReadOnly = true
+const returnListPath = computed(() => {
+  const module = order.value?.module
+  if (module === 'newspaper') return '/orders/newspaper'
+  if (module === 'bookkeeping') return '/orders/bookkeeping'
+  return '/orders/seal'
+})
 const newStatus = ref(1)
 const adminRemark = ref('')
 
@@ -349,32 +364,19 @@ async function confirmDeliver() {
   if (!deliverForm.value.expressNo.trim()) { ElMessage.warning('请输入快递单号'); return }
   delivering.value = true
   try {
-    await updateOrder(order.value.id, {
-      status: 4,
-      statusText: '已发货',
-      expressCompany: deliverForm.value.expressCompany,
-      expressNo: deliverForm.value.expressNo,
+    // 统一走 axios 管理端发货接口（snake_case 字段、携带 admin_token），
+    // 替代原先 camelCase 字段的 updateOrder + 无鉴权原生 fetch 的重复调用。
+    await deliverOrderAdmin(order.value.id, {
+      express_company: deliverForm.value.expressCompany,
+      express_no: deliverForm.value.expressNo.trim(),
+      remark: deliverForm.value.remark || undefined,
       receipts: deliverFileList.value.map(f => ({ type: 'certificate', url: f.url })),
-      remark: deliverForm.value.remark || order.value.remark,
     })
-    // also call dedicated deliver API if available
-    try {
-      await (window as any).fetch?.('/api/orders/' + order.value.id + '/deliver-admin', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          express_company: deliverForm.value.expressCompany,
-          express_no: deliverForm.value.expressNo,
-          receipts: deliverFileList.value.map((f: any) => ({ type: 'certificate', url: f.url })),
-          remark: deliverForm.value.remark || undefined,
-        })
-      })
-    } catch { /* deliver admin API optional */ }
     ElMessage.success('发货成功')
     deliverVisible.value = false
     fetchDetail()
   } catch (err: any) {
-    ElMessage.error(err?.message || '发货失败')
+    ElMessage.error(err?.response?.data?.message || err?.message || '发货失败')
   } finally {
     delivering.value = false
   }
@@ -569,7 +571,8 @@ async function fetchDetail() {
     adminRemark.value = order.value.adminRemark || ''
     // 材料审核的临时变量
     if (order.value.materials) {
-      order.value.materials.forEach((m: any) => { m._auditStatus = 1 })
+      // 材料审核下拉默认跟随当前状态，避免"待审核"材料被预选为"通过"
+      order.value.materials.forEach((m: any) => { m._auditStatus = m.status })
     }
   } finally {
     loading.value = false
@@ -615,7 +618,7 @@ async function showAssignDialog() {
   assignVisible.value = true
   try {
     const res: any = await getOutletsAPI({ page: 1, pageSize: 100 })
-    outletList.value = (res as any).data?.list || []
+    outletList.value = (res as any)?.list ?? (res as any)?.data?.list ?? []
   } catch { /* ignore */ }
 }
 

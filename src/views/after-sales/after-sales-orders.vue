@@ -38,7 +38,7 @@
     <el-card shadow="never" class="filter-card">
       <el-form :inline="true" :model="query">
         <el-form-item label="模块">
-          <el-select v-model="query.module" placeholder="全部模块" clearable style="width: 140px" @change="fetchOrders">
+          <el-select v-model="query.module" placeholder="全部模块" clearable style="width: 140px" @change="onModuleChange">
             <el-option label="刻章" value="seal" />
             <el-option label="登报" value="newspaper" />
             <el-option label="代理记账" value="bookkeeping" />
@@ -86,11 +86,10 @@
             <el-tag type="warning" size="small">售后中</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <el-button type="success" size="small" link @click="confirmRefund(row)">确认退款</el-button>
-            <el-divider direction="vertical" />
-            <el-button type="danger" size="small" link @click="rejectDialog(row)">拒绝</el-button>
+            <el-button type="success" link @click="confirmRefund(row)">确认退款</el-button>
+            <el-button type="danger" link @click="rejectDialog(row)">拒绝</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -163,6 +162,12 @@ const loadStats = async () => {
 }
 
 const query = reactive({ module: '', page: 1, pageSize: 20 })
+
+// 模块筛选：重置页码后再加载
+function onModuleChange() {
+  query.page = 1
+  fetchOrders()
+}
 
 // ---- 确认退款 ----
 const refundVisible = ref(false)

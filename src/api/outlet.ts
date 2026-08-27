@@ -19,14 +19,17 @@ outletRequest.interceptors.request.use((config) => {
 
 // 响应拦截
 outletRequest.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    const body = response.data
+    return body && typeof body === 'object' && body.code === 0 && 'data' in body
+      ? body.data
+      : body
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('outlet_token')
       ElMessage.error('登录已过期，请重新登录')
       router.push('/Outlet-login')
-    } else {
-      ElMessage.error(error.response?.data?.message || '请求失败')
     }
     return Promise.reject(error)
   }
@@ -86,6 +89,13 @@ export const bindOpenidAPI = (openid: string) =>
 // 开关订阅消息
 export const toggleSubscribeAPI = (enabled: boolean) =>
   outletRequest.put('/outlets/me/subscribe-toggle', { enabled })
+
+export const getShippingPreferencesAPI = () =>
+  outletRequest.get('/outlets/me/shipping-preferences')
+
+export const saveShippingPreferencesAPI = (data: {
+  preferredCouriers: string[]; defaultCourier?: string; shippingRemark?: string
+}) => outletRequest.put('/outlets/me/shipping-preferences', data)
 
 // ==================== 文件上传 ====================
 export const uploadImage = (file: File) => {

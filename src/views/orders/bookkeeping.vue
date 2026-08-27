@@ -1,8 +1,9 @@
 <template>
   <div>
     <div class="page-header">
-      <h2>代理记账订单</h2>
+      <h2>历史记账订单</h2>
       <div>
+        <el-button @click="openExport">导出</el-button>
         <el-button type="primary" @click="fetchOrders">刷新</el-button>
       </div>
     </div>
@@ -44,7 +45,7 @@
       <!-- 搜索 -->
       <el-form inline :model="query" class="search-form">
         <el-form-item label="关键词">
-          <el-input v-model="query.keyword" placeholder="订单号" clearable style="width: 200px" />
+          <el-input v-model="query.keyword" placeholder="订单号/公司名/手机号" clearable style="width: 200px" />
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="query.status" placeholder="全部" clearable style="width: 140px">
@@ -87,7 +88,7 @@
         </el-table-column>
         <el-table-column prop="contactPhone" label="联系电话" width="130" />
         <el-table-column prop="totalPrice" label="金额" width="110">
-          <template #default="{ row }">¥{{ row.totalPrice }}</template>
+          <template #default="{ row }">¥{{ Number(row.totalPrice || 0).toFixed(2) }}</template>
         </el-table-column>
         <el-table-column prop="statusText" label="状态" width="100">
           <template #default="{ row }"><el-tag :type="statusType(row.status)">{{ row.statusText }}</el-tag></template>
@@ -101,16 +102,22 @@
         <el-table-column prop="createdAt" label="下单时间" width="170">
           <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="$router.push(`/orders/${row.id}`)">详情</el-button>
-            <el-button type="primary" link v-if="row.status === 1" @click="handleMarkPaid(row)">确认付款</el-button>
-            <el-button type="primary" link v-if="row.status === 2" @click="handleComplete(row)">完成</el-button>
-            <el-button type="warning" link v-if="row.assignmentStatus === 0 && row.status >= 2" @click="showAssignDialog(row)">分配</el-button>
-            <el-button type="danger" link v-if="[2,3,4,7].includes(row.status)" @click="openRefund(row)">退款</el-button>
+            <el-button v-if="row.status === 1" type="warning" link @click="handleMarkPaid(row)">标记支付</el-button>
+            <el-button v-if="row.assignmentStatus !== 1 && row.assignmentStatus !== 2 && row.assignmentStatus !== 3" type="primary" link @click="showAssignDialog(row)">分配</el-button>
+            <el-button v-if="row.status === 4" type="success" link @click="handleComplete(row)">完成</el-button>
+            <el-button v-if="row.status === 5" type="danger" link @click="openRefund(row)">退款</el-button>
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 分页（此前缺失，列表只能看到第一页） -->
+      <el-pagination style="margin-top: 20px; justify-content: flex-end"
+        v-model:current-page="query.page" v-model:page-size="query.pageSize"
+        :total="total" :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next" @change="fetchOrders" />
 
       <!-- 退款弹窗 -->
       <el-dialog v-model="refundVisible" title="订单退款" width="420px">
@@ -162,14 +169,27 @@
           </el-button>
         </template>
       </el-dialog>
+
+      <el-dialog v-model="exportVisible" title="导出订单" width="420px">
+        <el-radio-group v-model="exportScope">
+          <el-radio value="page">当前页（{{ list.length }} 条）</el-radio>
+          <el-radio value="filter">当前筛选结果</el-radio>
+          <el-radio value="all">全部记账订单</el-radio>
+        </el-radio-group>
+        <div class="export-tip">导出的 Excel 包含订单全部字段（含客户手机号），请注意数据安全。</div>
+        <template #footer>
+          <el-button @click="exportVisible = false">取消</el-button>
+          <el-button type="primary" :loading="exporting" @click="doExport">导出</el-button>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { assignOrderAPI, getOutletsAPI, getAvailableOutlets, getOrderStatistics, updateOrder, refundOrder, getBookkeepingOrders } from '@/api'
-import { ElMessage } from 'element-plus'
+import { assignOrderAPI, getOutletsAPI, getAvailableOutlets, getOrderStatistics, updateOrder, refundOrder, getBookkeepingOrders, exportOrders } from '@/api'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 import { FolderOpened, Clock, Tools, Calendar } from '@element-plus/icons-vue'
 
@@ -189,8 +209,8 @@ const loadStats = async () => {
     statsError.value = false
     const res = await getOrderStatistics() as any
     stats.bookkeeping = res.bookkeeping ?? 0
-    stats.assigned = res.assignedOrders ?? 0
-    stats.making = res.making ?? 0
+    stats.assigned = res.bookkeepingAssigned ?? 0
+    stats.making = res.bookkeepingMaking ?? 0
     stats.todayBookkeeping = res.todayBookkeeping ?? 0
   } catch (e) {
     statsError.value = true
@@ -256,10 +276,11 @@ async function showAssignDialog(row: any) {
   assignVisible.value = true
   try {
     const params: any = {}
-    if (row.address_json) params.addressJson = row.address_json
+    // 与后端 smartAssign 同款规则：记账订单用执照地址优先
+    const addrJson = row.license_address_json || row.address_json
+    if (addrJson) params.addressJson = addrJson
     params.businessType = 'accounting'
-    const res: any = await getAvailableOutlets(params)
-    outletList.value = (res as any).data ?? []
+    outletList.value = await getAvailableOutlets(params)
   } catch { /* ignore */ }
 }
 
@@ -285,6 +306,14 @@ async function confirmAssign() {
 
 // 确认付款 / 完成
 async function handleMarkPaid(order: any) {
+  // 二次确认，防止误操作影响结算口径
+  try {
+    await ElMessageBox.confirm(
+      '确认将此订单标记为已付款？此操作将影响结算口径，请确保已收到客户付款。',
+      '确认付款',
+      { type: 'warning', confirmButtonText: '确认付款', cancelButtonText: '取消' }
+    )
+  } catch { return }
   try {
     await updateOrder(order.id, { status: 2, statusText: '已支付' })
     ElMessage.success('已标记为已支付')
@@ -320,12 +349,62 @@ async function fetchOrders() {
       params.endDate = dateRange.value[1]
     }
     const res: any = await getBookkeepingOrders(params)
-    list.value = (res as any).data?.list ?? []
-    total.value = (res as any).data?.pagination?.total ?? 0
+    // 拦截器已剥 {code:0,data:{list,pagination}} 外层，res 直接是 {list,pagination}
+    list.value = (res as any)?.list ?? []
+    total.value = (res as any)?.pagination?.total ?? 0
   } catch (e) {
     ElMessage.error('加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+// 导出 Excel
+const exportVisible = ref(false)
+const exportScope = ref<'page' | 'filter' | 'all'>('filter')
+const exporting = ref(false)
+
+function openExport() {
+  exportScope.value = 'filter'
+  exportVisible.value = true
+}
+
+async function doExport() {
+  exporting.value = true
+  try {
+    const params: any = { module: 'bookkeeping', scope: exportScope.value }
+    if (exportScope.value === 'page') {
+      params.page = query.page
+      params.pageSize = query.pageSize
+    }
+    if (exportScope.value !== 'all') {
+      if (query.keyword) params.keyword = query.keyword
+      if (query.status) params.status = query.status
+      if (dateRange.value?.length === 2) {
+        params.startDate = dateRange.value[0]
+        params.endDate = dateRange.value[1]
+      }
+    }
+    const blob = await exportOrders(params)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `记账订单_${new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    exportVisible.value = false
+    ElMessage.success('导出成功')
+  } catch (e: any) {
+    if (e?.response?.data instanceof Blob) {
+      try {
+        const j = JSON.parse(await e.response.data.text())
+        ElMessage.error(j.message || '导出失败')
+      } catch { /* ignore */ }
+    }
+  } finally {
+    exporting.value = false
   }
 }
 
@@ -340,12 +419,18 @@ onMounted(() => { loadStats(); fetchOrders() })
 </script>
 
 <style scoped>
+.export-tip {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+}
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .page-header h2 { margin: 0; font-size: 20px; }
 .page-card { background: #fff; padding: 20px; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,21,41,.08); }
 .search-form { margin-bottom: 16px; }
 .text-muted { color: #999; font-size: 12px; }
-::v-deep .current-row td { background-color: #EBF5FF !important; color: #5B6FE8; font-weight: 600; }
+:deep(.current-row td) { background-color: #EBF5FF !important; color: #5B6FE8; font-weight: 600; }
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
 .stat-card { background: #fff; border-radius: 16px; padding: 20px 20px 18px; display: flex; align-items: center; gap: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); transition: transform .2s, box-shadow .2s; cursor: default; }
 .stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }

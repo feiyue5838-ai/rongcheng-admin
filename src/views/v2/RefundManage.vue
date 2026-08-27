@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="page-header">
-      <h2>V2.0 退款管理</h2>
+      <h2>退款管理</h2>
       <div>
         <el-radio-group v-model="statusFilter" size="small" @change="() => { page = 1; load() }">
           <el-radio-button label="">全部</el-radio-button>
@@ -114,13 +114,8 @@ const statusTag = (s: string) => {
   return map[s] || 'info'
 }
 
-const fmt = (v?: string) => {
-  if (!v) return '—'
-  const d = new Date(v)
-  if (isNaN(d.getTime())) return v
-  const p = (n: number) => (n < 10 ? '0' + n : '' + n)
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
-}
+// 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
+const fmt = (v?: string) => (v ? v.slice(0, 16).replace('T', ' ') : '—')
 
 async function load() {
   loading.value = true
@@ -187,7 +182,7 @@ async function doReject() {
 
 function viewOrder(row: any) {
   if (row.orderNo) {
-    window.open(`/#/v2/orders/detail?orderNo=${row.orderNo}`, '_blank')
+    window.open(`/v2/orders/detail?orderNo=${encodeURIComponent(row.orderNo)}`, '_blank')
   }
 }
 

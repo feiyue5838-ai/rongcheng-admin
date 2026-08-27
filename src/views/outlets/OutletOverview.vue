@@ -253,11 +253,32 @@ const activeRatio = computed(() => {
   return ((activeOutlets / totalOutlets) * 100).toFixed(1)
 })
 
+// 后端 getOverview 混用两套命名：summary 用 camelCase，订单量字段用 snake_case（total_orders）。
+// 此处统一归一化为 camelCase，避免页面各处 totalOrders 取不到值。
+function normalizeOverview(raw: any): any {
+  if (!raw || typeof raw !== 'object') return raw
+  const pick = (v: any, key: string, alt: string) => (v?.[key] ?? v?.[alt] ?? 0)
+  const normSummary = (s: any) => s ? {
+    ...s,
+    totalOrders: pick(s, 'totalOrders', 'total_orders'),
+    totalPending: pick(s, 'totalPending', 'total_pending'),
+    totalCompleted: pick(s, 'totalCompleted', 'total_completed'),
+  } : s
+  const normRow = (r: any) => r ? { ...r, totalOrders: pick(r, 'totalOrders', 'total_orders') } : r
+  return {
+    ...raw,
+    summary: normSummary(raw.summary),
+    regions: Array.isArray(raw.regions) ? raw.regions.map(normRow) : raw.regions,
+    outlets: Array.isArray(raw.outlets) ? raw.outlets.map(normRow) : raw.outlets,
+    topOutlets: Array.isArray(raw.topOutlets) ? raw.topOutlets.map(normRow) : raw.topOutlets,
+  }
+}
+
 async function loadData() {
   loading.value = true
   try {
     const res: any = await getOutletOverviewAPI()
-    overview.value = res
+    overview.value = normalizeOverview(res)
     updateTime.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
     await nextTick()
     initChart()

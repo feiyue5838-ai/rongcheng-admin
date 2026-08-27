@@ -7,6 +7,7 @@
         <p class="subtitle">{{ greetingText }}</p>
       </div>
       <div class="welcome-actions">
+        <el-button :icon="Setting" @click="preferenceDialog = true">发货偏好</el-button>
         <!-- 通知铃铛 -->
         <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99" class="notify-bell">
           <el-button :icon="Bell" circle @click="openNotifyDrawer" />
@@ -14,6 +15,10 @@
         <el-button :icon="Refresh" @click="loadData" :loading="loading">刷新数据</el-button>
       </div>
     </div>
+
+    <!-- 订单数超限提示 -->
+    <el-alert v-if="ordersTruncated" type="warning" :closable="false" show-icon
+      title="当前仅显示最近 100 条订单，超出部分不可见" style="margin-bottom: 12px" />
 
     <!-- 通知抽屉 -->
     <el-drawer v-model="notifyDrawer" title="消息通知" size="380px" @open="onDrawerOpen">
@@ -144,6 +149,21 @@
     </el-dialog>
 
     <!-- 完成制作 -->
+    <el-dialog v-model="preferenceDialog" title="发货偏好" width="520px">
+      <el-form label-width="100px">
+        <el-form-item label="常用快递">
+          <el-select v-model="preferenceForm.preferredCouriers" multiple filterable allow-create default-first-option style="width:100%" placeholder="选择或输入快递公司">
+            <el-option v-for="item in commonCouriers" :key="item" :label="item" :value="item" />
+          </el-select>
+          <div class="form-tip">选择顺序即发货时的优先顺序，最多 10 个</div>
+        </el-form-item>
+        <el-form-item label="默认快递"><el-select v-model="preferenceForm.defaultCourier" clearable style="width:100%"><el-option v-for="item in preferenceForm.preferredCouriers" :key="item" :label="item" :value="item" /></el-select></el-form-item>
+        <el-form-item label="默认备注"><el-input v-model="preferenceForm.shippingRemark" type="textarea" :rows="3" maxlength="500" show-word-limit /></el-form-item>
+      </el-form>
+      <template #footer><el-button @click="preferenceDialog=false">取消</el-button><el-button type="primary" :loading="preferenceSaving" @click="savePreferences">保存</el-button></template>
+    </el-dialog>
+
+    <!-- 完成制作 -->
     <el-dialog v-model="completeDialog" title="提交交付" width="500px">
       <el-form ref="completeFormRef" :model="completeForm" :rules="completeRules" label-width="100px">
         <el-form-item label="快递公司" prop="expressCompany">
@@ -165,7 +185,7 @@
           </el-upload>
           <div style="font-size:12px;color:#999;margin-top:4px">上传制作完成的印章照片，最多 6 张</div>
         </el-form-item>
-        <el-form-item label="交付凭证">
+        <el-form-item label="交付凭证" required>
           <el-upload
             v-model:file-list="receiptFiles"
             list-type="picture-card"
@@ -350,11 +370,13 @@ import {
   getMyNotificationsAPI,
   markAllReadAPI,
   markReadAPI,
+  getShippingPreferencesAPI,
+  saveShippingPreferencesAPI,
 } from '@/api/outlet'
 import { formatDate } from '@/utils/format'
 import {
   Refresh, Clock, Tools, CircleCheck, DataLine,
-  Check, Box, View, Plus, Shop, Van, Picture, Postcard, Loading, Bell, Document,
+  Check, Box, View, Plus, Shop, Van, Picture, Postcard, Loading, Bell, Document, Setting,
 } from '@element-plus/icons-vue'
 
 const outletStore = useOutletStore()
@@ -385,13 +407,14 @@ const typeLabel = {
   other: '其他材料',
 }
 
-// 预览材料图片（新窗口打开）
+// 预览材料图片（新窗口打开）：绝对地址直接打开，相对地址拼 origin
 const previewMaterial = (url) => {
-  window.open(window.location.origin + url, '_blank')
+  window.open(getMaterialUrl(url), '_blank')
 }
 
 // 材料完整地址
-const getMaterialUrl = (url) => window.location.origin + url
+const getMaterialUrl = (url) =>
+  /^https?:\/\//i.test(url || '') ? url : window.location.origin + url
 
 // 判断是否为图片
 const isImageUrl = (url) => /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url)
@@ -406,6 +429,10 @@ function onImageError(img) {
 }
 const completeFormRef = ref(null)
 const completeForm = reactive({ expressCompany: '', expressNo: '', remark: '' })
+const preferenceDialog = ref(false)
+const preferenceSaving = ref(false)
+const commonCouriers = ref([])
+const preferenceForm = reactive({ preferredCouriers: [], defaultCourier: '', shippingRemark: '' })
 const receiptFiles = ref([])
 const sealFiles = ref([])
 
@@ -437,18 +464,25 @@ function getStatusTag(s) {
 // 按网点授权的业务类型过滤订单（orderItems.itemType 匹配 businessTypes.code）
 function getAuthorizedOrders(allOrders) {
   const codes = outletStore.outletInfo?.businessTypes?.map(b => b.code) ?? []
-  if (!codes.length) return []
+  if (!codes.length) {
+    // 网点未配置业务类型时放行全部订单，避免工作台整体置空
+    console.warn('[Workspace] 网点未配置业务类型，展示全部订单')
+    return allOrders
+  }
   return allOrders.filter(o => {
     if (!o.orderItems || o.orderItems.length === 0) return true
     return o.orderItems.some(item => codes.includes(item.itemType))
   })
 }
 
+// 订单数超限提示（列表按 pageSize=100 拉取，超出部分不可见）
+const ordersTruncated = computed(() => (outletStore.allOrders?.length || 0) >= 100)
+
 async function loadData() {
   loading.value = true
   try {
     const res = await getMyOutletOrdersAPI({ page: 1, pageSize: 100 })
-    const all = res?.data?.list ?? []
+    const all = res?.list ?? []
     outletStore.allOrders = all
     const authorized = getAuthorizedOrders(all)
     stats.value = {
@@ -492,10 +526,18 @@ async function onConfirmAccept() {
 
 function onComplete(order) {
   currentOrder.value = order
-  Object.assign(completeForm, { expressCompany: '', expressNo: '', remark: '' })
+  Object.assign(completeForm, { expressCompany: preferenceForm.defaultCourier || preferenceForm.preferredCouriers[0] || '', expressNo: '', remark: preferenceForm.shippingRemark || '' })
   receiptFiles.value = []
   sealFiles.value = []
   completeDialog.value = true
+}
+
+async function loadPreferences() {
+  try { const r = await getShippingPreferencesAPI(); Object.assign(preferenceForm, { preferredCouriers: r.preferredCouriers || [], defaultCourier: r.defaultCourier || '', shippingRemark: r.shippingRemark || '' }); commonCouriers.value = r.commonCouriers || [] } catch (_) {}
+}
+async function savePreferences() {
+  preferenceSaving.value = true
+  try { const r = await saveShippingPreferencesAPI(preferenceForm); Object.assign(preferenceForm, r); commonCouriers.value = r.commonCouriers || commonCouriers.value; preferenceDialog.value = false; ElMessage.success('发货偏好已保存') } finally { preferenceSaving.value = false }
 }
 
 async function uploadReceipt(option) {
@@ -518,15 +560,23 @@ async function uploadSeal(option) {
 async function onConfirmComplete() {
   const valid = await completeFormRef.value.validate().catch(() => false)
   if (!valid) return
-  actionLoading.value = true
-  try {
-    const sealImages = sealFiles.value
+  const sealImages = sealFiles.value
       .filter(f => f.response?.url)
       .map(f => ({ url: f.response.url, type: 'seal' }))
-    const receipts = receiptFiles.value
+  const receipts = receiptFiles.value
       .filter(f => f.response?.url)
       .map(f => ({ url: f.response.url, type: 'certificate' }))
+  if (!sealImages.length) {
+    ElMessage.warning('请至少上传一张印章照片')
+    return
+  }
+  if (!receipts.length) {
+    ElMessage.warning('请至少上传一张交付凭证')
+    return
+  }
 
+  actionLoading.value = true
+  try {
     await completeOrderAPI(currentOrder.value.orderId, {
       expressCompany: completeForm.expressCompany,
       expressNo: completeForm.expressNo,
@@ -591,7 +641,7 @@ function startPolling() {
 async function loadNotifications(showToast = true) {
   try {
     const res = await getMyNotificationsAPI()
-    const list = res?.data?.list ?? []
+    const list = res?.list ?? []
     notifyList.value = list
     unreadCount.value = list.filter((n) => !n.isRead).length
     // 有新未读消息时弹出提示
@@ -659,6 +709,7 @@ function stopPolling() {
 
 onMounted(() => {
   loadData()
+  loadPreferences()
   startPolling()
 })
 
@@ -668,6 +719,7 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+.form-tip { font-size: 12px; color: #909399; margin-top: 6px; }
 .welcome-bar {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 16px;
@@ -847,7 +899,7 @@ onUnmounted(() => {
     border-top: 1px solid #f0f0f0;
   }
 
-  .receipt-images {
+.receipt-images {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -868,5 +920,21 @@ onUnmounted(() => {
     gap: 4px;
     .el-icon { font-size: 20px; }
   }
+}
+
+@media (max-width: 900px) {
+  .welcome-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .welcome-actions { flex-wrap: wrap; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .panel { overflow-x: auto; }
+}
+
+@media (max-width: 520px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .stat-card { padding: 16px; }
 }
 </style>

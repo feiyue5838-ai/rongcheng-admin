@@ -58,6 +58,7 @@ const rules = {
 }
 
 async function handleLogin() {
+  if (loading.value) return
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 

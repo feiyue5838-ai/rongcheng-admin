@@ -50,6 +50,13 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler',
+      },
+    },
+  },
   build: {
     chunkSizeWarningLimit: 1100,
     rollupOptions: {
@@ -62,15 +69,15 @@ export default defineConfig({
   server: {
     port: 5185,
     proxy: {
-      '/api': { target: 'http://localhost:3001', changeOrigin: true },
-      '/uploads': { target: 'http://localhost:3001', changeOrigin: true },
+      '/api': { target: 'http://localhost:8080', changeOrigin: true },
+      '/uploads': { target: 'http://localhost:8080', changeOrigin: true },
     },
   },
   preview: {
     port: 5185,
     proxy: {
-      '/api': { target: 'http://localhost:3001', changeOrigin: true },
-      '/uploads': { target: 'http://localhost:3001', changeOrigin: true },
+      '/api': { target: 'http://localhost:8080', changeOrigin: true },
+      '/uploads': { target: 'http://localhost:8080', changeOrigin: true },
     },
   },
 })

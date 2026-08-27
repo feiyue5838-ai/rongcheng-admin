@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { unwrapV2 } from './unwrap'
 
 const request = axios.create({
   baseURL: '/api',
@@ -8,13 +9,15 @@ const request = axios.create({
 
 // 请求拦截器：附加 Token
 request.interceptors.request.use((config) => {
+  const requestUrl = (config.url || '').toLowerCase()
   // 真正的网点端专属接口才用 outlet_token
   // 注意：管理端的 /delivery-receipts（AdminJwtAuthGuard）也用 admin_token
   // 网点端用的是 /delivery-receipts/Outlet/list
   const isOutletEndpoint =
-    config.url?.startsWith('/auth/outlet/') ||
-    config.url?.startsWith('/delivery-receipts/Outlet/') ||
-    config.url === '/delivery-receipts/Outlet/list'
+    requestUrl.startsWith('/auth/outlet/') ||
+    requestUrl.startsWith('/outlets/me/') ||
+    requestUrl.startsWith('/orders/outlet/') ||
+    requestUrl.startsWith('/delivery-receipts/outlet/')
   if (isOutletEndpoint) {
     const outletToken = localStorage.getItem('outlet_token')
     if (outletToken) config.headers.Authorization = `Bearer ${outletToken}`
@@ -40,10 +43,12 @@ request.interceptors.response.use(
     if (error.response?.status === 401) {
       // 网点端专属接口 → 跳网点登录；其余（管理端接口）→ 跳管理登录
       const url = error.config?.url || ''
+      const requestUrl = url.toLowerCase()
       const isOutletEndpoint =
-        url.startsWith('/auth/outlet/') ||
-        url.startsWith('/delivery-receipts/Outlet/') ||
-        url === '/delivery-receipts/Outlet/list'
+        requestUrl.startsWith('/auth/outlet/') ||
+        requestUrl.startsWith('/outlets/me/') ||
+        requestUrl.startsWith('/orders/outlet/') ||
+        requestUrl.startsWith('/delivery-receipts/outlet/')
       if (isOutletEndpoint) {
         localStorage.removeItem('outlet_token')
         window.location.href = '/Outlet-login'
@@ -62,6 +67,15 @@ request.interceptors.response.use(
 
 export default request
 
+// ==================== 积分兑奖 ====================
+export const getPointsRewards = () => request.get('/points/admin/rewards')
+export const createPointsReward = (data: any) => request.post('/points/admin/rewards', data)
+export const updatePointsReward = (id: string, data: any) => request.put(`/points/admin/rewards/${id}`, data)
+export const disablePointsReward = (id: string) => request.delete(`/points/admin/rewards/${id}`)
+export const getPointsRedemptions = (params: any) => request.get('/points/admin/redemptions', { params })
+export const shipPointsRedemption = (id: string, data: any) => request.put(`/points/admin/redemptions/${id}/ship`, data)
+export const completePointsRedemption = (id: string) => request.put(`/points/admin/redemptions/${id}/complete`)
+
 // ==================== 认证接口 ====================
 export const login = (username: string, password: string) =>
   request.post('/auth/admin/login', { username, password })
@@ -78,6 +92,9 @@ export const refundOrder = (id: string, data: any) => request.post(`/orders/${id
 export const auditMaterial = (id: string, data: { status: number; remark?: string }) =>
   request.put(`/orders/admin/materials/${id}/audit`, data)
 export const getOrderStatistics = () => request.get('/orders/admin/statistics')
+// 导出订单 Excel（blob 流，拦截器对非 {code:0,data} 结构原样返回 Blob）
+export const exportOrders = (params: any): Promise<Blob> =>
+  request.get('/orders/admin/export', { params, responseType: 'blob', timeout: 60000 }) as unknown as Promise<Blob>
 
 // ==================== 产品接口 ====================
 // 无参数：返回4分类列表；传 id：返回该分类详情（含印章+套餐）
@@ -119,6 +136,7 @@ export const createNewspaperCategory = (data: any) => request.post('/newspapers/
 export const updateNewspaperCategory = (id: string, data: any) => request.put(`/newspapers/categories/${id}`, data)
 export const deleteNewspaperCategory = (id: string) => request.delete(`/newspapers/categories/${id}`)
 export const getTemplates = (params?: any) => request.get('/newspapers/templates', { params })
+export const getAdminTemplates = (params?: any) => request.get('/newspapers/admin/templates', { params })
 export const getTemplateMeta = () => request.get('/newspapers/template-meta')
 export const createTemplate = (data: any) => request.post('/newspapers/templates', data)
 export const updateTemplate = (id: string, data: any) => request.put(`/newspapers/templates/${id}`, data)
@@ -193,6 +211,12 @@ export const getUnassignedOrdersAPI = (params: object) => request.get('/orders/u
 export const getAssignedOrdersAPI = (params: object) => request.get('/orders/assigned', { params })
 export const assignOrderAPI = (orderId: string, data: { outletId: string; remark?: string }) => request.post(`/orders/${orderId}/assign`, { outlet_id: data.outletId, remark: data.remark })
 
+// 管理端发货（对齐后端 PUT /orders/{id}/deliver-admin，snake_case 字段，携带 admin_token）
+export const deliverOrderAdmin = (id: string, data: {
+  express_company: string; express_no: string; remark?: string
+  receipts?: Array<{ type: string; url: string }>
+}) => request.put(`/orders/${id}/deliver-admin`, data)
+
 // ==================== 交付回执 API ====================
 export const getDeliveryReceiptsAPI = (params: object) => request.get('/delivery-receipts', { params })
 export const getDeliveryReceiptAPI = (id: string) => request.get(`/delivery-receipts/${id}`)
@@ -200,6 +224,7 @@ export const getDeliveryReceiptStatsAPI = () => request.get('/delivery-receipts/
 
 // ==================== 代理记账套餐 API ====================
 export const getBookkeepingPackages = (params?: object) => request.get('/bookkeeping/packages', { params })
+export const getAdminBookkeepingPackages = (params?: object) => request.get('/bookkeeping/packages/admin/list', { params })
 export const getBookkeepingPackage = (id: string) => request.get(`/bookkeeping/packages/${id}`)
 export const createBookkeepingPackage = (data: object) => request.post('/bookkeeping/packages', data)
 export const updateBookkeepingPackage = (id: string, data: object) => request.put(`/bookkeeping/packages/${id}`, data)
@@ -231,8 +256,12 @@ export const getForcedRegions = () => request.get('/dispatch/forced-regions')
 export const addForcedRegion = (data: { province: string; city?: string; remark?: string }) =>
   request.post('/dispatch/forced-regions', data)
 export const removeForcedRegion = (id: string) => request.delete(`/dispatch/forced-regions/${id}`)
-export const getAvailableOutlets = (params?: { addressJson?: string; businessType?: string }) =>
-  request.get('/dispatch/outlets/available', { params })
+// 后端 /dispatch/outlets/available 返回裸数组（List），拦截器解包后 res 即数组；
+// 此处统一归一化，避免调用方二次解包 (res as any).data 取到空数组。
+export const getAvailableOutlets = async (params?: { addressJson?: string; businessType?: string }) => {
+  const res: any = await request.get('/dispatch/outlets/available', { params })
+  return Array.isArray(res) ? res : ((res as any)?.list ?? [])
+}
 
 // 菜单权限配置
 export const getMenuRoleConfigs = () => request.get('/menu-roles')
@@ -242,52 +271,33 @@ export const deleteMenuRoleConfig = (id: string) => request.delete(`/menu-roles/
 export const resetMenuRoleConfigs = () => request.post('/menu-roles/reset')
 
 // ==================== 结算管理 API ====================
-export const getSettlementRules = () => request.get('/settlement/rules')
-export const getSettlementDefaultRule = () => request.get('/settlement/rules/default')
-export const createSettlementRule = (data: any) => request.post('/settlement/rules', data)
-export const updateSettlementRule = (id: string, data: any) => request.put(`/settlement/rules/${id}`, data)
-export const deleteSettlementRule = (id: string) => request.delete(`/settlement/rules/${id}`)
 export const getOutletPendingSummary = () => request.get('/settlement/outlets/pending')
 export const getSettlementRecords = (params?: object) => request.get('/settlement/records', { params })
-export const getSettlementRecord = (id: string) => request.get(`/settlement/records/${id}`)
-export const generateSettlementRecord = (data: { outletId: string; periodStart: string; periodEnd: string }) =>
-  request.post('/settlement/records', data)
-export const autoGenerateSettlementRecords = (data: { periodStart: string; periodEnd: string }) =>
-  request.post('/settlement/records/auto-generate', data)
-export const updateSettlementStatus = (id: string, data: { status: number; remark?: string }) =>
-  request.put(`/settlement/records/${id}/status`, data)
-export const deleteSettlementRecord = (id: string) => request.delete(`/settlement/records/${id}`)
-export const getSettlementOutletSummary = () => request.get('/settlement/outlets/summary')
 
 // ==================== 交易流水 API ====================
-export const getTransactionStats = (params?: { startDate?: string; endDate?: string }) =>
-  request.get('/transaction/stats', { params })
-export const getTransactionStatsByModule = (params?: { startDate?: string; endDate?: string }) =>
-  request.get('/transaction/stats/by-module', { params })
-export const getTransactionFlows = (params?: {
+// 注意：transaction 系列端点后端为 {code:0,data:{data:...}} 双层包装，
+// 已在此统一解两层，页面直取数据对象，禁止再写 resp.data。
+export const getTransactionStats = async (params?: { startDate?: string; endDate?: string }) =>
+  unwrapV2(await request.get('/transaction/stats', { params }))
+export const getTransactionStatsByModule = async (params?: { startDate?: string; endDate?: string }) =>
+  unwrapV2(await request.get('/transaction/stats/by-module', { params }))
+export const getTransactionFlows = async (params?: {
   page?: number; pageSize?: number; module?: string; tradeType?: string; outletId?: string
   status?: string; startDate?: string; endDate?: string; keyword?: string
-}) => request.get('/transaction/flows', { params })
-export const getTransactionFlowDetail = (id: string) =>
-  request.get(`/transaction/flows/${id}`)
+}) => unwrapV2(await request.get('/transaction/flows', { params }))
+export const getTransactionFlowDetail = async (id: string) =>
+  unwrapV2(await request.get(`/transaction/flows/${id}`))
 export const exportTransactionFlows = (params?: any) =>
   request.get('/transaction/export', { params })
-
-export const exportSettlementRecords = (params?: any) =>
-  request.get('/settlement/records/export', { params })
 
 // ===== 财务总览 =====
 export const getFinanceOverview = (params?: any) =>
   request({ url: '/finance/overview', method: 'get', params });
 
-// ===== 退款管理 =====
-export const getRefundList = (params?: any) => request.get('/refund/list', { params });
-export const applyRefund = (data: { orderId: string; amount?: number; reason?: string }) => request.post('/refund/apply', data);
-export const reviewRefund = (id: string, data: { status: 2 | 4; reviewNote?: string }) => request.post(`/refund/${id}/review`, data);
-export const executeRefund = (id: string) => request.post(`/refund/${id}/execute`);
+
 
 // ===== 交易流水合作方筛选 =====
-export const getOutletsWithFlows = () => request.get('/transaction/outlets-with-flows');
+export const getOutletsWithFlows = async () => unwrapV2(await request.get('/transaction/outlets-with-flows'));
 
 
 // 合作价格管理
@@ -351,6 +361,9 @@ v2Request.interceptors.response.use(
       localStorage.removeItem('admin_token')
       window.location.href = '/login'
     }
+    // 提取后端业务错误信息（GlobalExceptionHandler 返回 {statusCode,message,error}；message 可能为数组）
+    const msg = error.response?.data?.message
+    if (msg) error.message = Array.isArray(msg) ? msg.join('；') : String(msg)
     return Promise.reject(error)
   },
 )

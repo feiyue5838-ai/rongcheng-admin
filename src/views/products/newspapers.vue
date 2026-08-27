@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="newspapers-page">
     <!-- 页面头部 -->
     <div class="page-header">
@@ -261,8 +261,8 @@
         <el-form-item label="出版社">
           <el-input v-model="form.publisher" placeholder="如：北京日报出版社" />
         </el-form-item>
-        <el-form-item label="覆盖范围">
-          <el-input v-model="form.coverage" placeholder="如：全国发行" />
+        <el-form-item label="发行量">
+          <el-input-number v-model="form.coverage" :min="0" :step="1000" style="width: 100%" />
         </el-form-item>
         <el-form-item label="封面图">
           <el-input v-model="form.image" placeholder="图片URL" />
@@ -324,7 +324,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { getAllNewspapers, getNewspaperCategories, createNewspaper, updateNewspaper, deleteNewspaper, getNewspaperSections, createNewspaperSection, updateNewspaperSection, deleteNewspaperSection } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Refresh, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
@@ -611,7 +611,7 @@ const form = reactive<any>({
   minWords: 50,
   alias: '',
   publisher: '',
-  coverage: '',
+  coverage: 0,
   image: '',
   description: '',
   sort: 0,
@@ -782,6 +782,11 @@ function handleSearch() {
   pageNum.value = 1
 }
 
+// 筛选条件变化时回到第一页，避免高页码下显示空列表
+watch([searchKey, filterRegion, filterProvince, filterCity, filterStatus, filterLevel], () => {
+  pageNum.value = 1
+})
+
 // 重置按钮
 function handleReset() {
   searchKey.value = ''
@@ -818,7 +823,7 @@ function showDialog(type: string, row?: any) {
       minWords: row.minWords || 50,
       alias: row.alias || '',
       publisher: row.publisher || '',
-      coverage: row.coverage || '',
+      coverage: Number(row.coverage) || 0,
       image: row.image || '',
       description: row.description || '',
       sort: row.sort || 0,
@@ -837,7 +842,7 @@ function showDialog(type: string, row?: any) {
       minWords: 50,
       alias: '',
       publisher: '',
-      coverage: '',
+      coverage: 0,
       image: '',
       description: '',
       sort: 0,
@@ -883,23 +888,33 @@ async function saveNewspaper() {
     ElMessage.success('保存成功')
     dialogVisible.value = false
     fetchNewspapers()
-  } catch (e: any) {
-    ElMessage.error(e.message || '保存失败')
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   } finally {
     saving.value = false
   }
 }
 
 async function handleDelete(row: any) {
-  await ElMessageBox.confirm('确认删除该报纸？', '提示')
-  await deleteNewspaper(row.id)
-  ElMessage.success('删除成功')
-  fetchNewspapers()
+  try {
+    await ElMessageBox.confirm('确认删除该报纸？', '提示')
+    await deleteNewspaper(row.id)
+    ElMessage.success('删除成功')
+    await fetchNewspapers()
+  } catch (e) {
+    // 用户取消时静默结束；接口错误由全局响应拦截器统一提示
+    if (e !== 'cancel' && e !== 'close') return
+  }
 }
 
 async function toggleStatus(row: any) {
-  await updateNewspaper(row.id, { status: row.status })
-  ElMessage.success('状态已更新')
+  const nextStatus = row.status
+  try {
+    await updateNewspaper(row.id, { status: nextStatus })
+    ElMessage.success('状态已更新')
+  } catch {
+    row.status = nextStatus === 1 ? 0 : 1
+  }
 }
 
 // ==================== 版面管理 ====================
@@ -917,8 +932,8 @@ async function handleExpandChange(row: any) {
     const list: any[] = Array.isArray(res) ? res : ((res as any)?.list || [])
     list.forEach((s: any) => { s._newspaperId = row.id })
     sections.value = [...sections.value.filter(s => s._newspaperId !== row.id), ...list]
-  } catch (e: any) {
-    ElMessage.error(e?.message || '加载版面失败')
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   }
 }
 
@@ -939,9 +954,10 @@ function openEditSection(row: any, section: any) {
   sectionIsEdit.value = true
   editingSectionId.value = section.id
   sectionDialogTitle.value = `编辑版面 - ${row.name}`
-  Object.assign(sectionForm, {
-    name: section.name,
-    listPrice: section.listPrice || 0,
+    Object.assign(sectionForm, {
+      name: section.name,
+      category: section.category || '',
+      listPrice: section.listPrice || 0,
     deadlineTime: section.deadlineTime || '',
     publishCycle: section.publishCycle || '',
     sort: section.sort || 0,
@@ -969,8 +985,8 @@ async function saveSection() {
     const list: any[] = Array.isArray(res) ? res : ((res as any)?.list || [])
     list.forEach((s: any) => { s._newspaperId = rowId })
     sections.value = [...sections.value.filter(s => s._newspaperId !== rowId), ...list]
-  } catch (e: any) {
-    ElMessage.error(e?.message || '保存失败')
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   } finally {
     sectionLoading.value = false
   }
@@ -982,14 +998,19 @@ async function deleteSection(row: any, section: any) {
     await deleteNewspaperSection(row.id, section.id)
     ElMessage.success('删除成功')
     sections.value = sections.value.filter(s => !(s._newspaperId === row.id && s.id === section.id))
-  } catch (e: any) {
-    ElMessage.error(e?.message || '删除失败')
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   }
 }
 
 onMounted(async () => {
-  const res: any = await getNewspaperCategories()
+  // 分类接口失败不阻塞报纸列表加载
+  try {
+    const res: any = await getNewspaperCategories()
     categories.value = Array.isArray(res) ? res : ((res as any).list || (res as any).data?.list || [])
+  } catch {
+    categories.value = []
+  }
   fetchNewspapers()
 })
 </script>

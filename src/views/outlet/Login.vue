@@ -64,11 +64,8 @@ const rules = {
 }
 
 async function handleLogin() {
-  const valid = await formRef.value?.validate().catch((err) => {
-    console.log('Validation error:', err)
-    return false
-  })
-  console.log('Validation result:', valid)
+  if (loading.value) return
+  const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
   loading.value = true
   try {
@@ -83,7 +80,8 @@ async function handleLogin() {
     }
   } catch (err) {
     console.error('Login error:', err)
-    ElMessage.error(err.message || '登录失败，请检查手机号和密码')
+    const message = err?.response?.data?.message || err?.message || '登录失败，请检查手机号和密码'
+    ElMessage.error(message)
   } finally {
     loading.value = false
   }

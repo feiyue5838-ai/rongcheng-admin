@@ -63,7 +63,7 @@
           </div>
           <el-table
             :data="priorities"
-            row-key="id"
+            row-key="outlet_id"
             border
             style="width: 100%"
             @selection-change="handleSelectionChange"
@@ -345,7 +345,7 @@ const batchPriority = ref(0)
 const selectedRows = ref<any[]>([])
 const showAddForced = ref(false)
 
-const config = reactive({ mode: 'auto', auto_assign: true, business_type_filter: true })
+const config = reactive({ mode: 'hybrid', auto_assign: true, business_type_filter: true })
 const priorities = ref<any[]>([])
 const forcedRegions = ref<any[]>([])
 
@@ -380,7 +380,9 @@ async function loadConfig() {
   try {
     const res = await getDispatchConfig()
     Object.assign(config, res)
-  } catch { /* ignore */ }
+  } catch {
+    ElMessage.error('派单配置加载失败，请刷新后重试')
+  }
 }
 
 async function saveConfig() {
@@ -397,7 +399,9 @@ async function loadPriorities() {
   try {
     const raw = (await getDispatchPriorities()) as any
     priorities.value = Array.isArray(raw) ? raw : []
-  } catch { /* ignore */ } finally {
+  } catch {
+    ElMessage.error('网点优先级加载失败，请刷新后重试')
+  } finally {
     loading.value = false
   }
 }
@@ -439,7 +443,9 @@ async function loadForcedRegions() {
   try {
     const raw = (await getForcedRegions()) as any
     forcedRegions.value = Array.isArray(raw) ? raw : []
-  } catch { /* ignore */ } finally {
+  } catch {
+    ElMessage.error('强制手动地区加载失败，请刷新后重试')
+  } finally {
     loading.value = false
   }
 }

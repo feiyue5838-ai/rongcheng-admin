@@ -1,9 +1,9 @@
 <template>
   <div>
     <div class="page-header">
-      <h2>刻章订单</h2>
+      <h2>历史刻章订单</h2>
       <div>
-        <el-button @click="exportOrders">导出</el-button>
+        <el-button @click="openExport">导出</el-button>
         <el-button type="primary" @click="refresh">刷新</el-button>
       </div>
     </div>
@@ -70,7 +70,7 @@
         <el-table-column prop="companyName" label="公司名称" min-width="160" />
         <el-table-column prop="type" label="订单类型" width="100" />
         <el-table-column prop="totalPrice" label="订单金额" width="100">
-          <template #default="{ row }">¥{{ row.totalPrice }}</template>
+          <template #default="{ row }">¥{{ Number(row.totalPrice || 0).toFixed(2) }}</template>
         </el-table-column>
         <el-table-column prop="contactPhone" label="联系电话" width="120" />
         <el-table-column prop="statusText" label="状态" width="100">
@@ -89,12 +89,11 @@
         <el-table-column prop="createdAt" label="下单时间" width="170">
           <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="$router.push(`/orders/${row.id}`)">详情</el-button>
-            <el-button type="primary" link v-if="row.status === 1" @click="handleStatus(row, 2, '已支付')">确认付款</el-button>
-            <el-button type="primary" link v-if="!row.assignment && row.status >= 2" @click="showAssignDialog(row)">分配</el-button>
-            <el-button type="primary" link v-if="row.status === 2" @click="showDeliverDialog(row)">发货</el-button>
+            <el-button v-if="!row.assignment" type="primary" link @click="showAssignDialog(row)">分配</el-button>
+            <el-button v-if="row.status === 3" type="primary" link @click="showDeliverDialog(row)">发货</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -133,8 +132,8 @@
     </el-dialog>
     <!-- 分配网点对话框 -->
     <el-dialog v-model="assignVisible" title="分配网点" width="640px" :close-on-click-modal="false">
-      <div v-if="currentAssignOrder.address_json" class="assign-order-info">
-        收货地址：{{ parseAddress(currentAssignOrder.address_json) }}
+      <div v-if="dispatchAddress(currentAssignOrder)" class="assign-order-info">
+        派单地址：{{ dispatchAddress(currentAssignOrder) }}
       </div>
       <el-table
         :data="outletList"
@@ -194,14 +193,27 @@
         <el-button type="primary" @click="confirmAssign" :loading="assigning" :disabled="!assignForm.outletId">确认分配</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="exportVisible" title="导出订单" width="420px">
+      <el-radio-group v-model="exportScope">
+        <el-radio value="page">当前页（{{ list.length }} 条）</el-radio>
+        <el-radio value="filter">当前筛选结果</el-radio>
+        <el-radio value="all">全部刻章订单</el-radio>
+      </el-radio-group>
+      <div class="export-tip">导出的 Excel 包含订单全部字段（含客户手机号），请注意数据安全。</div>
+      <template #footer>
+        <el-button @click="exportVisible = false">取消</el-button>
+        <el-button type="primary" :loading="exporting" @click="doExport">导出</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getSealOrders, updateOrder, assignOrderAPI, getAvailableOutlets, getOrderStatistics } from '@/api'
+import { getSealOrders, updateOrder, assignOrderAPI, getAvailableOutlets, getOrderStatistics, exportOrders } from '@/api'
 import { FolderOpened, Clock, Tools, Calendar } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 
 const statsError = ref(false)
@@ -212,9 +224,9 @@ const loadStats = async () => {
     statsError.value = false
     const res = await getOrderStatistics() as any
     stats.seal = res.seal ?? 0
-    stats.making = res.making ?? 0
+    stats.making = res.sealMaking ?? 0
     stats.todaySeal = res.todaySeal ?? 0
-    stats.assigned = res.assignedOrders ?? 0
+    stats.assigned = res.sealAssigned ?? 0
   } catch {
     statsError.value = true
   }
@@ -268,8 +280,9 @@ async function fetchOrders() {
     query.startDate = dateRange.value?.[0] || ''
     query.endDate = dateRange.value?.[1] || ''
     const res: any = await getSealOrders(query)
-    list.value = (res as any).data?.list ?? []
-    pagination.value = (res as any).data?.pagination ?? { page: 1, pageSize: 20, total: 0 }
+    // 拦截器已剥 {code:0,data:{list,pagination}} 外层，res 直接是 {list,pagination}
+    list.value = (res as any)?.list ?? []
+    pagination.value = (res as any)?.pagination ?? { page: 1, pageSize: 20, total: 0 }
   } finally {
     loading.value = false
   }
@@ -288,16 +301,50 @@ function showDeliverDialog(order: any) {
 }
 
 async function confirmDeliver() {
-  await updateOrder(currentOrder.value.id, { status: 4, ...deliverForm })
+  if (!deliverForm.expressCompany) { ElMessage.warning('请选择快递公司'); return }
+  if (!deliverForm.expressNo?.trim()) { ElMessage.warning('请输入快递单号'); return }
+  // 后端 adminUpdateOrder 白名单字段为 snake_case，camelCase 会被静默丢弃
+  await updateOrder(currentOrder.value.id, {
+    status: 4,
+    express_company: deliverForm.expressCompany,
+    express_no: deliverForm.expressNo.trim(),
+    admin_remark: deliverForm.adminRemark
+  })
   ElMessage.success('发货成功')
   deliverVisible.value = false
   fetchOrders()
 }
 
 async function handleStatus(order: any, status: number, statusText: string) {
-  await updateOrder(order.id, { status, statusText })
-  ElMessage.success(`订单已${statusText}`)
-  fetchOrders()
+  // 确认付款加二次确认，防止误操作影响结算口径
+  if (status === 2 && statusText === '已支付') {
+    try {
+      await ElMessageBox.confirm(
+        '确认将此订单标记为已付款？此操作将影响结算口径，请确保已收到客户付款。',
+        '确认付款',
+        { type: 'warning', confirmButtonText: '确认付款', cancelButtonText: '取消' }
+      )
+    } catch { return }
+  }
+  try {
+    await updateOrder(order.id, { status, statusText })
+    ElMessage.success(`订单已${statusText}`)
+    fetchOrders()
+  } catch (e: any) {
+    ElMessage.error(e?.message || '操作失败')
+  }
+}
+
+// 与后端 smartAssign 同款规则：个人印章/电子印章用收货地址，其余用执照地址
+function dispatchAddressJson(order: any): string {
+  if (!order) return ''
+  const isPersonal = order.type === '个人印章' || order.type === '电子印章'
+  return (isPersonal ? order.address_json : (order.license_address_json || order.address_json)) || ''
+}
+
+function dispatchAddress(order: any): string {
+  const json = dispatchAddressJson(order)
+  return json ? parseAddress(json) : ''
 }
 
 async function showAssignDialog(order: any) {
@@ -307,12 +354,11 @@ async function showAssignDialog(order: any) {
   assignVisible.value = true
   assignLoading.value = true
   try {
-    // 优先用智能推荐接口（带匹配分），传入收货地址和业务类型
+    // 优先用智能推荐接口（带匹配分），传入派单地址和业务类型（本页均为刻章订单）
     const params: any = {}
-    if (order.address_json) params.addressJson = order.address_json
-    // 根据订单类型推断业务类型（seal订单→seal，newspaper订单→newspaper等）
-    const bizType = order.type?.includes('刻章') ? 'seal' : order.type?.includes('登报') ? 'newspaper' : 'accounting'
-    if (bizType) params.businessType = bizType
+    const addrJson = dispatchAddressJson(order)
+    if (addrJson) params.addressJson = addrJson
+    params.businessType = 'seal'
     const res: any = await getAvailableOutlets(params)
     const list = (res as any).data ?? res
     outletList.value = Array.isArray(list) ? list : []
@@ -334,7 +380,53 @@ async function confirmAssign() {
   } finally { assigning.value = false }
 }
 
-function exportOrders() { ElMessage.info('导出功能开发中') }
+// 导出 Excel
+const exportVisible = ref(false)
+const exportScope = ref<'page' | 'filter' | 'all'>('filter')
+const exporting = ref(false)
+
+function openExport() {
+  exportScope.value = 'filter'
+  exportVisible.value = true
+}
+
+async function doExport() {
+  exporting.value = true
+  try {
+    const params: any = { module: 'seal', scope: exportScope.value }
+    if (exportScope.value === 'page') {
+      params.page = query.page
+      params.pageSize = query.pageSize
+    }
+    if (exportScope.value !== 'all') {
+      if (query.keyword) params.keyword = query.keyword
+      if (query.status) params.status = query.status
+      if (query.startDate) params.startDate = query.startDate
+      if (query.endDate) params.endDate = query.endDate
+    }
+    const blob = await exportOrders(params)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `刻章订单_${new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    exportVisible.value = false
+    ElMessage.success('导出成功')
+  } catch (e: any) {
+    // 401/常规错误由拦截器提示；blob 错误需手动解析
+    if (e?.response?.data instanceof Blob) {
+      try {
+        const j = JSON.parse(await e.response.data.text())
+        ElMessage.error(j.message || '导出失败')
+      } catch { /* ignore */ }
+    }
+  } finally {
+    exporting.value = false
+  }
+}
 
 onMounted(() => {
   loadStats()
@@ -343,6 +435,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.export-tip {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+}
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

@@ -164,6 +164,7 @@ const currentSceneId = ref('')
 const currentScene = ref<any>(null)
 const selectedSealIds = ref<string[]>([])
 const packageList = ref<any[]>([])
+let sceneRequestId = 0
 
 const savingSeals = ref(false)
 const savingPackages = ref(false)
@@ -251,13 +252,22 @@ function confirmAddPackage() {
 // ============ 数据加载 ============
 async function loadScenes() {
   scenes.value = (await getAdminScenes()) as any
-  if (scenes.value.length > 0 && !scenes.value.find(s => s.id === currentSceneId.value)) {
-    selectScene(scenes.value[0])
+  if (scenes.value.length === 0) {
+    sceneRequestId++
+    currentSceneId.value = ''
+    currentScene.value = null
+    selectedSealIds.value = []
+    packageList.value = []
+    return
   }
+  const selectedScene = scenes.value.find(s => s.id === currentSceneId.value) || scenes.value[0]
+  await selectScene(selectedScene)
 }
 async function selectScene(s: any) {
+  const requestId = ++sceneRequestId
   currentSceneId.value = s.id
   const detail = (await getAdminScene(s.id)) as any
+  if (requestId !== sceneRequestId || currentSceneId.value !== s.id) return
   currentScene.value = detail.scene
   selectedSealIds.value = detail.seals.map((x: any) => x.id)
   packageList.value = detail.packages.map((p: any) => ({
@@ -299,9 +309,10 @@ async function handleDeleteScene() {
 }
 
 onMounted(async () => {
-  const [seals, packages] = await Promise.all([getSeals() as any, getSealPackages() as any])
-  allSeals.value = seals
-  allPackages.value = packages
+  // Promise.allSettled：单个接口失败不阻塞场景列表加载
+  const [seals, packages] = await Promise.allSettled([getSeals() as any, getSealPackages() as any])
+  allSeals.value = (seals as any).status === 'fulfilled' ? (seals as any).value : []
+  allPackages.value = (packages as any).status === 'fulfilled' ? (packages as any).value : []
   await loadScenes()
 })
 </script>

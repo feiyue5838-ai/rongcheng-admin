@@ -161,7 +161,6 @@ function renderChart() {
     ]
   }
 
-  console.log('[ModuleDonut] setOption, items:', seriesData.length)
   chartInstance.setOption(option, true)
 }
 

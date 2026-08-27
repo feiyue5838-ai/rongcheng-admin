@@ -8,7 +8,6 @@
           placeholder="搜索省份名称"
           clearable
           style="width: 200px; margin-right: 12px"
-          @input="filteredRecords"
         >
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
@@ -39,6 +38,7 @@
               v-if="parseDesc(row.description).url"
               :href="parseDesc(row.description).url"
               target="_blank"
+              rel="noopener noreferrer"
               class="url-link"
             >
               {{ parseDesc(row.description).url }}
@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { getRecordQueries, createRecordQuery, updateRecordQuery, deleteRecordQuery } from '@/api'
@@ -107,10 +107,10 @@ const formRef = ref()
 // 解析 description = "平台名称\nURL"
 function parseDesc(desc: string): { platformName: string; url: string } {
   if (!desc) return { platformName: '', url: '' }
-  const parts = desc.split('\n')
+  const [platformName = '', ...urlParts] = desc.split('\n')
   return {
-    platformName: parts[0] || '',
-    url: parts[1] || '',
+    platformName: platformName.trim(),
+    url: urlParts.join('\n').trim(),
   }
 }
 
@@ -148,17 +148,13 @@ const displayRecords = computed(() => {
   return records.value.filter((r) => r.name.toLowerCase().includes(kw))
 })
 
-function filteredRecords() {
-  // trigger computed re-evaluation (keyword is already reactive)
-}
-
 async function fetchRecords() {
   loading.value = true
   try {
     const data = await getRecordQueries()
     records.value = Array.isArray(data) ? data : []
   } catch {
-    ElMessage.error('加载省份列表失败')
+    records.value = []
   } finally {
     loading.value = false
   }
@@ -179,11 +175,23 @@ function showDialog(type: 'add' | 'edit', row?: RecordQuery) {
     form.value = { id: '', name: '', platformName: '', url: '', sort: 0 }
   }
   dialogVisible.value = true
+  nextTick(() => formRef.value?.clearValidate())
 }
 
 async function handleSave() {
+  form.value.name = form.value.name.trim()
+  form.value.platformName = form.value.platformName.trim()
+  form.value.url = form.value.url.trim()
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
+
+  const duplicate = records.value.some((record) =>
+    record.id !== form.value.id && record.name.trim().toLowerCase() === form.value.name.toLowerCase()
+  )
+  if (duplicate) {
+    ElMessage.warning('该省份已存在，请勿重复添加')
+    return
+  }
 
   saving.value = true
   try {
@@ -202,7 +210,7 @@ async function handleSave() {
     dialogVisible.value = false
     await fetchRecords()
   } catch {
-    ElMessage.error(isEdit.value ? '更新失败' : '添加失败')
+    // 接口错误由全局响应拦截器统一提示
   } finally {
     saving.value = false
   }

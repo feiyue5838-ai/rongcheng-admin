@@ -106,7 +106,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getBookkeepingPackages, createBookkeepingPackage, updateBookkeepingPackage, deleteBookkeepingPackage } from '@/api'
+import { getAdminBookkeepingPackages, createBookkeepingPackage, updateBookkeepingPackage, deleteBookkeepingPackage } from '@/api'
 
 const loading = ref(false)
 const packages = ref<any[]>([])
@@ -138,10 +138,10 @@ const form = ref({
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await getBookkeepingPackages()
-    packages.value = (res as any).list || (res as any).data || res
-  } catch (e: any) {
-    ElMessage.error(e.message || '获取数据失败')
+    const res = await getAdminBookkeepingPackages()
+    packages.value = Array.isArray(res) ? res : []
+  } catch {
+    packages.value = []
   } finally {
     loading.value = false
   }
@@ -174,6 +174,7 @@ const handleEdit = (row: any) => {
 }
 
 const handleSubmit = async () => {
+  form.value.name = form.value.name.trim()
   if (!form.value.name) {
     ElMessage.warning('请输入套餐名称')
     return
@@ -202,9 +203,9 @@ const handleSubmit = async () => {
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
-    fetchData()
-  } catch (e: any) {
-    ElMessage.error(e.message || '操作失败')
+    await fetchData()
+  } catch {
+    // 接口错误由全局响应拦截器统一提示
   } finally {
     submitting.value = false
   }
@@ -214,9 +215,8 @@ const handleStatusChange = async (row: any) => {
   try {
     await updateBookkeepingPackage(row.id, { status: row.status })
     ElMessage.success('状态已更新')
-  } catch (e: any) {
-    ElMessage.error(e.message || '更新失败')
-    fetchData()
+  } catch {
+    await fetchData()
   }
 }
 
@@ -225,11 +225,9 @@ const handleDelete = async (row: any) => {
     await ElMessageBox.confirm('确定删除此套餐吗？', '提示', { type: 'warning' })
     await deleteBookkeepingPackage(row.id)
     ElMessage.success('删除成功')
-    fetchData()
+    await fetchData()
   } catch (e: any) {
-    if (e !== 'cancel') {
-      ElMessage.error(e.message || '删除失败')
-    }
+    if (e === 'cancel' || e === 'close') return
   }
 }
 

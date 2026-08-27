@@ -65,13 +65,31 @@ async function fetchPackages() {
 async function fetchSeals() { allSeals.value = ((await getSeals()) as any) ?? [] }
 function showDialog(type: string, row?: any) {
   isEdit.value = type === 'edit'
-  if (row) { Object.assign(form, { ...row }) } else { Object.assign(form, { name: '', badge: '', price: 0, sealIds: [], description: '', sort: 0 }) }
+  if (row) {
+    const sealIds = Array.isArray(row.seal_ids)
+      ? row.seal_ids
+      : Array.isArray(row.seals)
+        ? row.seals.map((seal: any) => seal.id)
+        : []
+    Object.assign(form, { ...row, sealIds: [...sealIds] })
+  } else {
+    delete form.id
+    Object.assign(form, { name: '', badge: '', price: 0, sealIds: [], description: '', sort: 0 })
+  }
   dialogVisible.value = true
 }
 async function savePackage() {
   saving.value = true
   try {
-    if (isEdit.value) { await updatePackage(form.id, form) } else { await createPackage(form) }
+    const payload = {
+      name: form.name,
+      badge: form.badge,
+      price: form.price,
+      seal_ids: [...form.sealIds],
+      description: form.description,
+      sort: form.sort,
+    }
+    if (isEdit.value) { await updatePackage(form.id, payload) } else { await createPackage(payload) }
     ElMessage.success('保存成功'); dialogVisible.value = false; fetchPackages()
   } finally { saving.value = false }
 }
