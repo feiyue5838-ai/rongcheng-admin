@@ -116,6 +116,19 @@ export function hasAccess(role: string, path: string): boolean {
     '/system/dispatch-rules': ['superadmin'],
     '/system/menu-roles': ['superadmin'],
   }
+  // 精确匹配
   const allowed = DEFAULTS[path]
-  return allowed ? (allowed.includes('*') || allowed.includes(role)) : false
+  if (allowed) return allowed.includes('*') || allowed.includes(role)
+
+  // 前缀匹配（最长前缀优先，与缓存配置分支语义一致）：
+  // 动态路由如 /orders/:id（订单详情）继承 /orders 列表权限，
+  // 避免 DB 无菜单配置（或未配 /orders 前缀规则）时 order_admin/outlet_admin 点「详情」被 403
+  const prefixKey = Object.keys(DEFAULTS)
+    .filter(k => path.startsWith(k + '/'))
+    .sort((a, b) => b.length - a.length)[0]
+  if (prefixKey) {
+    const roles = DEFAULTS[prefixKey]
+    return roles.includes('*') || roles.includes(role)
+  }
+  return false
 }

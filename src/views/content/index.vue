@@ -291,6 +291,79 @@
           </template>
         </el-dialog>
       </el-tab-pane>
+
+      <!-- ============ 页面装修 ============ -->
+      <el-tab-pane label="页面装修" name="decorations">
+        <div class="page-header">
+          <h2>页面装修管理</h2>
+          <el-button type="primary" @click="openDecoDialog()">新增装修</el-button>
+        </div>
+        <div class="page-card">
+          <el-table :data="decorations" v-loading="decoLoading" stripe empty-text="暂无页面装修">
+            <el-table-column prop="type" label="适用页面" width="140">
+              <template #default="{ row }">{{ decoTypeLabel(row.type) }}</template>
+            </el-table-column>
+            <el-table-column label="背景图" width="180">
+              <template #default="{ row }">
+                <el-image v-if="row.image" :src="row.image" style="width: 160px; height: 90px; border-radius: 4px" :preview-src-list="[row.image]" fit="cover" />
+              </template>
+            </el-table-column>
+            <el-table-column prop="title" label="主标题" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="subtitle" label="副标题" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="sort" label="排序" width="80" />
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+                  {{ row.status === 1 ? '启用' : '禁用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="220" fixed="right">
+              <template #default="{ row }">
+                <el-button type="primary" link @click="openDecoDialog(row)">编辑</el-button>
+                <el-button :type="row.status === 1 ? 'warning' : 'success'" :loading="decoActionKey === `status-${row.id}`" link @click="toggleDecoStatus(row)">{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
+                <el-button type="danger" :loading="decoActionKey === `delete-${row.id}`" link @click="deleteDeco(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <el-dialog v-model="decoVisible" :title="decoForm.id ? '编辑页面装修' : '新增页面装修'" width="560px">
+          <el-form :model="decoForm" label-width="100px">
+            <el-form-item label="适用页面">
+              <el-select v-model="decoForm.type" style="width:100%">
+                <el-option label="刻章页" value="seal" />
+                <el-option label="登报页" value="newspaper" />
+                <el-option label="代理记账页" value="bookkeeping" />
+              </el-select>
+              <div class="form-tip">对应小程序 Tab 页 Hero 品牌区</div>
+            </el-form-item>
+            <el-form-item label="主标题">
+              <el-input v-model="decoForm.title" maxlength="100" show-word-limit placeholder="如：专业印章服务" />
+            </el-form-item>
+            <el-form-item label="副标题">
+              <el-input v-model="decoForm.subtitle" maxlength="200" show-word-limit placeholder="如：公安备案 · 正规可靠 · 全国办理（可选）" />
+            </el-form-item>
+            <el-form-item label="背景图">
+              <el-upload :action="'/api/upload/image'" :headers="uploadHeaders()" :show-file-list="false" :on-success="decoUploadSuccess" :on-error="uploadError" :before-upload="beforeUpload" accept=".jpg,.jpeg,.png,.gif,.webp">
+                <el-button>选择图片</el-button>
+              </el-upload>
+              <el-button v-if="decoForm.image" type="danger" link @click="decoForm.image = ''">移除图片</el-button>
+              <el-image v-if="decoForm.image" :src="decoForm.image" :preview-src-list="[decoForm.image]" style="width: 200px; margin-top: 8px; border-radius: 4px" />
+              <div class="form-tip">Hero 背景图，建议尺寸 750×500；留空则使用页面默认渐变。注意：上传背景图后小程序端只展示图片，主标题/副标题将不再显示</div>
+            </el-form-item>
+            <el-form-item label="排序">
+              <el-input-number v-model="decoForm.sort" :min="0" :max="9999" :step="1" step-strictly />
+            </el-form-item>
+            <el-form-item label="状态">
+              <el-switch v-model="decoForm.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="禁用" />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <el-button @click="decoVisible = false">取消</el-button>
+            <el-button type="primary" :loading="decoSaving" @click="saveDeco">保存</el-button>
+          </template>
+        </el-dialog>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -669,6 +742,96 @@ async function deleteIntro(row: ContentRow) {
   } catch (e) { ElMessage.error(errorMessage(e, '删除失败')) } finally { introActionKey.value = '' }
 }
 
+// ==================== 页面装修 ====================
+const decorations = ref<ContentRow[]>([])
+const decoLoading = ref(false)
+const decoSaving = ref(false)
+const decoActionKey = ref('')
+const decoVisible = ref(false)
+type DecoType = 'seal' | 'newspaper' | 'bookkeeping'
+const decoForm = reactive<{
+  id: string | number | null
+  type: DecoType
+  title: string
+  subtitle: string
+  image: string
+  sort: number
+  status: number
+}>({ id: null, type: 'seal', title: '', subtitle: '', image: '', sort: 0, status: 1 })
+
+function normalizeDecoType(value: unknown): DecoType {
+  return value === 'newspaper' || value === 'bookkeeping' ? value : 'seal'
+}
+function decoTypeLabel(value: unknown) {
+  const labels: Record<DecoType, string> = {
+    seal: '刻章页', newspaper: '登报页', bookkeeping: '代理记账页'
+  }
+  return labels[normalizeDecoType(value)]
+}
+
+async function loadDecos() {
+  decoLoading.value = true
+  try {
+    const res = await request.get('/content/page-decorations')
+    decorations.value = listFromResponse(res)
+    loadedTabs.add('decorations')
+  } catch { /* ignore */ } finally { decoLoading.value = false }
+}
+function openDecoDialog(row?: ContentRow) {
+  if (row) Object.assign(decoForm, {
+    id: row.id, type: normalizeDecoType(row.type), title: row.title || '', subtitle: row.subtitle || '',
+    image: row.image || '', sort: row.sort ?? 0, status: row.status ?? 1
+  })
+  else Object.assign(decoForm, { id: null, type: 'seal', title: '', subtitle: '', image: '', sort: 0, status: 1 })
+  decoVisible.value = true
+}
+function decoUploadSuccess(res: UploadResponse) {
+  const imageUrl = uploadUrlFromResponse(res)
+  if (imageUrl) decoForm.image = imageUrl
+  else ElMessage.error('上传失败')
+}
+async function saveDeco() {
+  const title = decoForm.title.trim()
+  const image = decoForm.image.trim()
+  if (!decoForm.type) { ElMessage.warning('请选择适用页面'); return }
+  if (!title) { ElMessage.warning('请输入主标题'); return }
+  decoSaving.value = true
+  try {
+    const payload = { type: decoForm.type, title, subtitle: decoForm.subtitle.trim(), image, sort: decoForm.sort, status: decoForm.status }
+    if (decoForm.id) await request.put(`/content/page-decorations/${decoForm.id}`, payload)
+    else await request.post('/content/page-decorations', payload)
+    ElMessage.success('保存成功')
+    decoVisible.value = false
+    await loadDecos()
+  } catch (e) {
+    const msg = errorMessage(e, '保存失败')
+    // 后端同 type 启用互斥：给出可操作的提示
+    ElMessage.error(msg.includes('启用中') ? `${msg}；可先编辑现有记录或将其禁用后再保存` : msg)
+  } finally { decoSaving.value = false }
+}
+async function toggleDecoStatus(row: ContentRow) {
+  const nextStatus = row.status === 1 ? 0 : 1
+  const action = nextStatus === 1 ? '启用' : '禁用'
+  const confirmed = await ElMessageBox.confirm(`确定${action}「${row.title}」吗？`, `${action}页面装修`, { type: 'warning' }).then(() => true).catch(() => false)
+  if (!confirmed) return
+  decoActionKey.value = `status-${row.id}`
+  try {
+    await request.put(`/content/page-decorations/${row.id}`, { status: nextStatus })
+    ElMessage.success(`${action}成功`)
+    await loadDecos()
+  } catch (e) { ElMessage.error(errorMessage(e, `${action}失败`)) } finally { decoActionKey.value = '' }
+}
+async function deleteDeco(row: ContentRow) {
+  const confirmed = await ElMessageBox.confirm(`确定删除「${row.title}」吗？`, '提示', { type: 'warning' }).then(() => true).catch(() => false)
+  if (!confirmed) return
+  decoActionKey.value = `delete-${row.id}`
+  try {
+    await request.delete(`/content/page-decorations/${row.id}`)
+    ElMessage.success('删除成功')
+    await loadDecos()
+  } catch (e) { ElMessage.error(errorMessage(e, '删除失败')) } finally { decoActionKey.value = '' }
+}
+
 // ==================== 关于我们 ====================
 type AboutForm = {
   appName: string
@@ -819,6 +982,7 @@ function onTabChange(name: string | number) {
   else if (tabName === 'announcements') loadAnnouncements()
   else if (tabName === 'intros') loadIntros()
   else if (tabName === 'about') loadAbout()
+  else if (tabName === 'decorations') loadDecos()
 }
 
 onMounted(loadBanners)

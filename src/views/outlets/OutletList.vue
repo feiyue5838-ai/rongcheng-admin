@@ -821,7 +821,8 @@ async function onSubmit() {
       ElMessage.success('新增成功')
     }
     dialogVisible.value = false
-    loadData()
+    // 编辑后停留在当前页（不再强制跳回第 1 页）；新增回第 1 页便于看到新记录
+    loadData(isEdit.value ? currentPage.value : 1)
   } catch (err: any) {
     ElMessage.error(err?.response?.data?.message || '操作失败')
   } finally {
@@ -852,7 +853,8 @@ async function onDelete(row: any) {
     await ElMessageBox.confirm(`确定要删除履约供应商「${row.name}」吗？`, '删除确认', { type: 'warning' })
     await deleteOutletAPI(row.id)
     ElMessage.success('删除成功')
-    loadData()
+    // 删除后停留在当前页（不再强制跳回第 1 页）
+    loadData(currentPage.value)
   } catch (err: any) {
     if (err !== 'cancel' && err !== 'close') ElMessage.error(err?.response?.data?.message || '删除失败')
   }

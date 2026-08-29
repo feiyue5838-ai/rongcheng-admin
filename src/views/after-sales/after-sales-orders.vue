@@ -252,8 +252,16 @@ function moduleType(m: string) { return { seal: '', newspaper: 'success', bookke
 function getOrderContent(row: any) {
   if (row.module === 'bookkeeping') {
     try {
-      const r = JSON.parse(row.remark || '{}')
-      if (r.taxpayerType) return `${r.taxpayerType === 'small' ? '小规模' : '一般纳税人'} / ${r.cycle || ''}`
+      // 后端 AfterSalesService.parseAfterSales 已把 remark 解析为对象（snake_case 键），
+      // 兼容字符串形态；原代码 JSON.parse(对象) 抛错导致永远显示「代理记账」
+      const r = typeof row.remark === 'string' ? JSON.parse(row.remark || '{}') : (row.remark || {})
+      const tt = r.taxpayer_type || r.taxpayerType
+      const cycle = r.cycle
+      if (tt || cycle) {
+        const ttText = tt === 'small' ? '小规模' : tt === 'general' ? '一般纳税人' : tt
+        const cycleMap: Record<string, string> = { year: '全年', half: '半年', preorder: '预售' }
+        return [ttText, cycleMap[cycle] || cycle].filter(Boolean).join(' / ')
+      }
     } catch {}
     return '代理记账'
   }

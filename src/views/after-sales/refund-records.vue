@@ -143,26 +143,30 @@ function onFilterChange() {
   fetchRecords()
 }
 
+// 后端 AfterSalesService.parseAfterSales 已把 remark 解析为对象（refundId/refundFee/refundedAt），
+// 兼容字符串形态；原代码 JSON.parse(对象) 抛错 → 退款金额误显示整单 payPrice、ID/时间恒为 -/下单时间
+function parseRemark(row: any): any {
+  const remark = row?.remark
+  if (remark == null) return {}
+  if (typeof remark === 'object') return remark
+  try { return JSON.parse(remark) } catch { return {} }
+}
+
 function getRefundFee(row: any) {
-  try {
-    const r = JSON.parse(row.remark || '{}')
-    if (r.refund?.refundFee) return (r.refund.refundFee / 100).toFixed(2)
-  } catch {}
-  return (row.payPrice || row.totalPrice || 0).toFixed(2)
+  const r = parseRemark(row)
+  // remark.refund.refundFee 单位为分（与 detail.vue 一致），转元显示
+  if (r.refund?.refundFee != null) return (Number(r.refund.refundFee) / 100).toFixed(2)
+  return Number(row.payPrice || row.totalPrice || 0).toFixed(2)
 }
 
 function getRefundId(row: any) {
-  try {
-    const r = JSON.parse(row.remark || '{}')
-    return r.refund?.refundId || '-'
-  } catch { return '-' }
+  const r = parseRemark(row)
+  return r.refund?.refundId || '-'
 }
 
 function getRefundTime(row: any) {
-  try {
-    const r = JSON.parse(row.remark || '{}')
-    if (r.refund?.refundedAt) return r.refund.refundedAt.slice(0, 16).replace('T', ' ')
-  } catch {}
+  const r = parseRemark(row)
+  if (r.refund?.refundedAt) return String(r.refund.refundedAt).slice(0, 16).replace('T', ' ')
   return formatDate(row.createdAt)
 }
 

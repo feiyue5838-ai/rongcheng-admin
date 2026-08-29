@@ -3,7 +3,7 @@ module.exports = {
     name: 'rongcheng-admin',
     script: 'node_modules/vite/bin/vite.js',
     args: '',
-    cwd: 'D:/rongcheng-admin/admin',
+    cwd: 'E:/代码/admin',
     instances: 1,
     exec_mode: 'fork',
     env: {

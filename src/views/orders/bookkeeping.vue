@@ -72,18 +72,24 @@
         <el-table-column prop="orderNo" label="订单号" width="220" />
         <el-table-column label="纳税人类型" width="110">
           <template #default="{ row }">
-            <el-tag :type="row.taxpayerType === 'general' ? 'warning' : 'info'" size="small">
-              {{ row.taxpayerTypeText }}
+            <el-tag :type="row.extra?.taxpayerType === 'general' ? 'warning' : 'info'" size="small">
+              {{ taxpayerTypeText(row.extra?.taxpayerType) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="cycleText" label="会计期间" width="100" />
+        <el-table-column label="会计期间" width="100">
+          <template #default="{ row }">
+            {{ cycleText[row.extra?.cycle as string] || row.extra?.cycle || '-' }}
+          </template>
+        </el-table-column>
         <el-table-column label="附加服务" min-width="220">
           <template #default="{ row }">
-            <el-tag v-if="row.addons.invoice" type="success" size="small" style="margin-right: 4px">开票</el-tag>
-            <el-tag v-if="row.addons.social" type="success" size="small" style="margin-right: 4px">社保</el-tag>
-            <el-tag v-if="row.addons.fund" type="success" size="small" style="margin-right: 4px">公积金</el-tag>
-            <span v-if="!row.addons.invoice && !row.addons.social && !row.addons.fund" class="text-muted">无</span>
+            <template v-if="row.extra && (hasAddon(row.extra.invoice) || hasAddon(row.extra.social) || hasAddon(row.extra.fund))">
+              <el-tag v-if="hasAddon(row.extra.invoice)" type="success" size="small" style="margin-right: 4px">开票</el-tag>
+              <el-tag v-if="hasAddon(row.extra.social)" type="success" size="small" style="margin-right: 4px">社保</el-tag>
+              <el-tag v-if="hasAddon(row.extra.fund)" type="success" size="small" style="margin-right: 4px">公积金</el-tag>
+            </template>
+            <span v-else class="text-muted">无</span>
           </template>
         </el-table-column>
         <el-table-column prop="contactPhone" label="联系电话" width="130" />
@@ -226,6 +232,17 @@ function statusType(status: any): string {
 }
 
 function formatDate(d: any): string { return d ? dayjs(d).format('YYYY-MM-DD HH:mm') : '-' }
+
+// 后端 /orders/admin/list 记账订单 extra 字段（remark 解析）：taxpayerType/cycle/invoice/social/fund
+// （原模板误读 row.addons.* / row.taxpayerTypeText / row.cycleText，字段不存在且 addons 未定义会抛 TypeError）
+function taxpayerTypeText(v: string | null | undefined): string {
+  return v === 'general' ? '一般纳税人' : v === 'small' ? '小规模' : (v || '-')
+}
+const cycleText: Record<string, string> = { year: '全年', half: '半年', preorder: '预售' }
+// 附加服务：'none'/空 = 未购买
+function hasAddon(v: any): boolean {
+  return v != null && v !== '' && v !== 'none'
+}
 
 // 退款
 const refundVisible = ref(false)

@@ -10,7 +10,7 @@
           <el-dropdown-menu>
             <el-dropdown-item command="seal">添加印章</el-dropdown-item>
             <el-dropdown-item command="package">添加套餐</el-dropdown-item>
-            <el-dropdown-item v-if="routeType === 'enterprise'" command="scene" divided>管理场景</el-dropdown-item>
+            <el-dropdown-item command="scene" divided>管理场景</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -292,7 +292,6 @@
         </el-form-item>
         <el-form-item label="图片" label-width="60px">
           <el-upload
-            ref="sealUploadRef"
             :show-file-list="false"
             :before-upload="beforeUpload"
             :http-request="uploadSeal"
@@ -300,7 +299,7 @@
           >
             <div v-if="form.image" class="image-preview-wrapper">
               <img :src="form.image" style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; display: block;" />
-              <div class="image-overlay" @click.stop="triggerSealUpload">更换</div>
+              <div class="image-overlay">更换</div>
             </div>
             <el-button v-else type="primary" plain size="small">上传图片</el-button>
           </el-upload>
@@ -432,7 +431,7 @@
       <div class="scene-manage-header">
         <el-button type="primary" size="small" @click="showSceneEditDialog()">+ 新增场景</el-button>
       </div>
-      <el-table :data="businessCategories" style="margin-top: 12px" size="small">
+      <el-table :data="sceneManageList" style="margin-top: 12px" size="small">
         <el-table-column prop="name" label="场景名称" min-width="140" />
         <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
         <el-table-column prop="sort" label="排序" width="70" align="center" />
@@ -522,7 +521,7 @@ const sealCategories = ref<any[]>([])
 // 个人印章子分类：只使用接口返回的真实 seal_categories id
 const personalCategories = computed(() => {
   const pc = sealCategories.value.find((c: any) => c.name === '个人印章')
-  const prc = sealCategories.value.find((c: any) => c.name === '个人签名章')
+  const prc = sealCategories.value.find((c: any) => c.name === '个人职业章')
   return [
     pc && { id: pc.id, name: '个人印章' },
     prc && { id: prc.id, name: '个人职业印章' },
@@ -556,7 +555,13 @@ function getSealSubType(name: string): string {
 }
 
 function getElectronicCategory(type: string) {
-  return sealCategories.value.find((category: any) => category.name === type)
+  // 电子子类型 → 实体分类：'电子公章' → '公章'（DB 无「电子*」分类，电子印章挂在通用分类下）
+  const names = type.startsWith('电子') ? [type.slice(2), type] : [type]
+  for (const n of names) {
+    const c = sealCategories.value.find((category: any) => category.name === n)
+    if (c) return c
+  }
+  return undefined
 }
 
 function normalizeElectronicSealName(name: string, type: string): string {
@@ -600,7 +605,6 @@ const activePersonalSubTab = ref('personal')  // single 路由 + 个人场景：
 const activeSingleSubTab = ref('电子公章')    // single 路由 + 电子场景：子 Tab（电子公章 / …）
 
 const dialogVisible = ref(false)
-const sealUploadRef = ref<any>(null)
 const saving = ref(false)
 const isEdit = ref(false)
 const form = reactive<any>({ name: '', electronicType: '', sceneId: '', sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
@@ -628,7 +632,7 @@ const regionPricesRows = ref<Array<{ city: string; price: number; _cityValue: st
 const pricingMode = ref<'nationwide' | 'regional'>('nationwide')
 
 function getRegionPricesRows() {
-  const rp = form.region_prices || {}
+  const rp = form.region_prices || form.regionPrices || {}
   // @ts-ignore
   regionPricesRows.value = Object.entries(rp).map(([city, price]) => ({ city, price: Number(price), _cityValue: CITY_TO_PROVINCE[city] ? [CITY_TO_PROVINCE[city], city] : (city || '') }))
 }
@@ -670,7 +674,12 @@ const sceneEditVisible = ref(false)
 const sceneSaving = ref(false)
 const sceneEditForm = reactive<any>({ id: '', name: '', description: '', sort: 0, status: 1 })
 
-function openSceneDialog() {
+// 场景管理列表：仅真实场景（sceneType==='scene'），排除合成进来的个人/电子分类项
+const sceneManageList = computed(() => categories.value.filter((c: any) => c.sceneType === 'scene'))
+
+async function openSceneDialog() {
+  // 打开前刷新场景列表，避免与其他页面（场景管理）的改动不同步
+  await fetchAllCategories()
   sceneDialogVisible.value = true
 }
 
@@ -737,16 +746,16 @@ async function loadPkgSealOptions(sceneId?: string) {
       if (isPersonal.value) {
         pkgSealOptions.value = list.filter((s: any) => {
           const n = s.sealCategories?.name
-          return n === '个人印章' || n === '个人签名章'
+          return (n === '个人印章' || n === '个人签名章' || n === '个人职业章') && !(s.name || '').startsWith('电子')
         })
       } else if (isElectronic.value) {
-        const electronicCategoryIds = new Set(
+        const electronicCategoryNames = new Set(
           ELECTRONIC_SUB_TYPES
-            .map((type) => getElectronicCategory(type.label)?.id)
+            .map((type) => getElectronicCategory(type.label)?.name)
             .filter(Boolean)
         )
         pkgSealOptions.value = list.filter((s: any) =>
-          electronicCategoryIds.has(s.sealCategories?.id) ||
+          electronicCategoryNames.has(s.sealCategories?.name) ||
           (!s.sealCategories?.id && s.name && s.name.startsWith('电子'))
         )
       } else {
@@ -767,11 +776,11 @@ const filteredSeals = computed(() => {
   } else if (isPersonal.value) {
     list = activePersonalSubTab.value === 'personal'
       ? list.filter((s) => s.sealCategories?.name === '个人印章')
-      : list.filter((s) => s.sealCategories?.name === '个人签名章')
+      : list.filter((s) => s.sealCategories?.name === '个人职业章')
   } else if (isElectronic.value) {
-    const categoryId = getElectronicCategory(activeSingleSubTab.value)?.id
+    const categoryName = getElectronicCategory(activeSingleSubTab.value)?.name
     list = list.filter((s) =>
-      (categoryId && s.sealCategories?.id === categoryId) ||
+      (categoryName && s.sealCategories?.name === categoryName) ||
       (!s.sealCategories?.id && getSealSubType(s.name) === activeSingleSubTab.value)
     )
   }
@@ -806,14 +815,14 @@ function sceneItemCount(sceneId: string): number {
 // 个人场景：子分组计数
 // 个人印章 Tab 数量（动态计算，不再硬编码子分类名）
 const personalSealCount = computed(() => seals.value.filter((s) => s.sealCategories?.name === '个人印章').length)
-const professionalSealCount = computed(() => seals.value.filter((s) => s.sealCategories?.name === '个人签名章').length)
+const professionalSealCount = computed(() => seals.value.filter((s) => s.sealCategories?.name === '个人职业章').length)
 
 // 单路由（个人 + 电子）子 Tab 计数
 // 电子印章 Tab 数量（基于动态 electronicSubTypesMap）
 function singleSubCount(label: string): number {
-  const categoryId = getElectronicCategory(label)?.id
+  const categoryName = getElectronicCategory(label)?.name
   return seals.value.filter((s) =>
-    (categoryId && s.sealCategories?.id === categoryId) ||
+    (categoryName && s.sealCategories?.name === categoryName) ||
     (!s.sealCategories?.id && getSealSubType(s.name) === label)
   ).length
 }
@@ -867,14 +876,14 @@ async function fetchSealsByCategory(catId: string) {
       const all: any = await getSeals()
       const list = Array.isArray(all) ? all : (all?.items || [])
       const cat = categories.value.find((c) => c.id === catId)
-      const electronicCategoryIds = new Set(
+      const electronicCategoryNames = new Set(
         ELECTRONIC_SUB_TYPES
-          .map((type) => getElectronicCategory(type.label)?.id)
+          .map((type) => getElectronicCategory(type.label)?.name)
           .filter(Boolean)
       )
       seals.value = list
         .filter((s: any) =>
-          electronicCategoryIds.has(s.sealCategories?.id) ||
+          electronicCategoryNames.has(s.sealCategories?.name) ||
           (!s.sealCategories?.id && s.name && s.name.startsWith('电子'))
         )
         .map((s: any) => ({ ...s, categoryName: s.sealCategories?.name || '—', _sceneName: cat?.name || '电子印章' }))
@@ -887,7 +896,7 @@ async function fetchSealsByCategory(catId: string) {
       seals.value = list
         .filter((s: any) => {
           const n = s.sealCategories?.name
-          return n === '个人印章' || n === '个人签名章'
+          return (n === '个人印章' || n === '个人签名章' || n === '个人职业章') && !(s.name || '').startsWith('电子')
         })
         .map((s: any) => ({ ...s, categoryName: s.sealCategories?.name || '—', _sceneName: cat?.name || '个人印章' }))
       packages.value = []
@@ -933,7 +942,7 @@ async function fetchCategoryPackages(catId: string, catName: string): Promise<an
     if (routeType.value === 'enterprise') {
       const res: any = await getSealSceneProducts(catId)
       if (!res?.packages) return []
-      return res.packages.map((p: any) => ({ ...p, categoryName: catName, _sceneName: catName, _sceneId: p.scene_id }))
+      return res.packages.map((p: any) => ({ ...p, categoryName: catName, _sceneName: catName, _sceneId: p.sceneId || p.scene_id }))
     }
     // 其他路由：套餐独立接口，全量返回
     const res: any = await getSealPackages()
@@ -954,7 +963,7 @@ function showDialog(type: string, row?: any) {
   if (row) {
     // 编辑：回显当前所属场景 + 个人子分类，允许改所属场景
     let ctxSceneId = ''
-    if (isPersonal.value) ctxSceneId = personalScene.value?.id || ''
+    if (isPersonal.value) ctxSceneId = activePersonalSubTab.value === 'professional' ? (categories.value.find((c: any) => c.name === '个人职业章')?.id || '') : (personalScene.value?.id || '')
     else if (isElectronic.value) ctxSceneId = electronicScene.value?.id || ''
     else ctxSceneId = activeSceneId.value || ''
     const electronicType = isElectronic.value
@@ -973,7 +982,7 @@ function showDialog(type: string, row?: any) {
   } else {
     // 新增：预选当前所属场景（企业=当前 Tab；个人/电子=对应场景）
     let defaultSceneId = ''
-    if (isPersonal.value) defaultSceneId = personalScene.value?.id || ''
+    if (isPersonal.value) defaultSceneId = activePersonalSubTab.value === 'professional' ? (categories.value.find((c: any) => c.name === '个人职业章')?.id || '') : (personalScene.value?.id || '')
     else if (isElectronic.value) defaultSceneId = electronicScene.value?.id || ''
     else defaultSceneId = activeSceneId.value || ''
     const electronicType = isElectronic.value ? activeSingleSubTab.value : ''
@@ -1020,7 +1029,7 @@ async function saveSeal() {
       await updateSeal(form.id, {
         name: sealName,
         price: form.price,
-        region_prices,
+        regionPrices: region_prices,
         description: form.description,
         sort: form.sort,
         image: form.image,
@@ -1031,7 +1040,7 @@ async function saveSeal() {
       await createSeal({
         name: sealName,
         price: form.price,
-        region_prices,
+        regionPrices: region_prices,
         description: form.description,
         sort: form.sort,
         image: form.image,
@@ -1041,7 +1050,15 @@ async function saveSeal() {
     }
     ElMessage.success('保存成功')
     dialogVisible.value = false
-    await fetchSealsByCategory(defaultCategory.value)
+    if (routeType.value === 'enterprise') {
+      // 刷新目标场景 Tab，避免重新聚合导致跳回第一个有数据的场景
+      const targetSceneId = form.sceneId || activeSceneId.value
+      suppressSceneWatcher = targetSceneId !== activeSceneId.value
+      activeSceneId.value = targetSceneId
+      await fetchSealsByCategory(targetSceneId)
+    } else {
+      await fetchSealsByCategory(defaultCategory.value)
+    }
   } finally {
     saving.value = false
   }
@@ -1051,22 +1068,26 @@ async function handleDelete(row: any) {
   await ElMessageBox.confirm('确认删除该印章？', '提示')
   await deleteSeal(row.id)
   ElMessage.success('删除成功')
-  await fetchSealsByCategory(defaultCategory.value)
+  if (routeType.value === 'enterprise' && activeSceneId.value) {
+    await fetchSealsByCategory(activeSceneId.value)
+  } else {
+    await fetchSealsByCategory(defaultCategory.value)
+  }
 }
 
 // 套餐相关
 function showPkgDialog(row: any) {
   pkgIsEdit.value = true
   pkgForm.id = row.id
-  pkgForm.sceneId = row._sceneId || ''
+  pkgForm.sceneId = row.sceneId || row._sceneId || ''
   pkgForm.name = row.name
   pkgForm.price = Number(row.price) || 0
   pkgForm.description = row.description || ''
   pkgForm.sort = row.sort ?? 0
-  pkgForm.sealIds = Array.isArray(row.seal_ids) ? [...row.seal_ids] : []
+  pkgForm.sealIds = Array.isArray(row.sealIds) ? [...row.sealIds] : (Array.isArray(row.seal_ids) ? [...row.seal_ids] : [])
   loadPkgSealOptions(pkgForm.sceneId)
   pkgForm.images = Array.isArray(row.images) ? [...row.images] : []
-  pkgForm.region_prices = row.region_prices || {}
+  pkgForm.region_prices = row.regionPrices || row.region_prices || {}
   getPkgRegionPricesRows()
   pkgPricingMode.value = Object.keys(pkgForm.region_prices || {}).length > 0 ? 'regional' : 'nationwide'
   pkgDialogVisible.value = true
@@ -1093,7 +1114,7 @@ function openPkgDialog() {
 const pkgRegionPricesRows = ref<Array<{ city: string; price: number; _cityValue: string | string[] }>>([])
 const pkgPricingMode = ref<'nationwide' | 'regional'>('nationwide')
 function getPkgRegionPricesRows() {
-  const rp = pkgForm.region_prices || {}
+  const rp = pkgForm.region_prices || pkgForm.regionPrices || {}
   // @ts-ignore
   pkgRegionPricesRows.value = Object.entries(rp).map(([city, price]) => ({ city, price: Number(price), _cityValue: CITY_TO_PROVINCE[city] ? [CITY_TO_PROVINCE[city], city] : (city || '') }))
 }
@@ -1135,7 +1156,7 @@ async function savePkg() {
       description: pkgForm.description,
       sort: pkgForm.sort,
       images: pkgForm.images,
-      region_prices: pkgPricingMode.value === 'regional' ? buildPkgRegionPrices() : {},
+      regionPrices: pkgPricingMode.value === 'regional' ? buildPkgRegionPrices() : {},
       scene_ids: sceneIds,
       seal_ids: pkgForm.sealIds,
     }
@@ -1148,6 +1169,7 @@ async function savePkg() {
     pkgDialogVisible.value = false
     if (routeType.value === 'enterprise') {
       // 切换到套餐所属的 Tab 并刷新，否则套餐会"消失"
+      suppressSceneWatcher = targetSceneId !== activeSceneId.value
       activeSceneId.value = targetSceneId
       await fetchSealsByCategory(targetSceneId)
     } else {
@@ -1179,7 +1201,11 @@ async function handlePkgDelete(row: any) {
   await ElMessageBox.confirm('确认删除该套餐？', '提示')
   await deletePackage(row.id)
   ElMessage.success('删除成功')
-  await fetchSealsByCategory(defaultCategory.value)
+  if (routeType.value === 'enterprise' && activeSceneId.value) {
+    await fetchSealsByCategory(activeSceneId.value)
+  } else {
+    await fetchSealsByCategory(defaultCategory.value)
+  }
 }
 
 async function toggleStatus(row: any) {
@@ -1212,12 +1238,7 @@ async function uploadSeal(options: any) {
   }
 }
 
-function triggerSealUpload() {
-  // 清除已选文件状态，重新触发系统文件选择对话框
-  sealUploadRef.value?.clearFiles()
-  const input = sealUploadRef.value?.$refs.input as HTMLInputElement | undefined
-  if (input) input.click()
-}
+// 更换图片：点击图片/「更换」由 el-upload 原生点击事件打开文件选择框（element-plus >=2.14 不再暴露 $refs.input）
 
 // 8 大业务场景（企业刻章 Tab 只展示这些，排除电子/个人/测试/备案等干扰场景）
 const BUSINESS_SCENE_NAMES = ['新办企业全套章', '企业公章', '财务专用章', '合同专用章', '法定代表人章', '发票专用章', '个体户刻章', '其他印章']
