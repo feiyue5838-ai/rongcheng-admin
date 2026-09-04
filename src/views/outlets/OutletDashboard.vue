@@ -121,6 +121,23 @@
               </el-tag>
             </template>
           </el-table-column>
+          <el-table-column label="回执照片" width="130" align="center">
+            <template #default="{ row }">
+              <template v-if="(row.productionPhotos?.length || 0) + (row.filingPhotos?.length || 0) + (row.qualityCheckPhotos?.length || 0) > 0">
+                <el-image
+                  v-for="(p, pi) in (row.productionPhotos || []).concat(row.filingPhotos || [], row.qualityCheckPhotos || [])"
+                  :key="pi"
+                  :src="p"
+                  :preview-src-list="(row.productionPhotos || []).concat(row.filingPhotos || [], row.qualityCheckPhotos || [])"
+                  :initial-index="pi"
+                  style="width:36px; height:36px; border-radius:4px; margin:1px; cursor:zoom-in"
+                  fit="cover"
+                  :hide-on-click-modal="true"
+                />
+              </template>
+              <span v-else style="color:#ccc">—</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="assignedAt" label="分配时间" width="170">
             <template #default="{ row }">{{ formatDate(row.assignedAt) }}</template>
           </el-table-column>

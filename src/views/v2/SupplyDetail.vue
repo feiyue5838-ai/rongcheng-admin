@@ -101,6 +101,30 @@
                 <template v-if="f.completedAt"> · 完成 {{ fmt(f.completedAt) }}</template>
                 <template v-if="f.cancelledAt"> · 取消 {{ fmt(f.cancelledAt) }}</template>
               </div>
+              <!-- 回执照片：供应商端上传的制作/备案/质检照片 -->
+              <template v-if="f.productionPhotos?.length || f.filingPhotos?.length || f.qualityCheckPhotos?.length">
+                <div style="margin-top: 8px">
+                  <div
+                    v-for="g in receiptPhotoGroups(f)"
+                    :key="g.label"
+                    style="display:inline-flex; flex-direction:column; align-items:flex-start; margin-right:16px; margin-bottom:4px"
+                  >
+                    <div>
+                      <el-image
+                        v-for="(p, pi) in g.list"
+                        :key="pi"
+                        :src="p"
+                        :preview-src-list="g.list"
+                        :initial-index="pi"
+                        style="width:56px; height:56px; border-radius:4px; margin:0 6px 6px 0; cursor:zoom-in; vertical-align:top"
+                        fit="cover"
+                      />
+                    </div>
+                    <span style="color:#999; font-size:12px; line-height:1">{{ g.label }}（{{ g.list.length }}）</span>
+                  </div>
+                </div>
+              </template>
+              <div v-else-if="f.status === 'completed'" style="margin-top:4px; color:#bbb; font-size:12px">（无回执照片）</div>
             </div>
           </el-timeline-item>
         </el-timeline>
@@ -195,6 +219,16 @@ const statusTag = (s: string) => ({ pending_payment: 'warning', paid: 'success',
 const fulfillmentTag = (s: string) => fulfillmentStatusTag(s)
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
 const fmt = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
+
+/** 履约回执照片分组（仅返回非空组） */
+function receiptPhotoGroups(f: any) {
+  const groups = [
+    { label: '制作/成品', list: f?.productionPhotos || [] },
+    { label: '备案', list: f?.filingPhotos || [] },
+    { label: '质检', list: f?.qualityCheckPhotos || [] },
+  ]
+  return groups.filter(g => g.list.length > 0)
+}
 
 async function load() {
   loading.value = true
