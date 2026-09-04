@@ -90,9 +90,6 @@
             <button class="quick-btn" @click="goToOutletOrders">
               <el-icon><List /></el-icon> 查看全部订单
             </button>
-            <button class="quick-btn" @click="goToDeliveryReceipts">
-              <el-icon><Tickets /></el-icon> 查看交付回执
-            </button>
             <button class="quick-btn" @click="goToOutletList">
               <el-icon><OfficeBuilding /></el-icon> 网点列表
             </button>
@@ -228,7 +225,7 @@ import {
   outletFulfillmentStatusTag,
   FULFILLMENT_TODO_PRIORITY,
 } from '@/utils/fulfillment-status'
-import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding, Plus } from '@element-plus/icons-vue'
+import { Refresh, Clock, Tools, CircleCheck, Calendar, List, OfficeBuilding, Plus } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -414,10 +411,6 @@ async function onConfirmComplete() {
 
 function goToOutletOrders() {
   router.push('/v2/orders')
-}
-
-function goToDeliveryReceipts() {
-  router.push({ path: '/outlets/receipts', query: { outletId: selectedOutlet.value } })
 }
 
 function goToOutletList() {

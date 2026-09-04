@@ -81,9 +81,6 @@ export const v2OutletDeliverFulfillment = (id: string, data: any) =>
 export const v2OutletGetOrderDetail = (orderNo: string) =>
   outletRequest.get(`/v2/outlet/orders/${orderNo}`)
 
-export const getDeliveryReceiptsAPI = (params: { orderId?: string; storeId?: string }) =>
-  outletRequest.get('/delivery-receipts/Outlet/list', { params })
-
 // ==================== 网点通知 ====================
 export const getMyNotificationsAPI = () =>
   outletRequest.get('/notifications/me')

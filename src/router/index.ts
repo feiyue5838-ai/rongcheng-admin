@@ -79,7 +79,8 @@ const router = createRouter({
         { path: 'outlets', name: 'Outlets', component: () => import('@/views/outlets/OutletList.vue'), meta: { title: '合作网点' } },
         { path: 'outlets/dashboard', name: 'OutletDashboard', component: () => import('@/views/outlets/OutletDashboard.vue'), meta: { title: '网点控制台' } },
         { path: 'outlets/assign', redirect: '/v2/orders/unassigned' },
-        { path: 'outlets/receipts', name: 'DeliveryReceipts', component: () => import('@/views/outlets/DeliveryReceipts.vue'), meta: { title: '交付回执' } },
+        // V1 交付回执页退役（2026-09-04）：V2 回执照片在网点看板「回执照片」列 + 供应链订单详情时间线可见
+        { path: 'outlets/receipts', redirect: '/outlets/dashboard' },
         { path: 'outlets/overview', name: 'OutletOverview', component: () => import('@/views/outlets/OutletOverview.vue'), meta: { title: '全网点总览' } },
   { path: 'finance', name: 'Finance', component: () => import('@/views/finance/index.vue'), meta: { title: '财务总览' } },
         // 结算规则已废弃（V2.0 使用固定结算比例），旧页面 redirect 到财务总览

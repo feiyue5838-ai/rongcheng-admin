@@ -370,7 +370,6 @@ import {
   v2OutletDeliverFulfillment,
   v2OutletGetOrderDetail,
   uploadImage,
-  getDeliveryReceiptsAPI,
   getMyNotificationsAPI,
   markAllReadAPI,
   markReadAPI,

@@ -25,7 +25,6 @@
           <el-menu-item v-if="canAccess('/outlets/overview')" index="/outlets/overview">全网点总览</el-menu-item>
           <el-menu-item v-if="canAccess('/outlets')" index="/outlets">履约供应商列表</el-menu-item>
           <el-menu-item v-if="canAccess('/outlets/dashboard')" index="/outlets/dashboard">网点看板</el-menu-item>
-          <el-menu-item v-if="canAccess('/outlets/receipts')" index="/outlets/receipts">交付回执</el-menu-item>
         </el-sub-menu>
 
         <!-- 财务中心 sub-menu -->
@@ -156,7 +155,7 @@ const canAccess = (path: string) => authStore.canAccess(path)
 // 各子菜单是否显示（任一子项有权限则父菜单显示）
 const showStoreMgmt = computed(() =>
   canAccess('/outlets/overview') || canAccess('/outlets') || canAccess('/outlets/dashboard') ||
-  canAccess('/outlets/assign') || canAccess('/outlets/receipts'),
+  canAccess('/outlets/assign'),
 )
 const showFinance = computed(() =>
   canAccess('/finance') || canAccess('/v2/settlements'),

@@ -197,11 +197,6 @@ export const setOutletBusinessTypesAPI = (id: string, businessTypeIds: string[])
 
 // ==================== 订单分配 API（V1 退役 2026-08-29：派单走 v2AssignOrder / v2 待派单池） ====================
 
-// ==================== 交付回执 API ====================
-export const getDeliveryReceiptsAPI = (params: object) => request.get('/delivery-receipts', { params })
-export const getDeliveryReceiptAPI = (id: string) => request.get(`/delivery-receipts/${id}`)
-export const getDeliveryReceiptStatsAPI = () => request.get('/delivery-receipts/stats')
-
 // ==================== 代理记账套餐 API ====================
 export const getBookkeepingPackages = (params?: object) => request.get('/bookkeeping/packages', { params })
 export const getAdminBookkeepingPackages = (params?: object) => request.get('/bookkeeping/packages/admin/list', { params })
