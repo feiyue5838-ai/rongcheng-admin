@@ -161,7 +161,7 @@
       width="520px"
       :close-on-click-modal="false"
     >
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
         <el-form-item label="履约供应商名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入履约供应商名称" maxlength="50" />
         </el-form-item>
@@ -208,7 +208,7 @@
           </el-upload>
           <div style="font-size:12px;color:#999">支持多张（特种行业许可证等），最多 6 张</div>
         </el-form-item>
-        <el-form-item v-if="isEdit" label="状态" prop="status">
+        <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
             <el-radio :label="1">营业中</el-radio>
             <el-radio :label="0">已歇业</el-radio>
