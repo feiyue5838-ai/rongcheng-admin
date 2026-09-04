@@ -43,34 +43,23 @@
         </el-tab-pane>
       </el-tabs>
 
-      <!-- ====== 路由类型：single（个人 / 电子）—— 单一分类 Tab ====== -->
-      <!-- 个人印章：拆为【个人印章 / 个人职业印章】两个子 Tab -->
+      <!-- 个人印章：按后台配置的 personal 场景动态展示 -->
       <el-tabs
         v-if="isPersonal"
-        v-model="activePersonalSubTab"
+        v-model="activePersonalSceneId"
         class="scene-tabs"
       >
-        <el-tab-pane name="personal">
+        <el-tab-pane
+          v-for="scene in personalScenes"
+          :key="scene.id"
+          :name="scene.id"
+        >
           <template #label>
             <span class="tab-label">
-              个人印章
+              {{ scene.name }}
               <el-badge
-                v-if="personalSealCount > 0"
-                :value="personalSealCount"
-                :max="99"
-                class="tab-badge"
-                type="primary"
-              />
-            </span>
-          </template>
-        </el-tab-pane>
-        <el-tab-pane name="professional">
-          <template #label>
-            <span class="tab-label">
-              个人职业印章
-              <el-badge
-                v-if="professionalSealCount > 0"
-                :value="professionalSealCount"
+                v-if="personalSceneItemCount(scene.id) > 0"
+                :value="personalSceneItemCount(scene.id)"
                 :max="99"
                 class="tab-badge"
                 type="primary"
@@ -80,23 +69,23 @@
         </el-tab-pane>
       </el-tabs>
 
-      <!-- 电子印章：6 个子 Tab（按印章类型） -->
+      <!-- 电子印章：按后台配置的 electronic 场景动态展示 -->
       <el-tabs
         v-else-if="isElectronic"
-        v-model="activeSingleSubTab"
+        v-model="activeElectronicSceneId"
         class="scene-tabs electronic-tabs"
       >
         <el-tab-pane
-          v-for="sub in ELECTRONIC_SUB_TYPES"
-          :key="sub.label"
-          :name="sub.label"
+          v-for="scene in electronicScenes"
+          :key="scene.id"
+          :name="scene.id"
         >
           <template #label>
             <span class="tab-label">
-              {{ sub.label }}
+              {{ scene.name }}
               <el-badge
-                v-if="singleSubCount(sub.label) > 0"
-                :value="singleSubCount(sub.label)"
+                v-if="electronicSceneItemCount(scene.id) > 0"
+                :value="electronicSceneItemCount(scene.id)"
                 :max="99"
                 class="tab-badge"
                 type="primary"
@@ -261,10 +250,10 @@
             :inactive-value="'nationwide'"
             @change="onPricingModeChange"
           />
-          <span style="margin-left:8px;color:#606266">{{ pricingMode === 'regional' ? '区域价（按城市设置不同价格）' : '全国价（统一基准价）' }}</span>
+          <span style="margin-left:8px;color:#606266">{{ pricingMode === 'regional' ? '区域价（按城市/区县设置不同价格）' : '全国价（统一基准价）' }}</span>
         </el-form-item>
         <el-form-item label="城市差异化定价" v-if="pricingMode === 'regional'">
-          <div class="region-price-tip">设置各城市价格（空则使用上方基准价）</div>
+          <div class="region-price-tip">设置各城市或区县价格（空则使用上方基准价）</div>
           <div v-for="(row, idx) in regionPricesRows" :key="idx" class="region-price-row">
             <el-cascader
               v-model="row._cityValue"
@@ -274,13 +263,13 @@
               clearable
               filterable
               style="width:200px"
-              @change="(val: string[]) => { row.city = (val && val.length >= 2) ? val[1] : ''; row._cityValue = val }"
+              @change="(val: string[]) => setRegionRowSelection(row, val)"
             />
             <el-input-number v-model="row.price" :min="0" :precision="2" style="width:140px" />
             <el-button type="danger" link @click="removeRegionPrice(idx)">删除</el-button>
           </div>
           <div class="region-price-actions">
-            <el-button type="default" plain size="small" @click="addRegionPrice">+ 添加城市价格</el-button>
+            <el-button type="default" plain size="small" @click="addRegionPrice">+ 添加地区价格</el-button>
             <el-button v-if="regionPricesRows.length > 0" type="danger" plain size="small" @click="clearAllRegionPrices">清空全部</el-button>
           </div>
         </el-form-item>
@@ -366,10 +355,10 @@
             :inactive-value="'nationwide'"
             @change="onPkgPricingModeChange"
           />
-          <span style="margin-left:8px;color:#606266">{{ pkgPricingMode === 'regional' ? '区域价（按城市设置不同价格）' : '全国价（统一基准价）' }}</span>
+          <span style="margin-left:8px;color:#606266">{{ pkgPricingMode === 'regional' ? '区域价（按城市/区县设置不同价格）' : '全国价（统一基准价）' }}</span>
         </el-form-item>
         <el-form-item label="城市差异化定价" v-if="pkgPricingMode === 'regional'">
-          <div class="region-price-tip">设置各城市价格（空则使用上方基准价）</div>
+          <div class="region-price-tip">设置各城市或区县价格（空则使用上方基准价）</div>
           <div v-for="(row, idx) in pkgRegionPricesRows" :key="idx" class="region-price-row">
             <el-cascader
               v-model="row._cityValue"
@@ -379,13 +368,13 @@
               clearable
               filterable
               style="width:200px"
-              @change="(val: string[]) => { row.city = (val && val.length >= 2) ? val[1] : ''; row._cityValue = val }"
+              @change="(val: string[]) => setRegionRowSelection(row, val)"
             />
             <el-input-number v-model="row.price" :min="0" :precision="2" style="width:140px" />
             <el-button type="danger" link @click="removePkgRegionPrice(idx)">删除</el-button>
           </div>
           <div class="region-price-actions">
-            <el-button type="default" plain size="small" @click="addPkgRegionPrice">+ 添加城市价格</el-button>
+            <el-button type="default" plain size="small" @click="addPkgRegionPrice">+ 添加地区价格</el-button>
             <el-button v-if="pkgRegionPricesRows.length > 0" type="danger" plain size="small" @click="clearAllPkgRegionPrices">清空全部</el-button>
           </div>
         </el-form-item>
@@ -433,6 +422,9 @@
       </div>
       <el-table :data="sceneManageList" style="margin-top: 12px" size="small">
         <el-table-column prop="name" label="场景名称" min-width="140" />
+        <el-table-column label="业务类型" width="100" align="center">
+          <template #default="{ row }">{{ sceneTypeLabel(row.sceneType) }}</template>
+        </el-table-column>
         <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
         <el-table-column prop="sort" label="排序" width="70" align="center" />
         <el-table-column label="状态" width="80" align="center">
@@ -461,6 +453,14 @@
         <el-form-item label="场景名称" required>
           <el-input v-model="sceneEditForm.name" placeholder="如：新办企业全套章" />
         </el-form-item>
+        <el-form-item label="业务类型" required>
+          <el-select v-model="sceneEditForm.sceneType" style="width: 100%">
+            <el-option label="企业刻章" value="enterprise" />
+            <el-option label="个人印章" value="personal" />
+            <el-option label="电子印章" value="electronic" />
+            <el-option label="备案查询" value="record" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="sceneEditForm.description" type="textarea" rows="2" placeholder="场景说明（可选）" />
         </el-form-item>
@@ -487,7 +487,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { provinceToCities, cityToDistricts } from '@/data/region-data'
+import { provinceToCities, cityToDistricts, regionCodeByPath, regionPathByCode, regionPathByLegacyName } from '@/data/region-data'
 import { Box, Postcard } from '@element-plus/icons-vue'
 import { getSealCategories, getSealSceneProducts, createSeal, updateSeal, deleteSeal, uploadImage, updatePackage, deletePackage, getAdminScenes, getSeals, getSealPackages, createPackage, createScene, updateScene, deleteScene } from '@/api'
 const route = useRoute()
@@ -501,10 +501,11 @@ const routeCategoryKey = computed(() => {
 })
 
 // 场景全部来自接口，不再写死任何 UUID：
-//  - 8 大业务场景 = sceneType==='scene'
-//  - 个人 / 电子 / 备案查询 靠 route 中的 type= 区分
-const personalScene = computed(() => categories.value.find((c) => c.route && c.route.includes('type=personal')))
-const electronicScene = computed(() => categories.value.find((c) => c.route && c.route.includes('type=electronic')))
+//  - 企业 / 个人 / 电子分别使用 enterprise / personal / electronic
+const personalScenes = computed(() => categories.value.filter((c) => c.sceneType === 'personal'))
+const electronicScenes = computed(() => categories.value.filter((c) => c.sceneType === 'electronic'))
+const personalScene = computed(() => personalScenes.value.find((c) => c.name === '个人印章') || personalScenes.value[0])
+const electronicScene = computed(() => electronicScenes.value.find((c) => c.name === '电子印章') || electronicScenes.value[0])
 
 const isPersonal = computed(() => routeCategoryKey.value === 'personal')
 const isElectronic = computed(() => routeCategoryKey.value === 'electronic')
@@ -528,7 +529,7 @@ const personalCategories = computed(() => {
   ].filter(Boolean)
 })
 
-// 对话框「分类」下拉候选：企业=8 大业务场景；电子=单一电子场景（禁用）；个人走子分类（不展示本下拉）
+// 对话框「分类」下拉候选：企业=全部动态业务场景；电子=单一电子场景（禁用）；个人走子分类（不展示本下拉）
 const sceneOptions = computed(() => {
   if (isPersonal.value) return []
   if (isElectronic.value) return electronicScene.value ? [electronicScene.value] : []
@@ -590,7 +591,7 @@ const defaultCategoryName = computed(() => {
   return cat?.name || ''
 })
 
-// 8 大业务场景：sceneType==='scene'（来自接口，不再写死 ID 白名单）
+// 企业业务场景来自接口的 sceneType，不写死名称或 ID。
 
 const categories = ref<any[]>([])
 const seals = ref<any[]>([])
@@ -601,7 +602,8 @@ let suppressSceneWatcher = false
 
 const activeSceneId = ref('')        // enterprise 路由：当前选中的场景
 const activeSingleTab = ref('')       // single 路由：Tab name（等于 defaultCategory）
-const activePersonalSubTab = ref('personal')  // single 路由 + 个人场景：子 Tab（个人印章 / 个人职业印章）
+const activePersonalSceneId = ref('') // 个人路由：当前选中的动态场景
+const activeElectronicSceneId = ref('') // 电子路由：当前选中的动态场景
 const activeSingleSubTab = ref('电子公章')    // single 路由 + 电子场景：子 Tab（电子公章 / …）
 
 const dialogVisible = ref(false)
@@ -620,25 +622,71 @@ const PROVINCE_CITY_OPTIONS = Object.keys(provinceToCities).map((prov) => ({
   })),
 }))
 
-// 市 → 省 反向映射，用于编辑时回显级联路径
-const CITY_TO_PROVINCE: Record<string, string> = {}
-for (const [prov, cities] of Object.entries(provinceToCities)) {
-  for (const c of cities) CITY_TO_PROVINCE[c] = prov
+function getSelectedRegion(path: string[] | undefined | null) {
+  return path && path.length >= 2 ? path[path.length - 1] : ''
+}
+
+function getRegionCode(path: string[] | undefined | null) {
+  return path && path.length >= 2 ? (regionCodeByPath[path.join('\u0000')] || '') : ''
+}
+
+type RegionPriceRow = {
+  regionCode: string
+  city: string
+  price: number
+  _cityValue: string | string[]
+}
+
+type RegionPriceValue = {
+  province: string
+  city: string
+  district: string
+  price: number
+}
+
+function setRegionRowSelection(row: RegionPriceRow, path: string[]) {
+  row._cityValue = path
+  row.city = getSelectedRegion(path)
+  row.regionCode = getRegionCode(path)
+}
+
+function createRegionPriceRow(regionKey: string, price: unknown): RegionPriceRow {
+  const stored = price && typeof price === 'object' ? price as Partial<RegionPriceValue> : null
+  const storedPath = stored
+    ? [stored.province, stored.city, stored.district].filter((item): item is string => Boolean(item))
+    : []
+  const path = regionPathByCode[regionKey] || (storedPath.length >= 2 ? storedPath : regionPathByLegacyName[regionKey])
+  return {
+    regionCode: path ? getRegionCode(path) : regionKey,
+    city: path ? getSelectedRegion(path) : regionKey,
+    price: Number(stored?.price ?? price),
+    _cityValue: path || regionKey,
+  }
+}
+
+function buildRegionPriceValue(row: RegionPriceRow): RegionPriceValue {
+  const path = Array.isArray(row._cityValue) ? row._cityValue : []
+  return {
+    province: path[0] || '',
+    city: path[1] || '',
+    district: path[2] || '',
+    price: Number(row.price),
+  }
 }
 
 const cityOptions = PROVINCE_CITY_OPTIONS
 
-const regionPricesRows = ref<Array<{ city: string; price: number; _cityValue: string | string[] }>>([])
+const regionPricesRows = ref<RegionPriceRow[]>([])
 const pricingMode = ref<'nationwide' | 'regional'>('nationwide')
 
 function getRegionPricesRows() {
   const rp = form.region_prices || form.regionPrices || {}
   // @ts-ignore
-  regionPricesRows.value = Object.entries(rp).map(([city, price]) => ({ city, price: Number(price), _cityValue: CITY_TO_PROVINCE[city] ? [CITY_TO_PROVINCE[city], city] : (city || '') }))
+  regionPricesRows.value = Object.entries(rp).map(([regionKey, price]) => createRegionPriceRow(regionKey, price))
 }
 
 function addRegionPrice() {
-  regionPricesRows.value.push({ city: '', price: 0, _cityValue: '' })
+  regionPricesRows.value.push({ regionCode: '', city: '', price: 0, _cityValue: '' })
 }
 
 function onPricingModeChange(mode: string) {
@@ -672,10 +720,16 @@ const pkgForm = reactive<any>({ id: '', sceneId: '', name: '', price: 0, descrip
 const sceneDialogVisible = ref(false)
 const sceneEditVisible = ref(false)
 const sceneSaving = ref(false)
-const sceneEditForm = reactive<any>({ id: '', name: '', description: '', sort: 0, status: 1 })
+const sceneEditForm = reactive<any>({ id: '', name: '', description: '', sceneType: 'enterprise', sort: 0, status: 1 })
 
-// 场景管理列表：仅真实场景（sceneType==='scene'），排除合成进来的个人/电子分类项
-const sceneManageList = computed(() => categories.value.filter((c: any) => c.sceneType === 'scene'))
+// 场景管理列表：展示三类真实场景。
+const sceneManageList = computed(() => categories.value.filter((c: any) =>
+  ['enterprise', 'personal', 'electronic', 'record'].includes(c.sceneType)
+))
+
+function sceneTypeLabel(sceneType: string) {
+  return ({ enterprise: '企业刻章', personal: '个人印章', electronic: '电子印章', record: '备案查询' } as Record<string, string>)[sceneType] || '未分类'
+}
 
 async function openSceneDialog() {
   // 打开前刷新场景列表，避免与其他页面（场景管理）的改动不同步
@@ -687,7 +741,8 @@ function showSceneEditDialog(row?: any) {
   if (row) {
     Object.assign(sceneEditForm, { ...row })
   } else {
-    Object.assign(sceneEditForm, { id: '', name: '', description: '', sort: 0, status: 1 })
+    const sceneType = isPersonal.value ? 'personal' : isElectronic.value ? 'electronic' : 'enterprise'
+    Object.assign(sceneEditForm, { id: '', name: '', description: '', sceneType, sort: 0, status: 1 })
   }
   sceneEditVisible.value = true
 }
@@ -699,17 +754,27 @@ async function saveScene() {
     const payload = {
       name: sceneEditForm.name,
       description: sceneEditForm.description,
+      sceneType: sceneEditForm.sceneType,
       sort: sceneEditForm.sort,
       status: sceneEditForm.status,
     }
+    let savedScene: any
     if (sceneEditForm.id) {
       await updateScene(sceneEditForm.id, payload)
     } else {
-      await createScene(payload)
+      savedScene = await createScene(payload)
     }
     ElMessage.success(sceneEditForm.id ? '保存成功' : '创建成功')
     sceneEditVisible.value = false
     await fetchAllCategories()
+    const savedSceneId = savedScene?.id || savedScene?.data?.id
+    if (savedSceneId && payload.sceneType === 'personal' && isPersonal.value) {
+      activePersonalSceneId.value = savedSceneId
+      await fetchSealsByCategory(personalScene.value?.id || savedSceneId)
+    } else if (savedSceneId && payload.sceneType === 'electronic' && isElectronic.value) {
+      activeElectronicSceneId.value = savedSceneId
+      await fetchSealsByCategory(electronicScene.value?.id || savedSceneId)
+    }
   } finally {
     sceneSaving.value = false
   }
@@ -774,15 +839,9 @@ const filteredSeals = computed(() => {
     const scene = businessCategories.value.find((c) => c.id === activeSceneId.value)
     list = list.filter((s) => s._sceneName === scene?.name)
   } else if (isPersonal.value) {
-    list = activePersonalSubTab.value === 'personal'
-      ? list.filter((s) => s.sealCategories?.name === '个人印章')
-      : list.filter((s) => s.sealCategories?.name === '个人职业章')
+    list = list.filter((s) => s._sceneId === activePersonalSceneId.value)
   } else if (isElectronic.value) {
-    const categoryName = getElectronicCategory(activeSingleSubTab.value)?.name
-    list = list.filter((s) =>
-      (categoryName && s.sealCategories?.name === categoryName) ||
-      (!s.sealCategories?.id && getSealSubType(s.name) === activeSingleSubTab.value)
-    )
+    list = list.filter((s) => s._sceneId === activeElectronicSceneId.value)
   }
   return [...list].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
 })
@@ -794,6 +853,12 @@ const filteredPackages = computed(() => {
       if (routeType.value === 'enterprise' && activeSceneId.value) {
         const sceneName = businessCategories.value.find((c) => c.id === activeSceneId.value)?.name
         return p._sceneName === sceneName
+      }
+      if (isPersonal.value && activePersonalSceneId.value) {
+        return p._sceneId === activePersonalSceneId.value
+      }
+      if (isElectronic.value && activeElectronicSceneId.value) {
+        return p._sceneId === activeElectronicSceneId.value
       }
       return true
     })
@@ -812,10 +877,15 @@ function sceneItemCount(sceneId: string): number {
     + packages.value.filter((p) => p._sceneName === sceneName).length
 }
 
-// 个人场景：子分组计数
-// 个人印章 Tab 数量（动态计算，不再硬编码子分类名）
-const personalSealCount = computed(() => seals.value.filter((s) => s.sealCategories?.name === '个人印章').length)
-const professionalSealCount = computed(() => seals.value.filter((s) => s.sealCategories?.name === '个人职业章').length)
+function personalSceneItemCount(sceneId: string): number {
+  return seals.value.filter((s) => s._sceneId === sceneId).length
+    + packages.value.filter((p) => p._sceneId === sceneId).length
+}
+
+function electronicSceneItemCount(sceneId: string): number {
+  return seals.value.filter((s) => s._sceneId === sceneId).length
+    + packages.value.filter((p) => p._sceneId === sceneId).length
+}
 
 // 单路由（个人 + 电子）子 Tab 计数
 // 电子印章 Tab 数量（基于动态 electronicSubTypesMap）
@@ -845,11 +915,7 @@ async function fetchAllCategories() {
   const cats = Array.isArray(catRes) ? catRes : (catRes?.data || [])
   const scenes = Array.isArray(sceneRes) ? sceneRes : (sceneRes?.data || [])
   sealCategories.value = cats
-  const personalCat = cats.find((c: any) => c.name === '个人印章')
-  const electronicCat = cats.find((c: any) => c.name === '电子印章')
   const merged: any[] = [...scenes]
-  if (personalCat) merged.push({ ...personalCat, sceneType: 'single', route: '/pages/seal/form/index?type=personal' })
-  if (electronicCat) merged.push({ ...electronicCat, sceneType: 'single', route: '/pages/seal/form/index?type=electronic' })
   categories.value = merged
 }
 
@@ -872,34 +938,20 @@ async function fetchSealsByCategory(catId: string) {
       suppressSceneWatcher = nextSceneId !== activeSceneId.value
       activeSceneId.value = nextSceneId
     } else if (isElectronic.value) {
-      // 电子印章按真实 sealCategoryId 归类；旧数据无分类时用名称前缀兜底
-      const all: any = await getSeals()
-      const list = Array.isArray(all) ? all : (all?.items || [])
-      const cat = categories.value.find((c) => c.id === catId)
-      const electronicCategoryNames = new Set(
-        ELECTRONIC_SUB_TYPES
-          .map((type) => getElectronicCategory(type.label)?.name)
-          .filter(Boolean)
-      )
-      seals.value = list
-        .filter((s: any) =>
-          electronicCategoryNames.has(s.sealCategories?.name) ||
-          (!s.sealCategories?.id && s.name && s.name.startsWith('电子'))
-        )
-        .map((s: any) => ({ ...s, categoryName: s.sealCategories?.name || '—', _sceneName: cat?.name || '电子印章' }))
-      packages.value = []
+      const results = await Promise.all(electronicScenes.value.map((scene) => fetchSceneProducts(scene)))
+      seals.value = results.flatMap((result) => result.seals)
+      packages.value = results.flatMap((result) => result.packages)
+      if (!electronicScenes.value.some((scene) => scene.id === activeElectronicSceneId.value)) {
+        activeElectronicSceneId.value = electronicScene.value?.id || ''
+      }
     } else if (isPersonal.value) {
-      // 个人印章：全量拉取后前端按 name 过滤
-      const all: any = await getSeals()
-      const list = Array.isArray(all) ? all : (all?.items || [])
-      const cat = categories.value.find((c) => c.id === catId)
-      seals.value = list
-        .filter((s: any) => {
-          const n = s.sealCategories?.name
-          return (n === '个人印章' || n === '个人签名章' || n === '个人职业章') && !(s.name || '').startsWith('电子')
-        })
-        .map((s: any) => ({ ...s, categoryName: s.sealCategories?.name || '—', _sceneName: cat?.name || '个人印章' }))
-      packages.value = []
+      const results = await Promise.all(personalScenes.value.map((scene) => fetchSceneProducts(scene)))
+      // 保留产品与场景的关联记录；同一产品可同时属于多个个人场景。
+      seals.value = results.flatMap((result) => result.seals)
+      packages.value = results.flatMap((result) => result.packages)
+      if (!personalScenes.value.some((scene) => scene.id === activePersonalSceneId.value)) {
+        activePersonalSceneId.value = personalScene.value?.id || ''
+      }
     } else {
       const cat = categories.value.find((c) => c.id === catId)
       const catName = cat?.name || ''
@@ -908,6 +960,18 @@ async function fetchSealsByCategory(catId: string) {
     }
   } finally {
     loading.value = false
+  }
+}
+
+function dedupeById(items: any[]) {
+  return [...new Map(items.map((item) => [item.id, item])).values()]
+}
+
+async function fetchSceneProducts(scene: any) {
+  const res: any = await getSealSceneProducts(scene.id)
+  return {
+    seals: (res?.seals || []).map((s: any) => ({ ...s, categoryName: s.sealCategories?.name || '—', _sceneName: scene.name, _sceneId: scene.id })),
+    packages: (res?.packages || []).map((p: any) => ({ ...p, categoryName: scene.name, _sceneName: scene.name, _sceneId: scene.id })),
   }
 }
 
@@ -963,8 +1027,8 @@ function showDialog(type: string, row?: any) {
   if (row) {
     // 编辑：回显当前所属场景 + 个人子分类，允许改所属场景
     let ctxSceneId = ''
-    if (isPersonal.value) ctxSceneId = activePersonalSubTab.value === 'professional' ? (categories.value.find((c: any) => c.name === '个人职业章')?.id || '') : (personalScene.value?.id || '')
-    else if (isElectronic.value) ctxSceneId = electronicScene.value?.id || ''
+    if (isPersonal.value) ctxSceneId = row._sceneId || activePersonalSceneId.value || personalScene.value?.id || ''
+    else if (isElectronic.value) ctxSceneId = row._sceneId || activeElectronicSceneId.value || electronicScene.value?.id || ''
     else ctxSceneId = activeSceneId.value || ''
     const electronicType = isElectronic.value
       ? (ELECTRONIC_SUB_TYPES.find((type) => type.label === row.sealCategories?.name)?.label || getSealSubType(row.name || '') || activeSingleSubTab.value)
@@ -982,8 +1046,8 @@ function showDialog(type: string, row?: any) {
   } else {
     // 新增：预选当前所属场景（企业=当前 Tab；个人/电子=对应场景）
     let defaultSceneId = ''
-    if (isPersonal.value) defaultSceneId = activePersonalSubTab.value === 'professional' ? (categories.value.find((c: any) => c.name === '个人职业章')?.id || '') : (personalScene.value?.id || '')
-    else if (isElectronic.value) defaultSceneId = electronicScene.value?.id || ''
+    if (isPersonal.value) defaultSceneId = activePersonalSceneId.value || personalScene.value?.id || ''
+    else if (isElectronic.value) defaultSceneId = activeElectronicSceneId.value || electronicScene.value?.id || ''
     else defaultSceneId = activeSceneId.value || ''
     const electronicType = isElectronic.value ? activeSingleSubTab.value : ''
     Object.assign(form, {
@@ -1017,10 +1081,10 @@ async function saveSeal() {
       ? normalizeElectronicSealName(form.name, form.electronicType)
       : form.name
     // 从行编辑数据还原 region_prices 对象（全国价模式强制清空，仅用基准价）
-    const region_prices: Record<string, number> = {}
+    const region_prices: Record<string, RegionPriceValue> = {}
     if (pricingMode.value === 'regional') {
       for (const row of regionPricesRows.value) {
-        if (row.city.trim()) region_prices[row.city.trim()] = row.price
+        if (row.regionCode.trim()) region_prices[row.regionCode.trim()] = buildRegionPriceValue(row)
       }
     }
 
@@ -1111,15 +1175,15 @@ function openPkgDialog() {
 }
 
 // 套餐城市差异化定价
-const pkgRegionPricesRows = ref<Array<{ city: string; price: number; _cityValue: string | string[] }>>([])
+const pkgRegionPricesRows = ref<RegionPriceRow[]>([])
 const pkgPricingMode = ref<'nationwide' | 'regional'>('nationwide')
 function getPkgRegionPricesRows() {
   const rp = pkgForm.region_prices || pkgForm.regionPrices || {}
   // @ts-ignore
-  pkgRegionPricesRows.value = Object.entries(rp).map(([city, price]) => ({ city, price: Number(price), _cityValue: CITY_TO_PROVINCE[city] ? [CITY_TO_PROVINCE[city], city] : (city || '') }))
+  pkgRegionPricesRows.value = Object.entries(rp).map(([regionKey, price]) => createRegionPriceRow(regionKey, price))
 }
 function addPkgRegionPrice() {
-  pkgRegionPricesRows.value.push({ city: '', price: 0, _cityValue: '' })
+  pkgRegionPricesRows.value.push({ regionCode: '', city: '', price: 0, _cityValue: '' })
 }
 function removePkgRegionPrice(idx: number) {
   pkgRegionPricesRows.value.splice(idx, 1)
@@ -1133,10 +1197,10 @@ async function clearAllPkgRegionPrices() {
   pkgRegionPricesRows.value = []
 }
 function buildPkgRegionPrices() {
-  const rp: Record<string, number> = {}
+  const rp: Record<string, RegionPriceValue> = {}
   for (const row of pkgRegionPricesRows.value) {
-    if (row.city && row.price !== undefined && row.price !== null) {
-      rp[row.city] = Number(row.price)
+    if (row.regionCode && row.price !== undefined && row.price !== null) {
+      rp[row.regionCode] = buildRegionPriceValue(row)
     }
   }
   return rp
@@ -1240,14 +1304,10 @@ async function uploadSeal(options: any) {
 
 // 更换图片：点击图片/「更换」由 el-upload 原生点击事件打开文件选择框（element-plus >=2.14 不再暴露 $refs.input）
 
-// 8 大业务场景（企业刻章 Tab 只展示这些，排除电子/个人/测试/备案等干扰场景）
-const BUSINESS_SCENE_NAMES = ['新办企业全套章', '企业公章', '财务专用章', '合同专用章', '法定代表人章', '发票专用章', '个体户刻章', '其他印章']
-
-// 业务场景（8 大场景）：sceneType==='scene' 且属于企业业务场景白名单
-const businessCategories = computed(() => {
-  const scenes = categories.value.filter((c) => c.sceneType === 'scene' && BUSINESS_SCENE_NAMES.includes(c.name))
-  return scenes.length ? scenes : categories.value
-})
+// 企业、个人、电子均按后端 sceneType 精确隔离。
+const businessCategories = computed(() =>
+  categories.value.filter((c) => c.sceneType === 'enterprise')
+)
 
 // 初始化
 onMounted(async () => {
@@ -1265,7 +1325,8 @@ watch(defaultCategory, async (newVal, oldVal) => {
   if (newVal === oldVal) return
   activeSceneId.value = ''
   activeSingleTab.value = newVal
-  activePersonalSubTab.value = 'personal'
+  activePersonalSceneId.value = ''
+  activeElectronicSceneId.value = ''
   activeSingleSubTab.value = '电子公章'
   if (!initialized || !newVal) return
   await fetchSealsByCategory(newVal)
@@ -1635,4 +1696,3 @@ watch(activeSceneId, async (newId, oldId) => {
   margin-bottom: 8px;
 }
 </style>
-

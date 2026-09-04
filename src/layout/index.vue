@@ -25,7 +25,6 @@
           <el-menu-item v-if="canAccess('/outlets/overview')" index="/outlets/overview">全网点总览</el-menu-item>
           <el-menu-item v-if="canAccess('/outlets')" index="/outlets">履约供应商列表</el-menu-item>
           <el-menu-item v-if="canAccess('/outlets/dashboard')" index="/outlets/dashboard">网点看板</el-menu-item>
-          <el-menu-item v-if="canAccess('/outlets/assign')" index="/outlets/assign">订单分配</el-menu-item>
           <el-menu-item v-if="canAccess('/outlets/receipts')" index="/outlets/receipts">交付回执</el-menu-item>
         </el-sub-menu>
 
@@ -43,14 +42,6 @@
           <el-menu-item v-if="canAccess('/v2/orders')" index="/v2/orders">供应链订单</el-menu-item>
           <el-menu-item v-if="canAccess('/v2/orders/unassigned')" index="/v2/orders/unassigned">待派单池</el-menu-item>
           <el-menu-item v-if="canAccess('/v2/refunds')" index="/v2/refunds">退款管理</el-menu-item>
-          <el-sub-menu v-if="showLegacyOrders" index="legacyOrders">
-            <template #title><span>历史订单</span></template>
-            <el-menu-item v-if="canAccess('/orders/seal')" index="/orders/seal">历史刻章订单</el-menu-item>
-            <el-menu-item v-if="canAccess('/orders/newspaper')" index="/orders/newspaper">历史登报订单</el-menu-item>
-            <el-menu-item v-if="canAccess('/orders/bookkeeping')" index="/orders/bookkeeping">历史记账订单</el-menu-item>
-            <el-menu-item v-if="canAccess('/after-sales/orders')" index="/after-sales/orders">历史售后订单</el-menu-item>
-            <el-menu-item v-if="canAccess('/after-sales/refund-records')" index="/after-sales/refund-records">历史退款记录</el-menu-item>
-          </el-sub-menu>
         </el-sub-menu>
 
         <!-- 产品管理 sub-menu -->
@@ -171,13 +162,7 @@ const showFinance = computed(() =>
   canAccess('/finance') || canAccess('/v2/settlements'),
 )
 const showOrders = computed(() =>
-  canAccess('/v2/orders') || canAccess('/v2/orders/unassigned') || canAccess('/v2/refunds') ||
-  canAccess('/orders/seal') || canAccess('/orders/newspaper') || canAccess('/orders/bookkeeping') ||
-  canAccess('/after-sales/orders') || canAccess('/after-sales/refund-records'),
-)
-const showLegacyOrders = computed(() =>
-  canAccess('/orders/seal') || canAccess('/orders/newspaper') || canAccess('/orders/bookkeeping') ||
-  canAccess('/after-sales/orders') || canAccess('/after-sales/refund-records'),
+  canAccess('/v2/orders') || canAccess('/v2/orders/unassigned') || canAccess('/v2/refunds'),
 )
 const showProducts = computed(() =>
   canAccess('/products/seals/enterprise') || canAccess('/products/scenes') ||

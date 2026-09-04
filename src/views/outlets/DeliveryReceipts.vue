@@ -118,7 +118,6 @@
         stripe
         height="calc(100vh - 320px)"
         style="width:100%"
-        :default-sort="{ prop: 'createdAt', order: 'descending' }"
       >
         <el-table-column type="selection" width="40" fixed />
 
@@ -145,7 +144,7 @@
         </el-table-column>
 
         <!-- 订单号 -->
-        <el-table-column label="订单号" prop="seal_orders.order_no" width="200" sortable>
+        <el-table-column label="订单号" prop="seal_orders.order_no" width="200">
           <template #default="{ row }">
             <span class="order-no">{{ row.seal_orders?.order_no || '-' }}</span>
           </template>
@@ -190,7 +189,7 @@
         </el-table-column>
 
         <!-- 时间 -->
-        <el-table-column label="上传时间" prop="created_at" width="170" sortable>
+        <el-table-column label="上传时间" prop="created_at" width="170">
           <template #default="{ row }">
             {{ formatDate(row.created_at) }}
           </template>
@@ -212,9 +211,7 @@
               <el-button
                 size="small"
                 link
-                tag="a"
-                :href="row.url"
-                target="_blank"
+                @click="downloadReceipt(row)"
               >
                 <el-icon><Download /></el-icon> 下载
               </el-button>
@@ -252,7 +249,7 @@ import { getDeliveryReceiptsAPI, getOutletsAPI, getDeliveryReceiptStatsAPI } fro
 const route = useRoute()
 import { formatDate } from '@/utils/format'
 import {
-  Search, Document, Picture, ZoomIn, Download, ArrowDown, ArrowUp,
+  Search, Document, Picture, ZoomIn, Download,
   FolderOpened, DocumentChecked, Calendar,
 } from '@element-plus/icons-vue'
 
@@ -346,12 +343,14 @@ async function loadData() {
     const res: any = await getDeliveryReceiptsAPI(params)
     const rawList = (res as any).data?.list ?? (res as any).list ?? []
     const list = Array.isArray(rawList) ? rawList : []
-    const total = (res as any).pagination?.total ?? (res as any).total ?? 0
+    const total = (res as any).data?.pagination?.total
+      ?? (res as any).pagination?.total
+      ?? (res as any).data?.total
+      ?? (res as any).total
+      ?? 0
 
     tableData.value = list
     pagination.total = total
-    pagination.page = (res as any).data?.pagination?.page ?? res.pagination?.page ?? page.value
-    pagination.pageSize = (res as any).data?.pagination?.pageSize ?? res.pagination?.pageSize ?? pageSize.value
   } catch (err: any) {
     ElMessage.error('加载失败: ' + (err.message || ''))
   } finally {
@@ -378,28 +377,62 @@ function resetFilters() {
   handleSearch()
 }
 
-function handleBatchDownload() {
-  selected.value.forEach((r: any) => {
-    if (r.url) {
-      const a = document.createElement('a')
-      a.href = r.url
-      a.target = '_blank'
-      a.download = ''
-      a.click()
-    }
-  })
-  ElMessage.success(`已触发 ${selected.value.length} 个文件下载`)
+async function downloadUrl(url: string, filename?: string) {
+  const response = await fetch(url, { credentials: 'include' })
+  if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  const blob = await response.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = objectUrl
+  a.download = filename || decodeURIComponent(url.split('/').pop()?.split(/[?#]/)[0] || 'delivery-receipt')
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(objectUrl)
+}
+
+async function downloadReceipt(row: any) {
+  if (!row?.url) {
+    ElMessage.warning('该回执没有可下载的文件')
+    return
+  }
+  try {
+    await downloadUrl(row.url)
+  } catch {
+    ElMessage.error('文件下载失败，请稍后重试')
+  }
+}
+
+async function handleBatchDownload() {
+  const urls = selected.value
+    .map((r: any) => r.url)
+    .filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
+
+  if (urls.length === 0) {
+    ElMessage.warning('所选回执没有可下载的文件')
+    return
+  }
+
+  const results = await Promise.allSettled(urls.map((url) => downloadUrl(url)))
+  const failed = results.filter(result => result.status === 'rejected').length
+  if (failed > 0) {
+    ElMessage.warning(`下载完成 ${urls.length - failed} 个，失败 ${failed} 个`)
+  } else {
+    ElMessage.success(`已下载 ${urls.length} 个文件`)
+  }
 }
 
 function getRowKey(row: any) { return (row as any)?.id }
 
 // ---------- 工具函数 ----------
 function isImage(row: any) {
+  // SVG 可携带脚本，不在管理端以内嵌图片方式预览。
+  if (/\.svg(?:\?|#|$)/i.test((row as any)?.url || '')) return false
   // 优先按后端 type 字段判断（image/photo/seal/certificate 都视为图片）
   if ((row as any) && (row as any).type && ['image', 'photo', 'seal', 'certificate'].includes((row as any).type)) return true
   // 兜底：URL 后缀判断
   if (!(row as any)?.url) return false
-  return /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)(\?|$)/i.test((row as any).url)
+  return /\.(jpg|jpeg|png|gif|webp|bmp|avif)(?:\?|#|$)/i.test((row as any).url)
 }
 
 function typeTagType(type: any) {

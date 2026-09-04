@@ -47,7 +47,6 @@
           clearable
           prefix-icon="Search"
           style="width: 200px"
-          @input="handleSearch"
         />
 
         <el-select
@@ -78,9 +77,9 @@
           <el-option label="全部子分组" value="" />
           <el-option
             v-for="s in currentSubOptions"
-            :key="s.key"
+            :key="s.value || s.key"
             :label="s.label"
-            :value="s.key"
+            :value="s.value || s.key"
           />
         </el-select>
 
@@ -137,6 +136,7 @@
       <el-table
         :data="paginatedTemplates"
         v-loading="loading"
+        v-show="loading || displayedTemplates.length > 0"
         stripe
         @selection-change="onTableSelectionChange"
       >
@@ -332,15 +332,21 @@
       </el-select>
     </el-form-item>
 
+    <!-- Key（仅子分类：英文标识，模板按此关联，必填） -->
+    <el-form-item label="Key" v-if="unifiedType === 'sub'" :required="true">
+      <el-input v-model="unifiedForm.key" placeholder="英文标识，如 invoice（模板按此关联）" />
+    </el-form-item>
+
     <el-form-item label="名称" :required="true">
       <el-input v-model="unifiedForm.name" placeholder="输入名称" />
     </el-form-item>
 
-    <el-form-item label="描述">
+    <!-- 描述/配色仅子分类可保存（分类后端无 desc/color 字段） -->
+    <el-form-item label="描述" v-if="unifiedType === 'sub'">
       <el-input v-model="unifiedForm.desc" placeholder="简要描述用途" />
     </el-form-item>
 
-    <el-form-item label="配色">
+    <el-form-item label="配色" v-if="unifiedType === 'sub'">
       <div style="display:flex;align-items:center;gap:8px;">
         <el-color-picker v-model="unifiedForm.color" />
         <el-input v-model="unifiedForm.color" style="width:90px" @change="(v:any) => unifiedForm.color = v" />
@@ -397,9 +403,14 @@
     </template>
     <el-form label-width="80px">
       <el-form-item label="所属分类" :required="true">
-        <el-select v-model="subsCatId" placeholder="选择分类" style="width:100%" filterable @change="onSubsCatChange">
-          <el-option v-for="c in categoryList" :key="c.id" :label="c.name" :value="c.id" />
-        </el-select>
+        <div style="display:flex;align-items:center;gap:8px;width:100%;">
+          <el-select v-model="subsCatId" placeholder="选择分类" style="flex:1" filterable @change="onSubsCatChange">
+            <el-option v-for="c in categoryList" :key="c.id" :label="c.name" :value="c.id" />
+          </el-select>
+          <el-button type="danger" size="small" :disabled="!subsCatId" @click="deleteCurrentCategory">
+            <el-icon><Delete /></el-icon> 删除分类
+          </el-button>
+        </div>
       </el-form-item>
     </el-form>
 
@@ -436,7 +447,9 @@
       </el-table-column>
       <el-table-column label="操作" width="70" align="center">
         <template #default="{ $index }">
-          <el-button type="danger" size="small" icon="el-icon-delete" @click="removeSub($index)" />
+          <el-button type="danger" size="small" @click="removeSub($index)">
+            <el-icon><Delete /></el-icon>
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -465,6 +478,7 @@ import {
   deleteTemplate,
   updateNewspaperCategory,
   createNewspaperCategory,
+  deleteNewspaperCategory,
 } from '@/api'
 
 // ===== 状态 =====
@@ -543,20 +557,30 @@ const currentSubOptions = computed(() => {
     return subTypesMap.value[catName].map(s => ({ ...s, label: s.name }))
   }
   if (!filterCatId.value && Object.values(subTypesMap.value).some(a => a.length)) {
+    // 未选分类：保留全部子分组（不按 key 去重）。
+    // 跨分类共用的 key（company/personal/other 等）用「分类名::key」作 value 且标签标注
+    // 「名称 (分类)」，选中后 handleSubChange 自动带出分类，避免筛选跨分类错乱。
     const all = []
-    const seen = new Set()
+    const keyCount: Record<string, number> = {}
+    for (const subs of Object.values(subTypesMap.value)) {
+      for (const s of (subs as any[])) keyCount[s.key] = (keyCount[s.key] || 0) + 1
+    }
     for (const [cName, subs] of Object.entries(subTypesMap.value)) {
       for (const s of (subs as any[])) {
-        if (!seen.has(s.key)) { seen.add(s.key); all.push({ ...s, label: `${s.name} (${cName})` }) }
+        const dup = (keyCount[s.key] || 0) > 1
+        const catId = Object.keys(categoryNameMap.value).find(id => categoryNameMap.value[id] === cName) || ''
+        all.push({ ...s, value: dup ? `${cName}::${s.key}` : s.key, label: dup ? `${s.name} (${cName})` : s.name, catId })
       }
     }
-    return all.sort((a, b) => a.name.localeCompare(b.name, 'zh'))
+    return all.sort((a, b) => a.label.localeCompare(b.label, 'zh'))
   }
   // 无子分组数据：从已加载模板动态生成（去重，带中文标签）
+  // 已选分类时仅收集该分类下的模板类型，避免把其他分类的子分组混进来
   const usedKeys = new Set<string>()
   const result: { key: string; name: string; label: string }[] = []
   for (const t of templates.value) {
-    if (t.templateType && !usedKeys.has(t.templateType)) {
+    if (t.templateType && !usedKeys.has(t.templateType)
+      && (!filterCatId.value || t.categoryId === filterCatId.value)) {
       usedKeys.add(t.templateType)
       const label = TEMPLATE_TYPE_LABELS[t.templateType] || t.templateType
       result.push({ key: t.templateType, name: label, label })
@@ -570,6 +594,17 @@ const currentTemplateSubOptions = computed(() => {
   if (templateForm.value.categoryId) {
     const catName = categoryNameMap.value[templateForm.value.categoryId] || ''
     if (subTypesMap.value[catName]?.length) return subTypesMap.value[catName]
+    // 该分类无子分组配置：仅收集该分类下模板实际用到的 templateType，
+    // 保证当前值（如发票收据分类的 legacy key 'invoice'）能正常显示
+    const usedKeys = new Set<string>()
+    const result: { key: string; name: string }[] = []
+    for (const t of templates.value) {
+      if (t.categoryId === templateForm.value.categoryId && t.templateType && !usedKeys.has(t.templateType)) {
+        usedKeys.add(t.templateType)
+        result.push({ key: t.templateType, name: TEMPLATE_TYPE_LABELS[t.templateType] || t.templateType })
+      }
+    }
+    if (result.length) return result.sort((a, b) => a.name.localeCompare(b.name, 'zh'))
   }
   // 无子分组数据：动态从已加载模板生成
   const usedKeys = new Set<string>()
@@ -587,7 +622,12 @@ const currentTemplateSubOptions = computed(() => {
 const displayedTemplates = computed(() => {
   let list = templates.value
   if (filterCatId.value) list = list.filter(t => t.categoryId === filterCatId.value)
-  if (filterSubKey.value) list = list.filter(t => t.templateType === filterSubKey.value)
+  if (filterSubKey.value) {
+    // 跨分类共用 templateType（company/personal/other 等）：选中子分组时若同时选了分类，
+    // 必须限定分类，避免把其他分类的同名子分组模板一起筛出
+    list = list.filter(t => t.templateType === filterSubKey.value
+      && (!filterCatId.value || t.categoryId === filterCatId.value))
+  }
   if (filterText.value.trim()) {
     const kw = filterText.value.trim().toLowerCase()
     list = list.filter(t => (t.name || '').toLowerCase().includes(kw))
@@ -713,6 +753,7 @@ const unifiedType = ref<'cat' | 'sub'>('cat')
 const unifiedSubmitting = ref(false)
 const unifiedForm = ref({
   catId: '',
+  key: '',
   name: '',
   desc: '',
   color: '#5B6FE8',
@@ -725,7 +766,7 @@ const unifiedTitle = computed(() => {
 
 function switchUnifiedType(type: 'cat' | 'sub') {
   unifiedType.value = type
-  unifiedForm.value = { catId: '', name: '', desc: '', color: '#5B6FE8', sort: 0 }
+  unifiedForm.value = { catId: '', key: '', name: '', desc: '', color: '#5B6FE8', sort: 0 }
 }
 
 async function saveUnified() {
@@ -737,14 +778,25 @@ async function saveUnified() {
     ElMessage.warning('请选择所属分类')
     return
   }
+  if (unifiedType.value === 'sub') {
+    const key = unifiedForm.value.key.trim()
+    if (!key) {
+      ElMessage.warning('请填写子分类的英文标识 Key（如 invoice）')
+      return
+    }
+    if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)) {
+      ElMessage.warning('Key 只能包含英文字母、数字、下划线，且以字母开头')
+      return
+    }
+  }
 
   unifiedSubmitting.value = true
   try {
     if (unifiedType.value === 'cat') {
-      // 添加分类
+      // 添加分类：分类后端没有 desc/color 字段，仅提交名称与排序
       await createNewspaperCategory({
         name: unifiedForm.value.name.trim(),
-        icon: unifiedForm.value.desc || null,
+        icon: null,
         sort: unifiedForm.value.sort ?? 0,
       })
       ElMessage.success('分类添加成功')
@@ -754,7 +806,7 @@ async function saveUnified() {
       if (!cat) throw new Error('分类不存在')
       const existing = cat.subTypes || []
       const newSub = {
-        key: 'new_' + Date.now(),
+        key: unifiedForm.value.key.trim(),
         name: unifiedForm.value.name.trim(),
         desc: unifiedForm.value.desc || null,
         color: unifiedForm.value.color || '#5B6FE8',
@@ -823,6 +875,18 @@ async function saveSubs() {
     ElMessage.warning('Key 不能重复')
     return
   }
+  // 自动生成的占位 Key（new_xxx）必须先改成有意义的英文标识，否则会污染模板的子分组下拉
+  const placeholderKeys = editSubs.value.filter(s => typeof s.key === 'string' && s.key.startsWith('new_'))
+  if (placeholderKeys.length > 0) {
+    ElMessage.warning(`还有 ${placeholderKeys.length} 个子分类未设置英文标识 Key（new_ 开头），请先在表格中修改`)
+    return
+  }
+  for (const s of editSubs.value) {
+    if (typeof s.key !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_]*$/.test(s.key)) {
+      ElMessage.warning(`Key「${s.key}」只能包含英文字母、数字、下划线，且以字母开头`)
+      return
+    }
+  }
   subsSaving.value = true
   try {
     await updateNewspaperCategory(subsCatId.value, {
@@ -836,6 +900,31 @@ async function saveSubs() {
     // 接口错误由全局响应拦截器统一提示
   } finally {
     subsSaving.value = false
+  }
+}
+
+// ===== 删除分类（子分类管理弹窗内） =====
+async function deleteCurrentCategory() {
+  if (!subsCatId.value) return
+  const cat = categoryList.value.find(c => c.id === subsCatId.value)
+  if (!cat) return
+  const inUse = templates.value.filter(t => t.categoryId === subsCatId.value).length
+  try {
+    await ElMessageBox.confirm(
+      `确认删除分类「${cat.name}」？${inUse > 0 ? `该分类下还有 ${inUse} 个模板，删除后这些模板将变为「未分类」！` : ''}`,
+      '删除分类',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' },
+    )
+    await deleteNewspaperCategory(subsCatId.value)
+    ElMessage.success('分类已删除')
+    subsCatId.value = ''
+    editSubs.value = []
+    await reloadAll()
+    // 清理可能残留的分类/子分组筛选
+    if (filterCatId.value === cat.id) { filterCatId.value = ''; filterSubKey.value = '' }
+    currentPage.value = 1
+  } catch {
+    // 用户取消或接口错误
   }
 }
 
@@ -893,7 +982,7 @@ function handleAddCommand(cmd: string) {
     openTemplateDialog('add')
   } else if (cmd === 'cat') {
     unifiedType.value = 'cat'
-    unifiedForm.value = { catId: '', name: '', desc: '', color: '#5B6FE8', sort: 0 }
+    unifiedForm.value = { catId: '', key: '', name: '', desc: '', color: '#5B6FE8', sort: 0 }
     unifiedDialogVisible.value = true
   } else if (cmd === 'subs') {
     openSubsDialog()
@@ -910,11 +999,22 @@ function handleCatChange() {
 }
 
 function handleSubChange() {
+  // 兼容「分类名::key」复合值（未选分类时跨分类同名子分组）：自动带出分类并解出裸 key
+  const v: string = filterSubKey.value || ''
+  const sep = v.indexOf('::')
+  if (sep >= 0) {
+    const cName = v.substring(0, sep)
+    const key = v.substring(sep + 2)
+    const catId = Object.keys(categoryNameMap.value).find(id => categoryNameMap.value[id] === cName) || ''
+    if (catId) filterCatId.value = catId
+    filterSubKey.value = key
+  }
   currentPage.value = 1
 }
 
 function handlePageChange() {
-  document.querySelector('.page-card')?.scrollTo({ top: 0, behavior: 'smooth' })
+  // 页面滚动容器是 .layout-main（el-main 默认 overflow:auto），.page-card 是 overflow:hidden
+  document.querySelector('.layout-main')?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function handleSizeChange() {
@@ -974,13 +1074,33 @@ async function reloadNewspapers() {
   newspapers.value = Array.isArray(res) ? res : ((res as any)?.list || [])
 }
 
+// 拉取全部模板：后端 pageSize 有上限（真实后端 1000 / 历史镜像 500），
+// 若单页未取全（list.length < total）则继续翻页补齐，保证列表/统计完整
+const TEMPLATES_PAGE_SIZE = 1000
+const TEMPLATES_MAX_PAGES = 20 // 上限 20000 条，防死循环
+
+async function fetchAllTemplates(): Promise<{ list: any[]; total: number }> {
+  const first = await getAdminTemplates({ page: 1, pageSize: TEMPLATES_PAGE_SIZE })
+  const list = normalize(first)
+  let total = (first as any)?.total ?? list.length
+  let all = [...list]
+  let page = 2
+  while (all.length < total && page <= TEMPLATES_MAX_PAGES) {
+    const more = await getAdminTemplates({ page, pageSize: TEMPLATES_PAGE_SIZE })
+    const moreList = normalize(more)
+    if (!moreList.length) break
+    all = all.concat(moreList)
+    page++
+  }
+  return { list: all, total }
+}
+
 async function reloadTemplates() {
   loading.value = true
   try {
-    const tRaw = await getAdminTemplates({ page: 1, pageSize: 500 })
-    const list = normalize(tRaw)
+    const { list, total } = await fetchAllTemplates()
     templates.value = list
-    templatesTotal.value = (tRaw as any)?.total ?? list.length
+    templatesTotal.value = total
   } finally {
     loading.value = false
   }
@@ -993,7 +1113,7 @@ async function reloadAll() {
       getNewspapers(),
       getNewspaperCategories(),
       getTemplateMeta(),
-      getAdminTemplates({ page: 1, pageSize: 500 }),
+      fetchAllTemplates(),
     ])
     // getNewspapers 返回 {list,total}，getTemplateMeta 返回 {businessTypes, subTypes}（均无包装）
     const nRes = nRaw as any
@@ -1004,8 +1124,8 @@ async function reloadAll() {
     } else {
       subTypesMap.value = {}
     }
-    templates.value = normalize(tRaw)
-    templatesTotal.value = (tRaw as any)?.total ?? templates.value.length
+    templates.value = tRaw.list
+    templatesTotal.value = tRaw.total
   } catch (e: any) {
     console.error('reloadAll error:', e)
   } finally {

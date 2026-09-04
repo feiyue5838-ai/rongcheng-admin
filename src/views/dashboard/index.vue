@@ -281,7 +281,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue'
-import { getDashboard, getDashboardTrend, getOutletsAPI, getSettlementRecords, customerActionAPI } from '@/api'
+import { getDashboard, getDashboardTrend, getOutletsAPI, v2GetSettlements, customerActionAPI } from '@/api'
 import * as echarts from 'echarts'
 import { Refresh, Promotion, Download, Service, User, UserFilled, CircleCheck, ChatDotRound, Clock, Document, Lightning, WarningFilled, Star } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -523,9 +523,11 @@ async function loadOutlets() {
     const oRes: any = await getOutletsAPI({ page: 1, pageSize: 100 })
     const oData = oRes.data ?? oRes
     outletList.value = oData.list || []
-    const sRes: any = await getSettlementRecords({ status: 1, pageSize: 100 })
-    const sData = sRes.data ?? sRes
-    pendingSettlements.value = sData.items || []
+    // V2 结算（供应商=网点维度，2026-08-29 替代 V1 getSettlementRecords）：待结算 = 未付款单（pending/confirmed）
+    const sRes: any = await v2GetSettlements({ pageSize: 100 })
+    pendingSettlements.value = (sRes.list || [])
+      .filter((r: any) => r.status === 'pending' || r.status === 'confirmed')
+      .map((r: any) => ({ outletId: r.supplierId, outletAmount: Number(r.payableAmount ?? 0) }))
   } catch (e) {
     console.error('获取网点/结算数据失败', e)
   }

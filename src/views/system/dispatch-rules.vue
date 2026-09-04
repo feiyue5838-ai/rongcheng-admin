@@ -129,7 +129,7 @@
 
       <!-- Tab4: 派单记录 -->
       <el-tab-pane label="派单记录" name="records">
-        <!-- 统计卡片 -->
+        <!-- 统计卡片（V2 履约维度） -->
         <el-row :gutter="16" style="margin-bottom: 16px">
           <el-col :span="6">
             <div class="stat-card stat-blue">
@@ -142,28 +142,28 @@
           </el-col>
           <el-col :span="6">
             <div class="stat-card stat-green">
-              <div class="stat-icon">🤖</div>
+              <div class="stat-icon">⏱️</div>
               <div class="stat-info">
-                <div class="stat-num">{{ drStats.autoCount }}</div>
-                <div class="stat-label">自动派单</div>
+                <div class="stat-num">{{ drStats.today }}</div>
+                <div class="stat-label">今日派单</div>
               </div>
             </div>
           </el-col>
           <el-col :span="6">
             <div class="stat-card stat-orange">
-              <div class="stat-icon">👤</div>
+              <div class="stat-icon">🔄</div>
               <div class="stat-info">
-                <div class="stat-num">{{ drStats.manualCount }}</div>
-                <div class="stat-label">手动派单</div>
+                <div class="stat-num">{{ drStats.processing }}</div>
+                <div class="stat-label">进行中</div>
               </div>
             </div>
           </el-col>
           <el-col :span="6">
             <div class="stat-card stat-purple">
-              <div class="stat-icon">⏱️</div>
+              <div class="stat-icon">✅</div>
               <div class="stat-info">
-                <div class="stat-num">{{ drStats.avgAcceptTime }}<span class="unit">分</span></div>
-                <div class="stat-label">平均接单时长</div>
+                <div class="stat-num">{{ drStats.completed }}</div>
+                <div class="stat-label">已完成</div>
               </div>
             </div>
           </el-col>
@@ -183,22 +183,20 @@
                 @change="handleDrDateChange"
               />
             </el-form-item>
-            <el-form-item label="分配方式">
-              <el-select v-model="drFilters.assignedBy" placeholder="全部" clearable style="width: 120px">
-                <el-option label="自动派单" value="system" />
-                <el-option label="手动派单" value="manual" />
+            <el-form-item label="履约供应商">
+              <el-select v-model="drFilters.supplierId" placeholder="全部供应商" clearable filterable style="width: 200px">
+                <el-option v-for="o in drSupplierList" :key="o.id" :label="o.name" :value="o.id" />
               </el-select>
             </el-form-item>
-            <el-form-item label="分配网点">
-              <el-select v-model="drFilters.outletId" placeholder="全部网点" clearable filterable style="width: 200px">
-                <el-option v-for="o in drOutletList" :key="o.id" :label="o.name" :value="o.id" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="订单状态">
-              <el-select v-model="drFilters.status" placeholder="全部" clearable style="width: 120px">
-                <el-option label="待接单" :value="1" />
-                <el-option label="已接单" :value="2" />
-                <el-option label="已完成" :value="3" />
+            <el-form-item label="履约状态">
+              <el-select v-model="drFilters.status" placeholder="全部" clearable style="width: 130px">
+                <el-option label="待派单" value="pending_assignment" />
+                <el-option label="已派单" value="assigned" />
+                <el-option label="已接单" value="accepted" />
+                <el-option label="制作中" value="processing" />
+                <el-option label="发货中" value="delivering" />
+                <el-option label="已完成" value="completed" />
+                <el-option label="已取消" value="cancelled" />
               </el-select>
             </el-form-item>
             <el-form-item label="订单号">
@@ -219,36 +217,33 @@
                 <el-link type="primary" @click="drViewOrder(row)">{{ row.orderNo }}</el-link>
               </template>
             </el-table-column>
-            <el-table-column prop="companyName" label="公司名称" min-width="150" show-overflow-tooltip />
-            <el-table-column prop="outletName" label="分配网点" width="150">
+            <el-table-column prop="module" label="业务" width="80" align="center">
               <template #default="{ row }">
-                <el-tag>{{ row.outletName }}</el-tag>
+                <el-tag size="small">{{ ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' } as any)[row.module] || row.module }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="assignedBy" label="分配方式" width="100" align="center">
+            <el-table-column prop="fulfillmentNo" label="履约单号" min-width="170" show-overflow-tooltip />
+            <el-table-column prop="supplierName" label="履约供应商" width="150">
               <template #default="{ row }">
-                <el-tag :type="row.assignedBy === 'system' ? 'success' : 'warning'" size="small">
-                  {{ row.assignedBy === 'system' ? '自动' : '手动' }}
+                <el-tag>{{ row.supplierName }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="履约状态" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag
+                  :type="({ pending_assignment: 'warning', assigned: 'primary', accepted: 'primary', processing: 'primary', delivering: 'primary', completed: 'success', cancelled: 'danger' } as any)[row.status] || 'info'"
+                  size="small"
+                >
+                  {{ ({ pending_assignment: '待派单', assigned: '已派单', accepted: '已接单', processing: '制作中', delivering: '发货中', completed: '已完成', cancelled: '已取消' } as any)[row.status] || row.status }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="matchScore" label="匹配分" width="80" align="center">
-              <template #default="{ row }">
-                <span v-if="row.matchScore">{{ row.matchScore }}分</span>
-                <span v-else>-</span>
-              </template>
+            <el-table-column prop="assignedAt" label="分配时间" width="170">
+              <template #default="{ row }">{{ row.assignedAt ? row.assignedAt.slice(0, 16).replace('T', ' ') : '-' }}</template>
             </el-table-column>
-            <el-table-column prop="status_text" label="分配状态" width="100" align="center">
+            <el-table-column prop="acceptedAt" label="接单时间" width="170">
               <template #default="{ row }">
-                <el-tag :type="row.status === 1 ? 'warning' : row.status === 2 ? 'primary' : 'success'" size="small">
-                  {{ row.status_text }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="assigned_at" label="分配时间" width="170" />
-            <el-table-column prop="accepted_at" label="接单时间" width="170">
-              <template #default="{ row }">
-                <span v-if="row.acceptedAt">{{ row.acceptedAt }}</span>
+                <span v-if="row.acceptedAt">{{ row.acceptedAt.slice(0, 16).replace('T', ' ') }}</span>
                 <span v-else style="color: #999">未接单</span>
               </template>
             </el-table-column>
@@ -320,22 +315,22 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search as SearchIcon, Refresh as RefreshIcon } from '@element-plus/icons-vue'
-import request from '@/api'
 import {
   getDispatchConfig, updateDispatchConfig,
   getDispatchPriorities, setDispatchPriority, batchSetDispatchPriorities,
-  getForcedRegions, addForcedRegion as addForcedRegionAPI, removeForcedRegion
+  getForcedRegions, addForcedRegion as addForcedRegionAPI, removeForcedRegion,
+  v2GetDispatchRecords, v2GetDispatchStats, v2GetSuppliers
 } from '@/api'
 
 const activeTab = ref('mode')
 const loading = ref(false)
 
-// ====== 派单记录 Tab 状态 ======
+// ====== 派单记录 Tab 状态（V2 履约维度，2026-08-29 替代 V1 order_assignments） ======
 const drLoading = ref(false)
 const drTableData = ref<any[]>([])
-const drOutletList = ref<any[]>([])
-const drStats = reactive({ total: 0, autoCount: 0, manualCount: 0, avgAcceptTime: 0 })
-const drFilters = reactive({ orderNo: '', assignedBy: '', outletId: '', status: null as number | null, startDate: '', endDate: '' })
+const drSupplierList = ref<any[]>([])
+const drStats = reactive({ total: 0, today: 0, processing: 0, completed: 0 })
+const drFilters = reactive({ orderNo: '', supplierId: '', status: '' as string, startDate: '', endDate: '' })
 const drDateRange = ref<string[]>([])
 const drPagination = reactive({ page: 1, pageSize: 20, total: 0 })
 const drDetailVisible = ref(false)
@@ -478,19 +473,29 @@ async function deleteForced(id: string) {
   } catch { /* cancel or error */ }
 }
 
-// ====== 派单记录 Tab 函数 ======
-async function fetchDrOutlets() {
+// ====== 派单记录 Tab 函数（V2 履约维度） ======
+async function fetchDrSuppliers() {
   try {
-    const res: any = await request.get('/outlets', { params: { pageSize: 100 } })
-    drOutletList.value = res?.data?.list || res?.list || []
+    const res: any = await v2GetSuppliers({ pageSize: 100 })
+    drSupplierList.value = res?.list || []
   } catch { /* ignore */ }
 }
 
 async function fetchDrStats() {
   try {
-    const res: any = await request.get('/dashboard/dispatch-stats', { params: drFilters })
-    // 拦截器已剥 {code:0,data} 到 data 层，res 已是目标对象
-    Object.assign(drStats, res?.data ?? res ?? {})
+    const res: any = await v2GetDispatchStats({
+      supplierId: drFilters.supplierId || undefined,
+      status: drFilters.status || undefined,
+      startDate: drFilters.startDate || undefined,
+      endDate: drFilters.endDate || undefined,
+    })
+    const byStatus = res?.byStatus || {}
+    Object.assign(drStats, {
+      total: res?.total || 0,
+      today: res?.today || 0,
+      processing: Number(byStatus.processing || 0) + Number(byStatus.assigned || 0) + Number(byStatus.accepted || 0),
+      completed: Number(byStatus.completed || 0),
+    })
   } catch { /* ignore */ }
 }
 
@@ -498,14 +503,17 @@ async function fetchDrData() {
   drLoading.value = true
   try {
     const params: any = {
-      ...drFilters,
+      orderNo: drFilters.orderNo || undefined,
+      supplierId: drFilters.supplierId || undefined,
+      status: drFilters.status || undefined,
+      startDate: drFilters.startDate || undefined,
+      endDate: drFilters.endDate || undefined,
       page: drPagination.page,
       pageSize: drPagination.pageSize,
     }
-    const res: any = await request.get('/dashboard/dispatch-records', { params })
-    // 拦截器剥 {code:0,data} 后 res={list,pagination}，直接取 list/pagination
-    drTableData.value = res?.data?.list ?? res?.list ?? []
-    drPagination.total = res?.data?.pagination?.total ?? res?.pagination?.total ?? 0
+    const res: any = await v2GetDispatchRecords(params)
+    drTableData.value = res?.list || []
+    drPagination.total = res?.total || 0
     fetchDrStats()
   } catch {
     ElMessage.error('加载数据失败')
@@ -525,20 +533,20 @@ function handleDrDateChange(val: string[]) {
 }
 
 function resetDrFilters() {
-  Object.assign(drFilters, { orderNo: '', assignedBy: '', outletId: '', status: null, startDate: '', endDate: '' })
+  Object.assign(drFilters, { orderNo: '', supplierId: '', status: '', startDate: '', endDate: '' })
   drDateRange.value = []
   drPagination.page = 1
   fetchDrData()
 }
 
 function drViewOrder(row: any) {
-  window.open(`/orders/seal?id=${row.orderId}`, '_blank')
+  window.open(`/v2/orders/detail?orderNo=${row.orderNo}`, '_blank')
 }
 
 // 加载派单记录 Tab 时才拉数据（懒加载）
 watch(activeTab, (tab) => {
   if (tab === 'records') {
-    if (drOutletList.value.length === 0) fetchDrOutlets()
+    if (drSupplierList.value.length === 0) fetchDrSuppliers()
     fetchDrData()
   }
 })

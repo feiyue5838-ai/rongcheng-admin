@@ -107,9 +107,13 @@
         </div>
         <el-table :data="recentOrders" v-loading="loading" stripe>
           <el-table-column prop="orderNo" label="订单编号" width="180" />
-          <el-table-column prop="companyName" label="公司名称" min-width="160" show-overflow-tooltip />
-          <el-table-column prop="type" label="印章类型" width="120" />
-          <el-table-column label="分配状态" width="100" align="center">
+          <el-table-column label="业务" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag size="small">{{ ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' } as any)[row.module] || row.module || '-' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="fulfillmentNo" label="履约单号" min-width="170" show-overflow-tooltip />
+          <el-table-column label="履约状态" width="100" align="center">
             <template #default="{ row }">
               <el-tag :type="getStatusTag(row.status)" size="small">
                 {{ getStatusText(row.status) }}
@@ -121,11 +125,11 @@
           </el-table-column>
           <el-table-column label="操作" width="160" align="center">
             <template #default="{ row }">
-              <template v-if="row.status === 1">
+              <template v-if="row.status === 'assigned'">
                 <el-button type="success" size="small" @click="onAccept(row)">接单</el-button>
               </template>
-              <template v-else-if="row.status === 2">
-                <el-button type="warning" size="small" @click="onComplete(row)">完成制作</el-button>
+              <template v-else-if="row.status === 'accepted' || row.status === 'processing'">
+                <el-button type="warning" size="small" @click="onComplete(row)">完成交货</el-button>
               </template>
               <template v-else>
                 <span style="color:#999">—</span>
@@ -146,27 +150,14 @@
       </template>
     </el-dialog>
 
-    <!-- 完成制作 -->
-    <el-dialog v-model="completeDialogVisible" title="完成制作" width="500px">
+    <!-- 完成交货 -->
+    <el-dialog v-model="completeDialogVisible" title="完成交货" width="500px">
       <el-form ref="completeFormRef" :model="completeForm" :rules="completeRules" label-width="100px">
         <el-form-item label="快递公司" prop="expressCompany">
           <el-input v-model="completeForm.expressCompany" placeholder="如：顺丰速运、圆通快递" />
         </el-form-item>
         <el-form-item label="快递单号" prop="expressNo">
           <el-input v-model="completeForm.expressNo" placeholder="请输入快递单号" />
-        </el-form-item>
-        <el-form-item label="交付凭证" required>
-          <el-upload
-            v-model:file-list="receiptFiles"
-            list-type="picture-card"
-            :auto-upload="true"
-            :http-request="uploadReceipt"
-            :limit="6"
-            multiple
-          >
-            <el-icon><Plus /></el-icon>
-          </el-upload>
-          <div style="font-size:12px;color:#999;margin-top:4px">至少上传一张交付凭证，最多 6 张</div>
         </el-form-item>
         <el-form-item label="交货备注">
           <el-input v-model="completeForm.remark" type="textarea" :rows="2" placeholder="选填" />
@@ -184,7 +175,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getOutletsAPI, getOutletAPI, getOutletOrdersAPI, acceptOutletOrderAdminAPI, shipOutletOrderAdminAPI, uploadImage } from '@/api'
+import { getOutletsAPI, getOutletAPI, v2GetFulfillments, v2AcceptFulfillment, v2DeliverFulfillment } from '@/api'
 import { formatDate } from '@/utils/format'
 import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding, Plus } from '@element-plus/icons-vue'
 
@@ -209,14 +200,20 @@ const completeRules = {
 }
 
 function getStatusTag(status: any) {
-  // 后端 assignment 状态：1 待接单 / 2 制作中 / 3 已完成 / 4 已拒绝 / 5 已取消 / 6 已换网点
-  const map: Record<number,string> = { 1: 'warning', 2: '', 3: 'success', 4: 'danger', 5: 'info', 6: 'info' }
-  return map[status] || 'info'
+  // V2 履约状态（2026-08-29 网点看板 V2 化）
+  const map: Record<string, string> = {
+    assigned: 'warning', accepted: 'primary', processing: 'primary',
+    delivering: 'primary', completed: 'success', cancelled: 'info', pending_assignment: 'info'
+  }
+  return map[String(status)] || 'info'
 }
 
 function getStatusText(status: any) {
-  const map: Record<number,string> = { 1: '待接单', 2: '制作中', 3: '已完成', 4: '已拒绝', 5: '已取消', 6: '已换网点' }
-  return map[status] || String(status)
+  const map: Record<string, string> = {
+    pending_assignment: '待派单', assigned: '待接单', accepted: '已接单',
+    processing: '制作中', delivering: '发货中', completed: '已完成', cancelled: '已取消'
+  }
+  return map[String(status)] || String(status)
 }
 
 async function loadOutlets() {
@@ -237,14 +234,14 @@ async function loadData() {
   if (!selectedOutlet.value) return
   loading.value = true
   try {
-    const [outletRes, ordersRes]: any[] = await Promise.all([
+    const [outletRes, fulRes]: any[] = await Promise.all([
       getOutletAPI(selectedOutlet.value),
-      getOutletOrdersAPI(selectedOutlet.value, { page: 1, pageSize: 100 }),
+      v2GetFulfillments({ supplierId: selectedOutlet.value, page: 1, pageSize: 100 }),
     ])
     currentOutlet.value = (outletRes as any)
-    recentOrders.value = ((ordersRes as any).data?.list ?? (ordersRes as any).list ?? []).slice(0, 10)
-    // 从全部订单计算统计数据（取 100 条近似）
-    const allOrders = (ordersRes as any).data?.list ?? (ordersRes as any).list ?? []
+    const allOrders = (fulRes as any).list ?? []
+    recentOrders.value = allOrders.slice(0, 10)
+    // 履约状态统计（V2）
     const isToday = (t?: string) => {
       if (!t) return false
       const d = new Date(t)
@@ -252,11 +249,10 @@ async function loadData() {
       return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
     }
     stats.value = {
-      pending: allOrders.filter((o: any) => (o as any).status === 1).length,
-      processing: allOrders.filter((o: any) => (o as any).status === 2).length,
-      // 后端 assignment 状态 3 即为已完成（发货后置 3），4 为已拒绝
-      completed: allOrders.filter((o: any) => (o as any).status === 3).length,
-      todayTotal: allOrders.filter((o: any) => isToday(o.createdAt)).length,
+      pending: allOrders.filter((o: any) => o.status === 'assigned').length,
+      processing: allOrders.filter((o: any) => o.status === 'accepted' || o.status === 'processing' || o.status === 'delivering').length,
+      completed: allOrders.filter((o: any) => o.status === 'completed').length,
+      todayTotal: allOrders.filter((o: any) => isToday(o.assignedAt)).length,
     }
   } catch (err: any) { /* ignore */ } finally {
     loading.value = false
@@ -269,14 +265,14 @@ function onAccept(order: any) {
 }
 
 async function onConfirmAccept() {
-  // 前端状态校验：只有 status === 1 才能接单
-  if (currentOrder.value?.status !== 1) {
+  // 前端状态校验：只有 assigned（待接单）才能接单
+  if (currentOrder.value?.status !== 'assigned') {
     ElMessage.warning('该订单当前状态不允许接单，请刷新页面后重试')
     return
   }
   actionLoading.value = true
   try {
-    await acceptOutletOrderAdminAPI(selectedOutlet.value, (currentOrder.value as any).orderId)
+    await v2AcceptFulfillment((currentOrder.value as any).id)
     ElMessage.success('接单成功')
     acceptDialogVisible.value = false
     loadData()
@@ -294,40 +290,21 @@ function onComplete(order: any) {
   completeDialogVisible.value = true
 }
 
-async function uploadReceipt(option: any) {
-  try {
-    const response: any = await uploadImage(option.file)
-    const url = response?.data?.url ?? response?.url
-    if (!url) throw new Error('上传未返回文件地址')
-    option.onSuccess({ url }, option.file)
-  } catch (error) {
-    option.onError(error)
-  }
-}
-
 async function onConfirmComplete() {
-  // 前端状态校验：只有 status === 2 才能完成交货
-  if (currentOrder.value?.status !== 2) {
+  // 前端状态校验：只有 accepted/processing 才能交货
+  const st = currentOrder.value?.status
+  if (st !== 'accepted' && st !== 'processing') {
     ElMessage.warning('该订单当前状态不允许交货，请刷新页面后重试')
     return
   }
   const valid = await completeFormRef.value?.validate().catch(() => false)
   if (!valid) return
-  const receipts = receiptFiles.value
-    .map((file: any) => file.response?.url)
-    .filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
-    .map((url: string) => ({ url, type: 'certificate' }))
-  if (receipts.length === 0) {
-    ElMessage.warning('请至少上传一张交付凭证')
-    return
-  }
   actionLoading.value = true
   try {
-    await shipOutletOrderAdminAPI(selectedOutlet.value, (currentOrder.value as any).orderId, {
+    await v2DeliverFulfillment((currentOrder.value as any).id, {
       expressCompany: completeForm.expressCompany,
       trackingNo: completeForm.expressNo,
       remark: completeForm.remark,
-      receipts,
     })
     ElMessage.success('交货成功')
     completeDialogVisible.value = false
@@ -340,7 +317,7 @@ async function onConfirmComplete() {
 }
 
 function goToOutletOrders() {
-  router.push({ path: '/outlets/assign', query: { outletId: selectedOutlet.value } })
+  router.push('/v2/orders')
 }
 
 function goToDeliveryReceipts() {

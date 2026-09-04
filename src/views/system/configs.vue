@@ -71,6 +71,16 @@
           </el-form>
         </el-tab-pane>
 
+        <el-tab-pane label="服务详情" name="service">
+          <el-form label-width="140px" style="max-width: 640px">
+            <el-form-item label="代理记账服务详情">
+              <el-input v-model="serviceDetail" type="textarea" :rows="8" placeholder="多行文本，每行一项，如：&#10;1. 专业会计团队全程服务&#10;2. 智能做账报税" />
+              <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">显示在用户端「代理记账 - 服务详情」弹窗（SystemConfig key: bookkeepingServiceDetail）。保存后小程序端进页实时生效，无需发版；留空保存则弹窗显示默认文案。</div>
+            </el-form-item>
+            <el-form-item><el-button type="primary" :loading="serviceSaving" @click="saveServiceConfig">保存</el-button></el-form-item>
+          </el-form>
+        </el-tab-pane>
+
       </el-tabs>
     </div>
   </div>
@@ -97,6 +107,8 @@ const runtimeStatus = reactive<any>({
   payment: { configured: false, mchId: '', apiV3KeyConfigured: false, serialNo: '', privateKeyConfigured: false, certificateConfigured: false, notifyUrlConfigured: false, refundNotifyUrlConfigured: false },
 })
 const sealSaving = ref(false)
+const serviceDetail = ref('')
+const serviceSaving = ref(false)
 const sealConfig = reactive({
   handheldIdCities: [] as string[], handheldIdCitiesText: '',
   legalPhotoCities: [] as string[], legalPhotoCitiesText: '',
@@ -162,6 +174,7 @@ async function fetchConfigs() {
   } catch (e) {
     ElMessage.error('运行时配置状态加载失败')
   }
+  await fetchServiceConfig()
 }
 
 async function savePaymentConfig() {
@@ -274,6 +287,34 @@ async function saveSealConfig() {
     ElMessage.error('保存失败')
   } finally {
     sealSaving.value = false
+  }
+}
+
+async function fetchServiceConfig() {
+  try {
+    const res: any = await request.get('/config', { params: { key: 'bookkeepingServiceDetail' } })
+    if (res && typeof res.value === 'string') {
+      serviceDetail.value = res.value
+    } else {
+      serviceDetail.value = ''
+    }
+  } catch (e) {
+    ElMessage.error('服务详情加载失败')
+  }
+}
+
+async function saveServiceConfig() {
+  serviceSaving.value = true
+  try {
+    await request.put('/config/batch', {
+      group: 'service',
+      items: [{ key: 'bookkeepingServiceDetail', value: serviceDetail.value }],
+    })
+    ElMessage.success('保存成功')
+  } catch (e) {
+    ElMessage.error('服务详情保存失败')
+  } finally {
+    serviceSaving.value = false
   }
 }
 

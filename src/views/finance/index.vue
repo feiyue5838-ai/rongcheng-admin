@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="finance-page">
     <div class="page-header">
       <h2>{{ mainTab === 'transaction' ? '交易流水' : '财务总览' }}</h2>
@@ -207,7 +207,7 @@ import {
   getTransactionStats, getTransactionFlows,
   exportTransactionFlows,
   getOutletsWithFlows,
-  getOutletPendingSummary,
+  v2GetSettlements,
 } from '@/api'
 
 // ==================== 主 Tab 控制 ====================
@@ -264,9 +264,16 @@ async function loadModuleMonth() {
 
 async function loadOutletPending() {
   try {
-    const res = await getOutletPendingSummary()
-    const list = Array.isArray(res) ? res : []
-    outletPending.value = list.filter((it) => Number(it?.pendingAmount || 0) > 0)
+    // V2 结算（供应商=网点维度，2026-08-29 替代 V1 getOutletPendingSummary）：按供应商聚合未付款单
+    const res = await v2GetSettlements({ pageSize: 100 })
+    const list = (res.list || []).filter((it) => it.status === 'pending' || it.status === 'confirmed')
+    const bySupplier = {}
+    for (const it of list) {
+      const key = it.supplierId || 'unknown'
+      if (!bySupplier[key]) bySupplier[key] = { outletId: it.supplierId, outletName: it.supplierName || '未知供应商', pendingAmount: 0 }
+      bySupplier[key].pendingAmount += Number(it.payableAmount || 0)
+    }
+    outletPending.value = Object.values(bySupplier).filter((it) => Number(it?.pendingAmount || 0) > 0)
   } catch (e) { console.error(e) }
 }
 

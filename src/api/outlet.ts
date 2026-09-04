@@ -69,6 +69,18 @@ export const completeOrderAPI = (
 export const getOrderDetailAPI = (orderId: string) =>
   outletRequest.get(`/orders/Outlet/${orderId}`)
 
+// ==================== V2 履约/订单（2026-08-29：网点工作台 V2 化） ====================
+export const v2OutletGetFulfillments = (params: object) =>
+  outletRequest.get('/v2/outlet/fulfillments', { params })
+export const v2OutletAcceptFulfillment = (id: string) =>
+  outletRequest.post(`/v2/outlet/fulfillments/${id}/accept`)
+export const v2OutletStartFulfillment = (id: string) =>
+  outletRequest.post(`/v2/outlet/fulfillments/${id}/start`)
+export const v2OutletDeliverFulfillment = (id: string, data: any) =>
+  outletRequest.post(`/v2/outlet/fulfillments/${id}/deliver`, data || {})
+export const v2OutletGetOrderDetail = (orderNo: string) =>
+  outletRequest.get(`/v2/outlet/orders/${orderNo}`)
+
 export const getDeliveryReceiptsAPI = (params: { orderId?: string; storeId?: string }) =>
   outletRequest.get('/delivery-receipts/Outlet/list', { params })
 

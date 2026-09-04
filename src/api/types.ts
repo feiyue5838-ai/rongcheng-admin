@@ -162,7 +162,7 @@ export interface Seal {
   description: string
   image: string
   price: number
-  regionPrices?: Record<string, number>
+  regionPrices?: Record<string, number | RegionPriceValue>
   status: number
   sort: number
   createdAt: string
@@ -172,7 +172,7 @@ export interface Seal {
 export interface SealCategory {
   id: string
   name: string
-  sceneType?: 'scene' | 'single'
+  sceneType?: 'enterprise' | 'personal' | 'electronic' | 'record'
   sort: number
   status: number
 }
@@ -188,10 +188,17 @@ export interface SealPackage {
   status: number
   sort: number
   images: string[]
-  regionPrices?: Record<string, number>
+  regionPrices?: Record<string, number | RegionPriceValue>
   sceneId?: string
   createdAt: string
   updatedAt: string
+}
+
+export interface RegionPriceValue {
+  province: string
+  city: string
+  district: string
+  price: number
 }
 
 // ==================== 报纸 / 模板 ====================

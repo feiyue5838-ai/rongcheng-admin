@@ -91,10 +91,11 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { v2GetOrders, v2GetUnassigned } from '@/api'
 
 const router = useRouter()
+const route = useRoute()
 
 const loading = ref(false)
 const list = ref<any[]>([])
@@ -173,6 +174,11 @@ function openAssign(row: any) {
 }
 
 onMounted(() => {
+  // 支持 /v2/orders?module=seal|newspaper|bookkeeping（历史订单重定向入口，2026-08-29）
+  const qModule = route.query.module
+  if (typeof qModule === 'string' && ['seal', 'newspaper', 'bookkeeping'].includes(qModule)) {
+    filters.module = qModule
+  }
   load()
   loadUnassignedCount()
 })

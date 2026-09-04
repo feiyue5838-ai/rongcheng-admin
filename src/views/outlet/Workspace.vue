@@ -105,14 +105,14 @@
       </el-tabs>
 
       <el-table :data="orderList" v-loading="loading" stripe empty-text="暂无订单">
-        <el-table-column prop="orderNo" label="订单号" width="170" />
-        <el-table-column label="印章类型" width="110">
+        <el-table-column label="业务" width="90" align="center">
           <template #default="{ row }">
-            <el-tag size="small" type="info">{{ row.type }}</el-tag>
+            <el-tag size="small" type="info">{{ ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' })[row.module] || row.module || '-' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="companyName" label="客户名称" min-width="160" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.companyName || '(个人)' }}</template>
+        <el-table-column prop="orderNo" label="订单号" width="170" />
+        <el-table-column prop="supplierName" label="客户名称" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.supplierName || '-' }}</template>
         </el-table-column>
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
@@ -124,13 +124,16 @@
         </el-table-column>
         <el-table-column label="操作" width="240" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="row.status === 1" type="success" size="small" @click="onAccept(row)">
+            <el-button v-if="row.status === 'assigned'" type="success" size="small" @click="onAccept(row)">
               <el-icon><Check /></el-icon>接单
             </el-button>
-            <el-button v-if="row.status === 2" type="primary" size="small" @click="onComplete(row)">
-              <el-icon><Box /></el-icon>完成制作
+            <el-button v-if="row.status === 'accepted'" type="primary" size="small" @click="onStart(row)">
+              <el-icon><Tools /></el-icon>开始制作
             </el-button>
-            <el-button v-if="row.status === 3 || row.status === 4" type="info" size="small" plain @click="onView(row)">
+            <el-button v-if="row.status === 'processing'" type="warning" size="small" @click="onComplete(row)">
+              <el-icon><Box /></el-icon>完成交货
+            </el-button>
+            <el-button v-if="row.status === 'delivering' || row.status === 'completed'" type="info" size="small" plain @click="onView(row)">
               <el-icon><View /></el-icon>查看
             </el-button>
           </template>
@@ -361,11 +364,12 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useOutletStore } from '@/stores/outlet'
 import {
-  getMyOutletOrdersAPI,
-  acceptOrderAPI,
-  completeOrderAPI,
+  v2OutletGetFulfillments,
+  v2OutletAcceptFulfillment,
+  v2OutletStartFulfillment,
+  v2OutletDeliverFulfillment,
+  v2OutletGetOrderDetail,
   uploadImage,
-  getOrderDetailAPI,
   getDeliveryReceiptsAPI,
   getMyNotificationsAPI,
   markAllReadAPI,
@@ -458,21 +462,12 @@ const greetingText = computed(() => {
 })
 
 function getStatusTag(s) {
-  return { 1: 'warning', 2: '', 3: 'primary', 4: 'success' }[s] || 'info'
+  return { assigned: 'warning', accepted: 'primary', processing: '', delivering: 'primary', completed: 'success', cancelled: 'info' }[s] || 'info'
 }
 
-// 按网点授权的业务类型过滤订单（orderItems.itemType 匹配 businessTypes.code）
+// 2026-08-29：V2 履约列表无 orderItems.itemType，业务类型过滤不再适用（V2 派单已按供应商能力匹配）
 function getAuthorizedOrders(allOrders) {
-  const codes = outletStore.outletInfo?.businessTypes?.map(b => b.code) ?? []
-  if (!codes.length) {
-    // 网点未配置业务类型时放行全部订单，避免工作台整体置空
-    console.warn('[Workspace] 网点未配置业务类型，展示全部订单')
-    return allOrders
-  }
-  return allOrders.filter(o => {
-    if (!o.orderItems || o.orderItems.length === 0) return true
-    return o.orderItems.some(item => codes.includes(item.itemType))
-  })
+  return allOrders
 }
 
 // 订单数超限提示（列表按 pageSize=100 拉取，超出部分不可见）
@@ -481,15 +476,16 @@ const ordersTruncated = computed(() => (outletStore.allOrders?.length || 0) >= 1
 async function loadData() {
   loading.value = true
   try {
-    const res = await getMyOutletOrdersAPI({ page: 1, pageSize: 100 })
+    // 2026-08-29：V1 网点订单 → V2 履约单（网点=供应商维度）
+    const res = await v2OutletGetFulfillments({ page: 1, pageSize: 100 })
     const all = res?.list ?? []
     outletStore.allOrders = all
     const authorized = getAuthorizedOrders(all)
     stats.value = {
-      pending: authorized.filter(o => o.status === 1).length,
-      processing: authorized.filter(o => o.status === 2).length,
-      shipped: authorized.filter(o => o.status === 3).length,
-      completed: authorized.filter(o => o.status === 4).length,
+      pending: authorized.filter(o => o.status === 'assigned').length,
+      processing: authorized.filter(o => o.status === 'accepted' || o.status === 'processing').length,
+      shipped: authorized.filter(o => o.status === 'delivering').length,
+      completed: authorized.filter(o => o.status === 'completed').length,
     }
     loadOrders()
   } catch (err) {
@@ -500,9 +496,13 @@ async function loadData() {
 }
 
 function loadOrders() {
-  const statusMap = { pending: 1, processing: 2, shipped: 3, completed: 4 }
+  // V2 履约状态：待接单=assigned 制作中=accepted/processing 已发货=delivering 已完成=completed
+  const statusMap = { pending: 'assigned', processing: ['accepted', 'processing'], shipped: 'delivering', completed: 'completed' }
   const authorized = getAuthorizedOrders(outletStore.allOrders)
-  orderList.value = authorized.filter(o => o.status === statusMap[activeTab.value])
+  const keys = statusMap[activeTab.value]
+  orderList.value = Array.isArray(keys)
+    ? authorized.filter(o => keys.includes(o.status))
+    : authorized.filter(o => o.status === keys)
 }
 
 function onAccept(order) {
@@ -513,7 +513,7 @@ function onAccept(order) {
 async function onConfirmAccept() {
   actionLoading.value = true
   try {
-    await acceptOrderAPI(currentOrder.value.orderId)
+    await v2OutletAcceptFulfillment(currentOrder.value.id)
     ElMessage.success('接单成功')
     acceptDialog.value = false
     loadData()
@@ -522,6 +522,17 @@ async function onConfirmAccept() {
   } finally {
     actionLoading.value = false
   }
+}
+
+function onStart(order) {
+  actionLoading.value = true
+  v2OutletStartFulfillment(order.id)
+    .then(() => {
+      ElMessage.success('已开始制作')
+      loadData()
+    })
+    .catch((err) => ElMessage.error(err.response?.data?.message || '操作失败'))
+    .finally(() => { actionLoading.value = false })
 }
 
 function onComplete(order) {
@@ -560,29 +571,13 @@ async function uploadSeal(option) {
 async function onConfirmComplete() {
   const valid = await completeFormRef.value.validate().catch(() => false)
   if (!valid) return
-  const sealImages = sealFiles.value
-      .filter(f => f.response?.url)
-      .map(f => ({ url: f.response.url, type: 'seal' }))
-  const receipts = receiptFiles.value
-      .filter(f => f.response?.url)
-      .map(f => ({ url: f.response.url, type: 'certificate' }))
-  if (!sealImages.length) {
-    ElMessage.warning('请至少上传一张印章照片')
-    return
-  }
-  if (!receipts.length) {
-    ElMessage.warning('请至少上传一张交付凭证')
-    return
-  }
-
+  // 2026-08-29：V2 发货不接收凭证图（交付凭证走供应商端 uploadReceipt），仅快递+备注
   actionLoading.value = true
   try {
-    await completeOrderAPI(currentOrder.value.orderId, {
+    await v2OutletDeliverFulfillment(currentOrder.value.id, {
       expressCompany: completeForm.expressCompany,
-      expressNo: completeForm.expressNo,
+      trackingNo: completeForm.expressNo,
       remark: completeForm.remark,
-      receipts,
-      sealImages,
     })
     ElMessage.success('交付成功')
     completeDialog.value = false
@@ -602,27 +597,22 @@ async function onView(order) {
   detailLoading.value = true
 
   try {
-    // 并行获取订单详情和交付凭证
-    const [orderRes, receiptRes] = await Promise.all([
-      getOrderDetailAPI(order.orderId).catch(() => null),
-      getDeliveryReceiptsAPI({ orderId: order.orderId }).catch(() => null),
-    ])
-
+    // 2026-08-29：V1 订单详情 → V2 履约/订单详情（orderNo）
+    const orderRes = await v2OutletGetOrderDetail(order.orderNo).catch(() => null)
+    const ful = orderRes?.fulfillments?.[0] || null
     // 合并数据
     detailOrder.value = {
       ...order,
-      expressCompany: orderRes?.expressCompany,
-      expressNo: orderRes?.expressNo,
-      acceptedAt: orderRes?.acceptedAt || order.acceptedAt,
-      completedAt: orderRes?.completedAt || order.completedAt,
-      orderItems: orderRes?.orderItems || order.orderItems || [],
-      materials: orderRes?.materials || order.materials || [],
+      expressCompany: ful?.expressCompany,
+      expressNo: ful?.expressNo,
+      acceptedAt: ful?.acceptedAt || order.acceptedAt,
+      completedAt: ful?.completedAt || order.completedAt,
+      orderItems: orderRes?.order?.orderItems || [],
+      materials: [],
     }
 
-    // 凭证优先用 orderRes，其次用 receiptRes
-    const allReceipts = orderRes?.receipts?.length > 0
-      ? orderRes.receipts
-      : receiptRes?.list || []
+    // 凭证（V2 详情 order.deliveryReceipts）
+    const allReceipts = orderRes?.order?.deliveryReceipts || []
     sealImageList.value = allReceipts.filter(r => r.type === 'seal')
     receiptList.value = allReceipts.filter(r => r.type !== 'seal')
   } catch (err) {

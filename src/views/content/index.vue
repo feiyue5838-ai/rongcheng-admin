@@ -2,7 +2,7 @@
   <div>
     <el-tabs v-model="activeTab" class="content-tabs" @tab-change="onTabChange">
       <!-- ============ Banner ============ -->
-      <el-tab-pane label="Banner 管理" name="banners">
+      <el-tab-pane label="Banner 管理" name="banners" lazy>
         <div class="page-header">
           <h2>Banner 管理</h2>
           <el-button type="primary" @click="openBannerDialog()">新增 Banner</el-button>
@@ -72,7 +72,7 @@
       </el-tab-pane>
 
       <!-- ============ 公告 ============ -->
-      <el-tab-pane label="公告管理" name="announcements">
+      <el-tab-pane label="公告管理" name="announcements" lazy>
         <div class="page-header">
           <h2>公告管理</h2>
           <el-button type="primary" @click="openAnnDialog()">新增公告</el-button>
@@ -145,7 +145,7 @@
       </el-tab-pane>
 
       <!-- ============ 关于我们 ============ -->
-      <el-tab-pane label="关于我们" name="about">
+      <el-tab-pane label="关于我们" name="about" lazy>
         <div class="page-header">
           <h2>关于我们配置</h2>
           <el-button type="primary" :loading="aboutSaving" :disabled="aboutLoading" @click="saveAbout">保存配置</el-button>
@@ -196,33 +196,57 @@
               <el-input v-model="aboutForm.companyName" maxlength="100" placeholder="如：成都蓉城信息服务有限公司" />
               <div style="color: #909399; font-size: 12px; margin-top: 4px;">展示在「关于我们」页面底部版权下方</div>
             </el-form-item>
-            <el-form-item label="用户服务协议">
-              <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%;">
-                <Toolbar :editor="termsEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
-                <Editor v-model="aboutForm.termsContent" :defaultConfig="editorConfig" mode="default" style="height: 360px; overflow-y: hidden" @onCreated="termsCreated" />
-              </div>
-              <div style="color: #909399; font-size: 12px; margin-top: 4px;">留空则小程序展示默认协议文案</div>
-            </el-form-item>
-            <el-form-item label="隐私政策">
-              <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%;">
-                <Toolbar :editor="privacyEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
-                <Editor v-model="aboutForm.privacyContent" :defaultConfig="editorConfig" mode="default" style="height: 360px; overflow-y: hidden" @onCreated="privacyCreated" />
-              </div>
-              <div style="color: #909399; font-size: 12px; margin-top: 4px;">留空则小程序展示默认隐私文案</div>
-            </el-form-item>
-            <el-form-item label="材料真实性承诺书">
-              <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%;">
-                <Toolbar :editor="materialEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
-                <Editor v-model="aboutForm.materialCommitment" :defaultConfig="editorConfig" mode="default" style="height: 360px; overflow-y: hidden" @onCreated="materialCreated" />
-              </div>
-              <div style="color: #909399; font-size: 12px; margin-top: 4px;">留空则小程序展示默认承诺书文案</div>
-            </el-form-item>
           </el-form>
         </div>
       </el-tab-pane>
 
+      <!-- ============ 用户服务协议 ============ -->
+      <el-tab-pane label="用户服务协议" name="terms" lazy>
+        <div class="page-header">
+          <h2>用户服务协议</h2>
+          <el-button type="primary" :loading="termsSaving" :disabled="aboutLoading" @click="saveTerms">保存协议</el-button>
+        </div>
+        <div class="page-card" v-loading="aboutLoading">
+          <div class="form-tip" style="margin-bottom: 12px;">保存后由小程序「用户服务协议」页面通过公开接口实时读取；留空时小程序展示内置默认协议。</div>
+          <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%; max-width: 960px;">
+            <Toolbar :editor="termsEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
+            <Editor v-model="aboutForm.termsContent" :defaultConfig="editorConfig" mode="default" style="height: 560px; overflow-y: hidden" @onCreated="termsCreated" />
+          </div>
+        </div>
+      </el-tab-pane>
+
+      <!-- ============ 隐私政策 ============ -->
+      <el-tab-pane label="隐私政策" name="privacy" lazy>
+        <div class="page-header">
+          <h2>隐私政策</h2>
+          <el-button type="primary" :loading="privacySaving" :disabled="aboutLoading" @click="savePrivacy">保存隐私政策</el-button>
+        </div>
+        <div class="page-card" v-loading="aboutLoading">
+          <div class="form-tip" style="margin-bottom: 12px;">保存后由小程序「隐私政策」页面通过公开接口实时读取；留空时小程序展示内置默认政策。</div>
+          <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%; max-width: 960px;">
+            <Toolbar :editor="privacyEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
+            <Editor v-model="aboutForm.privacyContent" :defaultConfig="editorConfig" mode="default" style="height: 560px; overflow-y: hidden" @onCreated="privacyCreated" />
+          </div>
+        </div>
+      </el-tab-pane>
+
+      <!-- ============ 材料真实性承诺书 ============ -->
+      <el-tab-pane label="材料真实性承诺书" name="material-commitment" lazy>
+        <div class="page-header">
+          <h2>材料真实性承诺书</h2>
+          <el-button type="primary" :loading="materialSaving" :disabled="aboutLoading" @click="saveMaterialCommitment">保存承诺书</el-button>
+        </div>
+        <div class="page-card" v-loading="aboutLoading">
+          <div class="form-tip" style="margin-bottom: 12px;">保存后由小程序「材料真实性承诺书」页面通过公开接口实时读取；留空时小程序展示内置默认文案。</div>
+          <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%; max-width: 960px;">
+            <Toolbar :editor="materialEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
+            <Editor v-model="aboutForm.materialCommitment" :defaultConfig="editorConfig" mode="default" style="height: 560px; overflow-y: hidden" @onCreated="materialCreated" />
+          </div>
+        </div>
+      </el-tab-pane>
+
       <!-- ============ 业务介绍 ============ -->
-      <el-tab-pane label="业务介绍" name="intros">
+      <el-tab-pane label="业务介绍" name="intros" lazy>
         <div class="page-header">
           <h2>业务介绍管理</h2>
           <el-button type="primary" @click="openIntroDialog()">新增介绍</el-button>
@@ -293,7 +317,7 @@
       </el-tab-pane>
 
       <!-- ============ 页面装修 ============ -->
-      <el-tab-pane label="页面装修" name="decorations">
+      <el-tab-pane label="页面装修" name="decorations" lazy>
         <div class="page-header">
           <h2>页面装修管理</h2>
           <el-button type="primary" @click="openDecoDialog()">新增装修</el-button>
@@ -332,10 +356,14 @@
             <el-form-item label="适用页面">
               <el-select v-model="decoForm.type" style="width:100%">
                 <el-option label="刻章页" value="seal" />
+                <el-option label="企业刻章申请页" value="seal_application" />
+                <el-option label="个人印章申请页" value="seal_personal_application" />
+                <el-option label="电子印章申请页" value="seal_electronic_application" />
+                <el-option label="刻章备案查询页" value="seal_record_query" />
                 <el-option label="登报页" value="newspaper" />
                 <el-option label="代理记账页" value="bookkeeping" />
               </el-select>
-              <div class="form-tip">对应小程序 Tab 页 Hero 品牌区</div>
+              <div class="form-tip">刻章首页及企业、个人、电子、备案查询页面的 Hero 配置相互独立</div>
             </el-form-item>
             <el-form-item label="主标题">
               <el-input v-model="decoForm.title" maxlength="100" show-word-limit placeholder="如：专业印章服务" />
@@ -748,7 +776,7 @@ const decoLoading = ref(false)
 const decoSaving = ref(false)
 const decoActionKey = ref('')
 const decoVisible = ref(false)
-type DecoType = 'seal' | 'newspaper' | 'bookkeeping'
+type DecoType = 'seal' | 'seal_application' | 'seal_personal_application' | 'seal_electronic_application' | 'seal_record_query' | 'newspaper' | 'bookkeeping'
 const decoForm = reactive<{
   id: string | number | null
   type: DecoType
@@ -760,11 +788,18 @@ const decoForm = reactive<{
 }>({ id: null, type: 'seal', title: '', subtitle: '', image: '', sort: 0, status: 1 })
 
 function normalizeDecoType(value: unknown): DecoType {
-  return value === 'newspaper' || value === 'bookkeeping' ? value : 'seal'
+  const types: DecoType[] = ['seal', 'seal_application', 'seal_personal_application', 'seal_electronic_application', 'seal_record_query', 'newspaper', 'bookkeeping']
+  return types.includes(value as DecoType) ? value as DecoType : 'seal'
 }
 function decoTypeLabel(value: unknown) {
   const labels: Record<DecoType, string> = {
-    seal: '刻章页', newspaper: '登报页', bookkeeping: '代理记账页'
+    seal: '刻章首页',
+    seal_application: '企业刻章申请页',
+    seal_personal_application: '个人印章申请页',
+    seal_electronic_application: '电子印章申请页',
+    seal_record_query: '刻章备案查询页',
+    newspaper: '登报页',
+    bookkeeping: '代理记账页'
   }
   return labels[normalizeDecoType(value)]
 }
@@ -869,6 +904,9 @@ const aboutDefaults: AboutForm = {
 const aboutForm = reactive<AboutForm>({ ...aboutDefaults })
 const aboutLoading = ref(false)
 const aboutSaving = ref(false)
+const termsSaving = ref(false)
+const privacySaving = ref(false)
+const materialSaving = ref(false)
 
 function aboutUploadSuccess(res: UploadResponse) {
   const imageUrl = uploadUrlFromResponse(res)
@@ -881,7 +919,7 @@ function logoUploadSuccess(res: UploadResponse) {
   else ElMessage.error('上传失败')
 }
 
-async function loadAbout() {
+async function loadAbout(tabName = 'about') {
   aboutLoading.value = true
   try {
     const res = await request.get('/content/about') as unknown as Partial<AboutForm>
@@ -891,7 +929,7 @@ async function loadAbout() {
         aboutForm[key] = typeof value === 'string' ? value : ''
       }
     }
-    loadedTabs.add('about')
+    loadedTabs.add(tabName)
   } catch { /* request interceptor displays the error */ } finally { aboutLoading.value = false }
 }
 // 富文本白名单净化（防存储型 XSS）：保留常用排版/媒体标签，
@@ -946,7 +984,7 @@ function normalizeRichText(value: string) {
 }
 async function saveAbout() {
   if (aboutLoading.value) return
-  const payload: AboutForm = {
+  const payload = {
     appName: aboutForm.appName.trim(),
     phone: aboutForm.phone.trim(),
     wechat: aboutForm.wechat.trim(),
@@ -957,10 +995,7 @@ async function saveAbout() {
     image: aboutForm.image.trim(),
     logoUrl: aboutForm.logoUrl.trim(),
     version: aboutForm.version.trim(),
-    companyName: aboutForm.companyName.trim(),
-    termsContent: normalizeRichText(aboutForm.termsContent),
-    privacyContent: normalizeRichText(aboutForm.privacyContent),
-    materialCommitment: normalizeRichText(aboutForm.materialCommitment)
+    companyName: aboutForm.companyName.trim()
   }
   if (payload.phone && !/^[0-9+()\-\s]{5,30}$/.test(payload.phone)) {
     ElMessage.warning('请输入有效的客服电话')
@@ -969,9 +1004,46 @@ async function saveAbout() {
   aboutSaving.value = true
   try {
     await request.put('/content/about', payload)
-    Object.assign(aboutForm, payload)
-    ElMessage.success('保存成功')
+    // 保存后以服务端回读结果为准，避免只更新本地表单却误以为已经写入。
+    await loadAbout()
+    ElMessage.success('保存成功，小程序重新进入“关于我们”后即可看到')
   } catch (e) { ElMessage.error(errorMessage(e, '保存失败')) } finally { aboutSaving.value = false }
+}
+
+async function saveTerms() {
+  if (termsSaving.value || aboutLoading.value) return
+  termsSaving.value = true
+  try {
+    await request.put('/content/about', {
+      termsContent: normalizeRichText(aboutForm.termsContent)
+    })
+    await loadAbout('terms')
+    ElMessage.success('用户服务协议已保存')
+  } catch (e) { ElMessage.error(errorMessage(e, '协议保存失败')) } finally { termsSaving.value = false }
+}
+
+async function savePrivacy() {
+  if (privacySaving.value || aboutLoading.value) return
+  privacySaving.value = true
+  try {
+    await request.put('/content/about', {
+      privacyContent: normalizeRichText(aboutForm.privacyContent)
+    })
+    await loadAbout('privacy')
+    ElMessage.success('隐私政策已保存')
+  } catch (e) { ElMessage.error(errorMessage(e, '隐私政策保存失败')) } finally { privacySaving.value = false }
+}
+
+async function saveMaterialCommitment() {
+  if (materialSaving.value || aboutLoading.value) return
+  materialSaving.value = true
+  try {
+    await request.put('/content/material-commitment', {
+      content: normalizeRichText(aboutForm.materialCommitment)
+    })
+    await loadAbout('material-commitment')
+    ElMessage.success('材料真实性承诺书已保存')
+  } catch (e) { ElMessage.error(errorMessage(e, '承诺书保存失败')) } finally { materialSaving.value = false }
 }
 
 // 首次切到某 tab 时才加载（减少无意义请求）
@@ -982,6 +1054,9 @@ function onTabChange(name: string | number) {
   else if (tabName === 'announcements') loadAnnouncements()
   else if (tabName === 'intros') loadIntros()
   else if (tabName === 'about') loadAbout()
+  else if (tabName === 'terms') loadAbout('terms')
+  else if (tabName === 'privacy') loadAbout('privacy')
+  else if (tabName === 'material-commitment') loadAbout('material-commitment')
   else if (tabName === 'decorations') loadDecos()
 }
 

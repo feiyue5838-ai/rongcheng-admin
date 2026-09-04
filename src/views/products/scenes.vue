@@ -17,6 +17,7 @@
           <span class="dot" :class="{ off: s.status !== 1 }"></span>
           {{ s.name }}
         </div>
+        <div class="scene-item-type">{{ sceneTypeLabel(s.sceneType) }}</div>
         <div class="scene-item-meta">印章 {{ s._count?.sealSceneSeals ?? 0 }} · 套餐 {{ s._count?.sealScenePackages ?? 0 }}</div>
       </div>
     </div>
@@ -83,6 +84,14 @@
       <el-form :model="sceneForm" label-width="90px">
         <el-form-item label="场景名称" required>
           <el-input v-model="sceneForm.name" placeholder="如：个体户" />
+        </el-form-item>
+        <el-form-item label="业务类型" required>
+          <el-select v-model="sceneForm.sceneType" style="width: 100%">
+            <el-option label="企业刻章" value="enterprise" />
+            <el-option label="个人印章" value="personal" />
+            <el-option label="电子印章" value="electronic" />
+            <el-option label="备案查询" value="record" />
+          </el-select>
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="sceneForm.description" type="textarea" rows="2" />
@@ -184,10 +193,14 @@ const availableExistingPackages = computed(() =>
 
 // ============ 场景信息对话框 ============
 const sceneDialog = ref(false)
-const sceneForm = reactive<any>({ id: '', name: '', description: '', sort: 0, status: 1 })
+const sceneForm = reactive<any>({ id: '', name: '', description: '', sceneType: 'enterprise', sort: 0, status: 1 })
+
+function sceneTypeLabel(sceneType: string) {
+  return ({ enterprise: '企业刻章', personal: '个人印章', electronic: '电子印章', record: '备案查询' } as Record<string, string>)[sceneType] || '未分类'
+}
 
 function showCreateScene() {
-  Object.assign(sceneForm, { id: '', name: '', description: '', sort: 0, status: 1 })
+  Object.assign(sceneForm, { id: '', name: '', description: '', sceneType: 'enterprise', sort: 0, status: 1 })
   sceneDialog.value = true
 }
 function showEditScene() {
@@ -195,6 +208,7 @@ function showEditScene() {
     id: currentScene.value.id,
     name: currentScene.value.name,
     description: currentScene.value.description || '',
+    sceneType: currentScene.value.sceneType,
     sort: currentScene.value.sort || 0,
     status: currentScene.value.status,
   })
@@ -206,12 +220,12 @@ async function submitScene() {
   try {
     if (sceneForm.id) {
       await updateScene(sceneForm.id, {
-        name: sceneForm.name, description: sceneForm.description, sort: sceneForm.sort, status: sceneForm.status,
+        name: sceneForm.name, description: sceneForm.description, sceneType: sceneForm.sceneType, sort: sceneForm.sort, status: sceneForm.status,
       })
       ElMessage.success('更新成功')
     } else {
       await createScene({
-        name: sceneForm.name, description: sceneForm.description, sort: sceneForm.sort, status: sceneForm.status,
+        name: sceneForm.name, description: sceneForm.description, sceneType: sceneForm.sceneType, sort: sceneForm.sort, status: sceneForm.status,
       })
       ElMessage.success('创建成功')
     }

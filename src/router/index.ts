@@ -41,13 +41,14 @@ const router = createRouter({
         { path: 'v2/orders/detail', name: 'V2SupplyDetail', component: () => import('@/views/v2/SupplyDetail.vue'), meta: { title: '供应链视图' } },
         { path: 'v2/settlements', name: 'V2Settlements', component: () => import('@/views/v2/Settlements.vue'), meta: { title: '结算管理' } },
         { path: 'v2/refunds', name: 'V2RefundManage', component: () => import('@/views/v2/RefundManage.vue'), meta: { title: '退款管理' } },
-        { path: 'orders/seal', name: 'SealOrders', component: () => import('@/views/orders/seal.vue'), meta: { title: '历史刻章订单' } },
-        { path: 'orders/newspaper', name: 'NewspaperOrders', component: () => import('@/views/orders/newspaper.vue'), meta: { title: '历史登报订单' } },
-        { path: 'orders/bookkeeping', name: 'BookkeepingOrders', component: () => import('@/views/orders/bookkeeping.vue'), meta: { title: '历史记账订单' } },
-        { path: 'orders/:id', name: 'OrderDetail', component: () => import('@/views/orders/detail.vue'), meta: { title: '订单详情' } },
-        // 售后管理
-        { path: 'after-sales/orders', name: 'AfterSalesOrders', component: () => import('@/views/after-sales/after-sales-orders.vue'), meta: { title: '历史售后订单' } },
-        { path: 'after-sales/refund-records', name: 'RefundRecords', component: () => import('@/views/after-sales/refund-records.vue'), meta: { title: '历史退款记录' } },
+        // 历史订单（V1 退役，2026-08-29 方案 A）：重定向到 V2 供应链订单（按 module 预筛选）
+        { path: 'orders/seal', redirect: () => ({ path: '/v2/orders', query: { module: 'seal' } }) },
+        { path: 'orders/newspaper', redirect: () => ({ path: '/v2/orders', query: { module: 'newspaper' } }) },
+        { path: 'orders/bookkeeping', redirect: () => ({ path: '/v2/orders', query: { module: 'bookkeeping' } }) },
+        { path: 'orders/:id', redirect: '/v2/orders' },
+        // 售后管理（V1 退役）：并入 V2 退款管理
+        { path: 'after-sales/orders', redirect: '/v2/refunds' },
+        { path: 'after-sales/refund-records', redirect: '/v2/refunds' },
         // 产品管理
         { path: 'products/seals', redirect: '/products/seals/enterprise' },
         { path: 'products/seals/enterprise', name: 'SealProductsEnterprise', component: () => import('@/views/products/seals.vue'), meta: { title: '企业刻章' } },
@@ -77,7 +78,7 @@ const router = createRouter({
         // 网点管理
         { path: 'outlets', name: 'Outlets', component: () => import('@/views/outlets/OutletList.vue'), meta: { title: '合作网点' } },
         { path: 'outlets/dashboard', name: 'OutletDashboard', component: () => import('@/views/outlets/OutletDashboard.vue'), meta: { title: '网点控制台' } },
-        { path: 'outlets/assign', name: 'OrderAssign', component: () => import('@/views/outlets/OrderAssign.vue'), meta: { title: '订单分配' } },
+        { path: 'outlets/assign', redirect: '/v2/orders/unassigned' },
         { path: 'outlets/receipts', name: 'DeliveryReceipts', component: () => import('@/views/outlets/DeliveryReceipts.vue'), meta: { title: '交付回执' } },
         { path: 'outlets/overview', name: 'OutletOverview', component: () => import('@/views/outlets/OutletOverview.vue'), meta: { title: '全网点总览' } },
   { path: 'finance', name: 'Finance', component: () => import('@/views/finance/index.vue'), meta: { title: '财务总览' } },

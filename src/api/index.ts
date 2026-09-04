@@ -83,18 +83,7 @@ export const login = (username: string, password: string) =>
 export const getAdminInfo = () => request.get('/admin/profile')
 
 // ==================== 订单接口 ====================
-export const getSealOrders = (params: any) => request.get('/orders/admin/list', { params: { ...params, module: 'seal' } })
-export const getNewspaperOrders = (params: any) => request.get('/orders/admin/list', { params: { ...params, module: 'newspaper' } })
-export const getBookkeepingOrders = (params: any) => request.get('/orders/admin/list', { params: { ...params, module: 'bookkeeping' } })
-export const getOrderDetail = (id: string) => request.get(`/orders/admin/detail/${id}`)
-export const updateOrder = (id: string, data: any) => request.put(`/orders/admin/${id}`, data)
-export const refundOrder = (id: string, data: any) => request.post(`/orders/${id}/refund`, data)
-export const auditMaterial = (id: string, data: { status: number; remark?: string }) =>
-  request.put(`/orders/admin/materials/${id}/audit`, data)
-export const getOrderStatistics = () => request.get('/orders/admin/statistics')
-// 导出订单 Excel（blob 流，拦截器对非 {code:0,data} 结构原样返回 Blob）
-export const exportOrders = (params: any): Promise<Blob> =>
-  request.get('/orders/admin/export', { params, responseType: 'blob', timeout: 60000 }) as unknown as Promise<Blob>
+// V1 订单 API 已于 2026-08-29 退役（历史页重定向 V2），列表/详情/操作全部走 v2* 系列
 
 // ==================== 产品接口 ====================
 // 无参数：返回4分类列表；传 id：返回该分类详情（含印章+套餐）
@@ -206,16 +195,7 @@ export const shipOutletOrderAdminAPI = (outletId: string, orderId: string, data:
 export const setOutletBusinessTypesAPI = (id: string, businessTypeIds: string[]) =>
   request.put(`/outlets/${id}/business-types`, { businessTypeIds })
 
-// ==================== 订单分配 API ====================
-export const getUnassignedOrdersAPI = (params: object) => request.get('/orders/unassigned', { params })
-export const getAssignedOrdersAPI = (params: object) => request.get('/orders/assigned', { params })
-export const assignOrderAPI = (orderId: string, data: { outletId: string; remark?: string }) => request.post(`/orders/${orderId}/assign`, { outlet_id: data.outletId, remark: data.remark })
-
-// 管理端发货（对齐后端 PUT /orders/{id}/deliver-admin，snake_case 字段，携带 admin_token）
-export const deliverOrderAdmin = (id: string, data: {
-  express_company: string; express_no: string; remark?: string
-  receipts?: Array<{ type: string; url: string }>
-}) => request.put(`/orders/${id}/deliver-admin`, data)
+// ==================== 订单分配 API（V1 退役 2026-08-29：派单走 v2AssignOrder / v2 待派单池） ====================
 
 // ==================== 交付回执 API ====================
 export const getDeliveryReceiptsAPI = (params: object) => request.get('/delivery-receipts', { params })
@@ -271,8 +251,7 @@ export const deleteMenuRoleConfig = (id: string) => request.delete(`/menu-roles/
 export const resetMenuRoleConfigs = () => request.post('/menu-roles/reset')
 
 // ==================== 结算管理 API ====================
-export const getOutletPendingSummary = () => request.get('/settlement/outlets/pending')
-export const getSettlementRecords = (params?: object) => request.get('/settlement/records', { params })
+// V1 settlement 接口已退役（2026-08-29）：待结算数据走 v2GetSettlements（v2Request）
 
 // ==================== 交易流水 API ====================
 // 注意：transaction 系列端点后端为 {code:0,data:{data:...}} 双层包装，
@@ -419,3 +398,12 @@ export const v2RejectRefund = (id: string, data: { remark?: string }) => v2Reque
 // ---------- 管理端 V2.0 供应商 ----------
 // 供应商列表 GET /api/v2/admin/suppliers
 export const v2GetSuppliers = (params: any) => v2Request.get('/v2/admin/suppliers', { params })
+
+// V2 派单记录/统计（履约维度，替代 V1 dashboard/dispatch-*，2026-08-29）
+export const v2GetDispatchRecords = (params: any) => v2Request.get('/v2/admin/dispatch-records', { params })
+export const v2GetDispatchStats = (params: any) => v2Request.get('/v2/admin/dispatch-stats', { params })
+
+// V2 履约管理（网点看板用，替代 V1 /api/outlets/{id}/orders，2026-08-29）
+export const v2GetFulfillments = (params: any) => v2Request.get('/v2/admin/fulfillments', { params })
+export const v2AcceptFulfillment = (id: string) => v2Request.post(`/v2/admin/fulfillments/${id}/accept`)
+export const v2DeliverFulfillment = (id: string, data: any) => v2Request.post(`/v2/admin/fulfillments/${id}/deliver`, data || {})
