@@ -406,4 +406,5 @@ export const v2GetDispatchStats = (params: any) => v2Request.get('/v2/admin/disp
 // V2 履约管理（网点看板用，替代 V1 /api/outlets/{id}/orders，2026-08-29）
 export const v2GetFulfillments = (params: any) => v2Request.get('/v2/admin/fulfillments', { params })
 export const v2AcceptFulfillment = (id: string) => v2Request.post(`/v2/admin/fulfillments/${id}/accept`)
+export const v2StartFulfillment = (id: string) => v2Request.post(`/v2/admin/fulfillments/${id}/start`)
 export const v2DeliverFulfillment = (id: string, data: any) => v2Request.post(`/v2/admin/fulfillments/${id}/deliver`, data || {})

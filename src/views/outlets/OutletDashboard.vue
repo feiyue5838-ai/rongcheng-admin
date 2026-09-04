@@ -123,12 +123,15 @@
           <el-table-column prop="assignedAt" label="分配时间" width="170">
             <template #default="{ row }">{{ formatDate(row.assignedAt) }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="160" align="center">
+          <el-table-column label="操作" width="200" align="center">
             <template #default="{ row }">
               <template v-if="row.status === 'assigned'">
                 <el-button type="success" size="small" @click="onAccept(row)">接单</el-button>
               </template>
-              <template v-else-if="row.status === 'accepted' || row.status === 'processing'">
+              <template v-else-if="row.status === 'accepted'">
+                <el-button type="primary" size="small" @click="onStart(row)">开始制作</el-button>
+              </template>
+              <template v-else-if="row.status === 'processing'">
                 <el-button type="warning" size="small" @click="onComplete(row)">完成交货</el-button>
               </template>
               <template v-else>
@@ -143,10 +146,20 @@
     <!-- 接单确认 -->
     <el-dialog v-model="acceptDialogVisible" title="接单确认" width="420px">
       <p>确定接受订单 <strong>{{ currentOrder?.orderNo }}</strong> 吗？</p>
-      <p style="color:#666;margin-top:8px">接单后请尽快开始制作，完成后点击「完成制作」提交交货。</p>
+      <p style="color:#666;margin-top:8px">接单后请先点击「开始制作」，制作完成后点击「完成交货」提交交付信息。</p>
       <template #footer>
         <el-button @click="acceptDialogVisible = false">取消</el-button>
         <el-button type="success" :loading="actionLoading" @click="onConfirmAccept">确认接单</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 开始制作确认 -->
+    <el-dialog v-model="startDialogVisible" title="开始制作" width="420px">
+      <p>确定对订单 <strong>{{ currentOrder?.orderNo }}</strong> 开始制作吗？</p>
+      <p style="color:#666;margin-top:8px">开始制作后，完成时可点击「完成交货」提交交付信息。</p>
+      <template #footer>
+        <el-button @click="startDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="actionLoading" @click="onConfirmStart">确认开始</el-button>
       </template>
     </el-dialog>
 
@@ -175,7 +188,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getOutletsAPI, getOutletAPI, v2GetFulfillments, v2AcceptFulfillment, v2DeliverFulfillment } from '@/api'
+import { getOutletsAPI, getOutletAPI, v2GetFulfillments, v2AcceptFulfillment, v2StartFulfillment, v2DeliverFulfillment } from '@/api'
 import { formatDate } from '@/utils/format'
 import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding, Plus } from '@element-plus/icons-vue'
 
@@ -188,6 +201,7 @@ const stats = ref<any>({ pending: 0, processing: 0, completed: 0, todayTotal: 0 
 const recentOrders = ref<any[]>([])
 const currentOrder = ref<any>(null)
 const acceptDialogVisible = ref(false)
+const startDialogVisible = ref(false)
 const completeDialogVisible = ref(false)
 const actionLoading = ref(false)
 const completeFormRef = ref<any>(null)
@@ -240,7 +254,19 @@ async function loadData() {
     ])
     currentOutlet.value = (outletRes as any)
     const allOrders = (fulRes as any).list ?? []
-    recentOrders.value = allOrders.slice(0, 10)
+    // 未完成（待接单/已接单/制作中）优先置顶，已完成按时间倒序排在后面
+    // 保证卡片提示的待办在列表内永远可见可操作（不因 slice 截断被挤出）
+    const STATUS_PRIORITY: Record<string, number> = {
+      assigned: 0, accepted: 1, processing: 2, delivering: 3,
+      completed: 4, cancelled: 5, pending_assignment: 6,
+    }
+    const sorted = [...allOrders].sort((a: any, b: any) => {
+      const pa = STATUS_PRIORITY[a.status] ?? 9
+      const pb = STATUS_PRIORITY[b.status] ?? 9
+      if (pa !== pb) return pa - pb
+      return String(b.assignedAt || '').localeCompare(String(a.assignedAt || ''))
+    })
+    recentOrders.value = sorted.slice(0, 10)
     // 履约状态统计（V2）
     const isToday = (t?: string) => {
       if (!t) return false
@@ -290,10 +316,34 @@ function onComplete(order: any) {
   completeDialogVisible.value = true
 }
 
+function onStart(order: any) {
+  currentOrder.value = order
+  startDialogVisible.value = true
+}
+
+async function onConfirmStart() {
+  // 前端状态校验：只有 accepted（已接单）才能开始制作
+  if (currentOrder.value?.status !== 'accepted') {
+    ElMessage.warning('该订单当前状态不允许开始制作，请刷新页面后重试')
+    return
+  }
+  actionLoading.value = true
+  try {
+    await v2StartFulfillment((currentOrder.value as any).id)
+    ElMessage.success('已开始制作')
+    startDialogVisible.value = false
+    loadData()
+  } catch (err: any) {
+    ElMessage.error(err?.response?.data?.message || err?.message || '操作失败')
+  } finally {
+    actionLoading.value = false
+  }
+}
+
 async function onConfirmComplete() {
-  // 前端状态校验：只有 accepted/processing 才能交货
+  // 前端状态校验：只有 processing（制作中）才能交货（accepted 需先开始制作）
   const st = currentOrder.value?.status
-  if (st !== 'accepted' && st !== 'processing') {
+  if (st !== 'processing') {
     ElMessage.warning('该订单当前状态不允许交货，请刷新页面后重试')
     return
   }
