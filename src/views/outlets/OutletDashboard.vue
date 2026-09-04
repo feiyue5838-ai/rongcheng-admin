@@ -193,6 +193,21 @@
         <el-form-item label="交货备注">
           <el-input v-model="completeForm.remark" type="textarea" :rows="2" placeholder="选填" />
         </el-form-item>
+        <el-form-item label="交货照片">
+          <el-upload
+            ref="completeUploadRef"
+            list-type="picture-card"
+            :auto-upload="true"
+            :before-upload="beforePhotoUpload"
+            :http-request="uploadCompletePhoto"
+            :limit="5"
+            :on-exceed="onPhotoExceed"
+            multiple
+          >
+            <el-icon><Plus /></el-icon>
+          </el-upload>
+          <div style="font-size:12px;color:#999">选传：交货凭证照片（最多 5 张）</div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="completeDialogVisible = false">取消</el-button>
@@ -206,14 +221,14 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getOutletsAPI, getOutletAPI, v2GetFulfillments, v2AcceptFulfillment, v2StartFulfillment, v2DeliverFulfillment } from '@/api'
+import { getOutletsAPI, getOutletAPI, v2GetFulfillments, v2AcceptFulfillment, v2StartFulfillment, v2DeliverFulfillment, uploadImage } from '@/api'
 import { formatDate } from '@/utils/format'
 import {
   outletFulfillmentStatusText,
   outletFulfillmentStatusTag,
   FULFILLMENT_TODO_PRIORITY,
 } from '@/utils/fulfillment-status'
-import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding } from '@element-plus/icons-vue'
+import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding, Plus } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -228,8 +243,9 @@ const startDialogVisible = ref(false)
 const completeDialogVisible = ref(false)
 const actionLoading = ref(false)
 const completeFormRef = ref<any>(null)
+const completeUploadRef = ref<any>(null)
 
-const completeForm = reactive({ expressCompany: '', expressNo: '', remark: '' })
+const completeForm = reactive({ expressCompany: '', expressNo: '', remark: '', photos: [] as string[] })
 const completeRules = {
   expressCompany: [{ required: true, message: '请输入快递公司', trigger: 'blur' }],
   expressNo: [{ required: true, message: '请输入快递单号', trigger: 'blur' }],
@@ -313,9 +329,35 @@ async function onConfirmAccept() {
   }
 }
 
+function beforePhotoUpload(file: any) {
+  const ok = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
+  if (!ok) { ElMessage.error('只能上传图片（JPG/PNG/GIF/WebP）'); return false }
+  if (file.size > 10 * 1024 * 1024) { ElMessage.error('图片大小不能超过 10MB'); return false }
+  return true
+}
+
+async function uploadCompletePhoto(option: any) {
+  try {
+    const res: any = await uploadImage(option.file)
+    const url = res?.data?.url ?? res?.url
+    if (!url) throw new Error('upload failed')
+    completeForm.photos.push(url)
+    option.file.url = url
+    option.onSuccess(res, option.file)
+  } catch (e: any) {
+    ElMessage.error('图片上传失败，请重试')
+    option.onError(e)
+  }
+}
+
+function onPhotoExceed() {
+  ElMessage.warning('最多上传 5 张交货照片')
+}
+
 function onComplete(order: any) {
   currentOrder.value = order
-  Object.assign(completeForm, { expressCompany: '', expressNo: '', remark: '' })
+  Object.assign(completeForm, { expressCompany: '', expressNo: '', remark: '', photos: [] })
+  completeUploadRef.value?.clearFiles()
   completeDialogVisible.value = true
 }
 
@@ -358,6 +400,7 @@ async function onConfirmComplete() {
       expressCompany: completeForm.expressCompany,
       trackingNo: completeForm.expressNo,
       remark: completeForm.remark,
+      photos: completeForm.photos.length > 0 ? completeForm.photos : undefined,
     })
     ElMessage.success('交货成功')
     completeDialogVisible.value = false
