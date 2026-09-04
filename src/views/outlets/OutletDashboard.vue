@@ -24,7 +24,7 @@
     </div>
 
     <template v-else>
-      <!-- 统计卡片 -->
+      <!-- 统计卡片：待接单 / 制作中 / 累计完成 / 今日完成 -->
       <div class="stats-grid">
         <div class="stat-card stat-pending">
           <div class="stat-icon"><el-icon><Clock /></el-icon></div>
@@ -44,14 +44,15 @@
           <div class="stat-icon"><el-icon><CircleCheck /></el-icon></div>
           <div class="stat-info">
             <div class="stat-value">{{ stats.completed }}</div>
-            <div class="stat-label">已完成</div>
+            <div class="stat-label">累计完成</div>
           </div>
         </div>
         <div class="stat-card stat-today">
           <div class="stat-icon"><el-icon><Calendar /></el-icon></div>
           <div class="stat-info">
             <div class="stat-value">{{ stats.todayTotal }}</div>
-            <div class="stat-label">今日新增</div>
+            <div class="stat-label">今日完成</div>
+            <div class="stat-sub" v-if="stats.cancelled">另有 {{ stats.cancelled }} 单已取消/改派</div>
           </div>
         </div>
       </div>
@@ -115,8 +116,8 @@
           <el-table-column prop="fulfillmentNo" label="履约单号" min-width="170" show-overflow-tooltip />
           <el-table-column label="履约状态" width="100" align="center">
             <template #default="{ row }">
-              <el-tag :type="getStatusTag(row.status)" size="small">
-                {{ getStatusText(row.status) }}
+              <el-tag :type="outletFulfillmentStatusTag(row.status)" size="small">
+                {{ outletFulfillmentStatusText(row.status) }}
               </el-tag>
             </template>
           </el-table-column>
@@ -190,14 +191,19 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getOutletsAPI, getOutletAPI, v2GetFulfillments, v2AcceptFulfillment, v2StartFulfillment, v2DeliverFulfillment } from '@/api'
 import { formatDate } from '@/utils/format'
-import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding, Plus } from '@element-plus/icons-vue'
+import {
+  outletFulfillmentStatusText,
+  outletFulfillmentStatusTag,
+  FULFILLMENT_TODO_PRIORITY,
+} from '@/utils/fulfillment-status'
+import { Refresh, Clock, Tools, CircleCheck, Calendar, List, Tickets, OfficeBuilding } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const loading = ref(false)
 const outlets = ref<any[]>([])
 const selectedOutlet = ref('')
 const currentOutlet = ref<any>(null)
-const stats = ref<any>({ pending: 0, processing: 0, completed: 0, todayTotal: 0 })
+const stats = ref<any>({ pending: 0, processing: 0, completed: 0, todayTotal: 0, cancelled: 0 })
 const recentOrders = ref<any[]>([])
 const currentOrder = ref<any>(null)
 const acceptDialogVisible = ref(false)
@@ -205,29 +211,11 @@ const startDialogVisible = ref(false)
 const completeDialogVisible = ref(false)
 const actionLoading = ref(false)
 const completeFormRef = ref<any>(null)
-const receiptFiles = ref<any[]>([])
 
 const completeForm = reactive({ expressCompany: '', expressNo: '', remark: '' })
 const completeRules = {
   expressCompany: [{ required: true, message: '请输入快递公司', trigger: 'blur' }],
   expressNo: [{ required: true, message: '请输入快递单号', trigger: 'blur' }],
-}
-
-function getStatusTag(status: any) {
-  // V2 履约状态（2026-08-29 网点看板 V2 化）
-  const map: Record<string, string> = {
-    assigned: 'warning', accepted: 'primary', processing: 'primary',
-    delivering: 'primary', completed: 'success', cancelled: 'info', pending_assignment: 'info'
-  }
-  return map[String(status)] || 'info'
-}
-
-function getStatusText(status: any) {
-  const map: Record<string, string> = {
-    pending_assignment: '待派单', assigned: '待接单', accepted: '已接单',
-    processing: '制作中', delivering: '发货中', completed: '已完成', cancelled: '已取消'
-  }
-  return map[String(status)] || String(status)
 }
 
 async function loadOutlets() {
@@ -254,21 +242,17 @@ async function loadData() {
     ])
     currentOutlet.value = (outletRes as any)
     const allOrders = (fulRes as any).list ?? []
-    // 未完成（待接单/已接单/制作中）优先置顶，已完成按时间倒序排在后面
+    // 待办（待接单/已接单/制作中）优先置顶，已完成/取消按时间倒序排在后面
     // 保证卡片提示的待办在列表内永远可见可操作（不因 slice 截断被挤出）
-    const STATUS_PRIORITY: Record<string, number> = {
-      assigned: 0, accepted: 1, processing: 2, delivering: 3,
-      completed: 4, cancelled: 5, pending_assignment: 6,
-    }
     const sorted = [...allOrders].sort((a: any, b: any) => {
-      const pa = STATUS_PRIORITY[a.status] ?? 9
-      const pb = STATUS_PRIORITY[b.status] ?? 9
+      const pa = FULFILLMENT_TODO_PRIORITY[a.status] ?? 99
+      const pb = FULFILLMENT_TODO_PRIORITY[b.status] ?? 99
       if (pa !== pb) return pa - pb
       return String(b.assignedAt || '').localeCompare(String(a.assignedAt || ''))
     })
     recentOrders.value = sorted.slice(0, 10)
-    // 履约状态统计（V2）
-    const isToday = (t?: string) => {
+    // 履约状态统计（V2，基于全量 list 非截断样本）
+    const isSameDay = (t?: string) => {
       if (!t) return false
       const d = new Date(t)
       const now = new Date()
@@ -276,9 +260,12 @@ async function loadData() {
     }
     stats.value = {
       pending: allOrders.filter((o: any) => o.status === 'assigned').length,
-      processing: allOrders.filter((o: any) => o.status === 'accepted' || o.status === 'processing' || o.status === 'delivering').length,
+      // 制作中 = 已接单（accepted，含已开始制作 processing）
+      processing: allOrders.filter((o: any) => o.status === 'accepted' || o.status === 'processing').length,
       completed: allOrders.filter((o: any) => o.status === 'completed').length,
-      todayTotal: allOrders.filter((o: any) => isToday(o.assignedAt)).length,
+      // 今日完成 = completedAt 为今天（原「今日新增」按 assignedAt 派单时间算，语义模糊，改为今日成果）
+      todayTotal: allOrders.filter((o: any) => o.status === 'completed' && isSameDay(o.completedAt)).length,
+      cancelled: allOrders.filter((o: any) => o.status === 'cancelled').length,
     }
   } catch (err: any) { /* ignore */ } finally {
     loading.value = false
@@ -312,7 +299,6 @@ async function onConfirmAccept() {
 function onComplete(order: any) {
   currentOrder.value = order
   Object.assign(completeForm, { expressCompany: '', expressNo: '', remark: '' })
-  receiptFiles.value = []
   completeDialogVisible.value = true
 }
 
@@ -414,6 +400,7 @@ onMounted(async () => {
 }
 .stat-value { font-size: 30px; font-weight: 800; line-height: 1; }
 .stat-label { font-size: 13px; color: #888; margin-top: 4px; }
+.stat-sub { font-size: 11px; color: #bbb; margin-top: 2px; }
 
 // 待接单 — 暖橙
 .stat-pending { background: linear-gradient(135deg, #fff7e6 0%, #ffe8c2 100%); border: 1px solid rgba(250, 140, 22, 0.15); .stat-icon { background: rgba(250, 140, 22, 0.12); color: #e69138; } .stat-value { color: #c87619; } }

@@ -190,13 +190,7 @@
             </el-form-item>
             <el-form-item label="履约状态">
               <el-select v-model="drFilters.status" placeholder="全部" clearable style="width: 130px">
-                <el-option label="待派单" value="pending_assignment" />
-                <el-option label="已派单" value="assigned" />
-                <el-option label="已接单" value="accepted" />
-                <el-option label="制作中" value="processing" />
-                <el-option label="发货中" value="delivering" />
-                <el-option label="已完成" value="completed" />
-                <el-option label="已取消" value="cancelled" />
+                <el-option v-for="(label, key) in FULFILLMENT_STATUS_TEXT" :key="key" :label="label" :value="key" />
               </el-select>
             </el-form-item>
             <el-form-item label="订单号">
@@ -231,10 +225,10 @@
             <el-table-column prop="status" label="履约状态" width="100" align="center">
               <template #default="{ row }">
                 <el-tag
-                  :type="({ pending_assignment: 'warning', assigned: 'primary', accepted: 'primary', processing: 'primary', delivering: 'primary', completed: 'success', cancelled: 'danger' } as any)[row.status] || 'info'"
+                  :type="fulfillmentStatusTag(row.status)"
                   size="small"
                 >
-                  {{ ({ pending_assignment: '待派单', assigned: '已派单', accepted: '已接单', processing: '制作中', delivering: '发货中', completed: '已完成', cancelled: '已取消' } as any)[row.status] || row.status }}
+                  {{ fulfillmentStatusText(row.status) }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -321,6 +315,7 @@ import {
   getForcedRegions, addForcedRegion as addForcedRegionAPI, removeForcedRegion,
   v2GetDispatchRecords, v2GetDispatchStats, v2GetSuppliers
 } from '@/api'
+import { FULFILLMENT_STATUS_TEXT, fulfillmentStatusText, fulfillmentStatusTag } from '@/utils/fulfillment-status'
 
 const activeTab = ref('mode')
 const loading = ref(false)

@@ -168,6 +168,7 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
 import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers } from '@/api'
+import { FULFILLMENT_STATUS_TEXT, fulfillmentStatusTag } from '@/utils/fulfillment-status'
 
 const route = useRoute()
 const orderNo = ref('')
@@ -186,14 +187,12 @@ const orderStatusMap: Record<string, string> = {
 }
 const paymentStatusMap: Record<string, string> = { unpaid: '未支付', paid: '已支付', partial_refund: '部分退款', full_refund: '已退款' }
 const refundStatusMap: Record<string, string> = { none: '无', applying: '申请中', partial_refund: '部分退款', full_refund: '已退款', rejected: '已驳回' }
-const fulfillmentStatusMap: Record<string, string> = {
-  pending_assignment: '待派单', assigned: '已派单', accepted: '已接单',
-  processing: '制作中', delivering: '发货中', signed: '已签收', completed: '已完成', cancelled: '已取消',
-}
+// 订单层履约状态字典（共享单一数据源，见 utils/fulfillment-status.ts）
+const fulfillmentStatusMap: Record<string, string> = FULFILLMENT_STATUS_TEXT
 const moduleLabel = (m: string) => ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' } as any)[m] || m
 const moduleType = (m: string) => ({ seal: 'primary', newspaper: 'success', bookkeeping: 'warning' } as any)[m] || 'info'
 const statusTag = (s: string) => ({ pending_payment: 'warning', paid: 'success', completed: 'info', cancelled: 'danger', processing: 'primary' } as any)[s] || 'info'
-const fulfillmentTag = (s: string) => ({ pending_assignment: 'warning', assigned: 'primary', accepted: 'primary', processing: 'primary', completed: 'success', cancelled: 'danger' } as any)[s] || 'info'
+const fulfillmentTag = (s: string) => fulfillmentStatusTag(s)
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
 const fmt = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
 
