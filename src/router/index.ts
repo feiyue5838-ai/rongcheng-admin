@@ -40,7 +40,9 @@ const router = createRouter({
         { path: 'v2/orders/unassigned', name: 'V2UnassignedPool', component: () => import('@/views/v2/UnassignedPool.vue'), meta: { title: '待派单池' } },
         { path: 'v2/orders/detail', name: 'V2SupplyDetail', component: () => import('@/views/v2/SupplyDetail.vue'), meta: { title: '供应链视图' } },
         { path: 'v2/settlements', name: 'V2Settlements', component: () => import('@/views/v2/Settlements.vue'), meta: { title: '结算管理' } },
+        { path: 'v2/settlement-rules', name: 'V2SettlementRules', component: () => import('@/views/v2/SettlementRules.vue'), meta: { title: '结算规则' } },
         { path: 'v2/refunds', name: 'V2RefundManage', component: () => import('@/views/v2/RefundManage.vue'), meta: { title: '退款管理' } },
+          { path: 'v2/invoices', name: 'V2InvoiceManage', component: () => import('@/views/v2/InvoiceManage.vue'), meta: { title: '开票管理' } },
         // 历史订单（V1 退役，2026-08-29 方案 A）：重定向到 V2 供应链订单（按 module 预筛选）
         { path: 'orders/seal', redirect: () => ({ path: '/v2/orders', query: { module: 'seal' } }) },
         { path: 'orders/newspaper', redirect: () => ({ path: '/v2/orders', query: { module: 'newspaper' } }) },

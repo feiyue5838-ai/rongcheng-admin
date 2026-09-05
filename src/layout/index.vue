@@ -33,6 +33,7 @@
           <el-menu-item v-if="canAccess('/finance')" index="/finance">财务总览</el-menu-item>
           <el-menu-item v-if="canAccess('/finance')" index="/finance?tab=transaction">交易流水</el-menu-item>
           <el-menu-item v-if="canAccess('/v2/settlements')" index="/v2/settlements">结算管理(V2.0)</el-menu-item>
+          <el-menu-item v-if="canAccess('/v2/settlement-rules')" index="/v2/settlement-rules">结算规则(差价)</el-menu-item>
         </el-sub-menu>
 
         <!-- 订单管理 sub-menu -->
@@ -41,6 +42,7 @@
           <el-menu-item v-if="canAccess('/v2/orders')" index="/v2/orders">供应链订单</el-menu-item>
           <el-menu-item v-if="canAccess('/v2/orders/unassigned')" index="/v2/orders/unassigned">待派单池</el-menu-item>
           <el-menu-item v-if="canAccess('/v2/refunds')" index="/v2/refunds">退款管理</el-menu-item>
+          <el-menu-item v-if="canAccess('/v2/invoices')" index="/v2/invoices">开票管理</el-menu-item>
         </el-sub-menu>
 
         <!-- 产品管理 sub-menu -->
@@ -161,7 +163,7 @@ const showFinance = computed(() =>
   canAccess('/finance') || canAccess('/v2/settlements'),
 )
 const showOrders = computed(() =>
-  canAccess('/v2/orders') || canAccess('/v2/orders/unassigned') || canAccess('/v2/refunds'),
+  canAccess('/v2/orders') || canAccess('/v2/orders/unassigned') || canAccess('/v2/refunds') || canAccess('/v2/invoices'),
 )
 const showProducts = computed(() =>
   canAccess('/products/seals/enterprise') || canAccess('/products/scenes') ||

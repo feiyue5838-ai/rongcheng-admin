@@ -17,6 +17,13 @@
         </el-table-column>
         <el-table-column prop="totalAmount" label="总金额" width="110" align="right">
           <template #default="{ row }">¥{{ Number(row.totalAmount || 0).toFixed(2) }}</template>
+        </el-table-column><el-table-column prop="totalAmount" label="订单总额" width="110" align="right">
+          <template #default="{ row }">¥{{ Number(row.totalAmount || 0).toFixed(2) }}</template>
+        </el-table-column>
+        <el-table-column label="应付网点" width="120" align="right">
+          <template #default="{ row }">
+            <span style="font-weight: 600">￥{{ Number(row.payableAmount ?? row.totalAmount ?? 0).toFixed(2) }}</span>
+          </template>
         </el-table-column>
         <el-table-column prop="orderCount" label="订单数" width="90" align="center" />
         <el-table-column label="状态" width="100">
@@ -75,7 +82,11 @@
         <el-table-column label="订单金额" width="110" align="right">
           <template #default="{ row }">¥{{ Number(row.orderAmount || 0).toFixed(2) }}</template>
         </el-table-column>
-        <el-table-column label="退款扣减" width="110" align="right">
+        <el-table-column label="供应商成本" width="110" align="right">
+          <template #default="{ row }">
+            <span :style="{ color: Number(row.supplierCost ?? row.orderAmount ?? 0) < Number(row.orderAmount ?? 0) ? '#e6a23c' : 'inherit' }">￥{{ Number(row.supplierCost ?? row.orderAmount ?? 0).toFixed(2) }}</span>
+          </template>
+        </el-table-column><el-table-column label="退款扣减" width="110" align="right">
           <template #default="{ row }">¥{{ Number(row.refundDeduct || 0).toFixed(2) }}</template>
         </el-table-column>
         <el-table-column label="应付金额" align="right">

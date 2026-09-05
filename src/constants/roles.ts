@@ -91,6 +91,7 @@ export function hasAccess(role: string, path: string): boolean {
     '/v2/orders/unassigned': ['superadmin', 'order_admin'],
     '/v2/orders/detail': ['superadmin', 'order_admin'],
     '/v2/refunds': ['superadmin', 'order_admin'],
+    '/v2/invoices': ['superadmin', 'order_admin'],
     '/after-sales/orders': ['superadmin', 'order_admin'],
     '/after-sales/refund-records': ['superadmin', 'order_admin'],
     '/products/seals/enterprise': ['superadmin', 'product_admin'],

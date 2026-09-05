@@ -380,6 +380,19 @@ export const v2ConfirmSettlement = (id: string) => v2Request.put(`/v2/admin/sett
 // 结算付款 POST /api/v2/admin/settlements/:id/pay
 export const v2PaySettlement = (id: string, data?: any) => v2Request.post(`/v2/admin/settlements/${id}/pay`, data || {})
 
+// ---------- 管理端 V2.0 结算规则（2026-09-05 真·总包差价机制） ----------
+// 结算规则列表 GET /api/v2/admin/settlement-rules
+export const v2GetSettlementRules = (params: any) => v2Request.get('/v2/admin/settlement-rules', { params })
+
+// 新增结算规则 POST /api/v2/admin/settlement-rules
+export const v2CreateSettlementRule = (data: any) => v2Request.post('/v2/admin/settlement-rules', data)
+
+// 编辑结算规则 PUT /api/v2/admin/settlement-rules/:id
+export const v2UpdateSettlementRule = (id: string, data: any) => v2Request.put(`/v2/admin/settlement-rules/${id}`, data)
+
+// 删除结算规则 DELETE /api/v2/admin/settlement-rules/:id
+export const v2DeleteSettlementRule = (id: string) => v2Request.delete(`/v2/admin/settlement-rules/${id}`)
+
 // ---------- 管理端 V2.0 退款 ----------
 // 退款列表 GET /api/v2/admin/refunds
 export const v2GetRefunds = (params: any) => v2Request.get('/v2/admin/refunds', { params })
@@ -403,3 +416,13 @@ export const v2GetFulfillments = (params: any) => v2Request.get('/v2/admin/fulfi
 export const v2AcceptFulfillment = (id: string) => v2Request.post(`/v2/admin/fulfillments/${id}/accept`)
 export const v2StartFulfillment = (id: string) => v2Request.post(`/v2/admin/fulfillments/${id}/start`)
 export const v2DeliverFulfillment = (id: string, data: any) => v2Request.post(`/v2/admin/fulfillments/${id}/deliver`, data || {})
+
+// ---------- 管理端 V2.0 开票管理 ----------
+// 开票申请列表 GET /api/v2/admin/invoice-applications?status=&keyword=&page=&pageSize=
+export const v2GetInvoiceApplications = (params: any) => v2Request.get('/v2/admin/invoice-applications', { params })
+
+// 开票通过 POST /api/v2/admin/invoice-applications/:id/issue
+export const v2IssueInvoice = (id: string, data?: any) => v2Request.post(`/v2/admin/invoice-applications/${id}/issue`, data || {})
+
+// 开票驳回 POST /api/v2/admin/invoice-applications/:id/reject
+export const v2RejectInvoice = (id: string, data: { remark?: string }) => v2Request.post(`/v2/admin/invoice-applications/${id}/reject`, data || {})
