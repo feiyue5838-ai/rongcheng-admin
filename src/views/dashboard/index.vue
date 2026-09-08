@@ -213,8 +213,10 @@
             </div>
           </template>
           <div class="aux-grid">
-            <div v-for="k in customerKeys" :key="k" class="aux-card customer-card"
-              :style="{ background: 'linear-gradient(135deg, ' + customerStats[k].bgLight + ' 0%, ' + customerStats[k].bgDark + ' 100%)', border: '1px solid ' + customerStats[k].bgBorder }">
+            <div
+              v-for="k in customerKeys" :key="k" class="aux-card customer-card"
+              :style="{ background: 'linear-gradient(135deg, ' + customerStats[k].bgLight + ' 0%, ' + customerStats[k].bgDark + ' 100%)', border: '1px solid ' + customerStats[k].bgBorder }"
+            >
               <div class="aux-icon" :style="{ background: 'linear-gradient(135deg, ' + customerStats[k].accent + ', ' + customerStats[k].accentEnd + ')' }">
                 <el-icon :size="16" color="#fff">
                   <component :is="customerStats[k].icon" />
@@ -242,8 +244,10 @@
             </div>
           </template>
           <div class="aux-grid">
-            <div v-for="k in kpiKeys" :key="k" class="aux-card"
-              :style="{ background: 'linear-gradient(135deg, ' + stats[k].bgLight + ' 0%, ' + stats[k].bgDark + ' 100%)', border: '1px solid ' + stats[k].bgBorder }">
+            <div
+              v-for="k in kpiKeys" :key="k" class="aux-card"
+              :style="{ background: 'linear-gradient(135deg, ' + stats[k].bgLight + ' 0%, ' + stats[k].bgDark + ' 100%)', border: '1px solid ' + stats[k].bgBorder }"
+            >
               <div class="aux-icon" :style="{ background: 'linear-gradient(135deg, ' + stats[k].accent + ', ' + stats[k].accentEnd + ')' }">
                 <el-icon :size="16" color="#fff">
                   <component :is="stats[k].icon" />

@@ -80,7 +80,6 @@
             <el-form-item><el-button type="primary" :loading="serviceSaving" @click="saveServiceConfig">保存</el-button></el-form-item>
           </el-form>
         </el-tab-pane>
-
       </el-tabs>
     </div>
   </div>

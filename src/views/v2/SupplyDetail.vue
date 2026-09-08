@@ -101,12 +101,16 @@
             v-if="detail.order.orderStatus === 'paid' && detail.order.paymentStatus === 'paid' && detail.order.fulfillmentStatus === 'pending_assignment'"
             type="primary" size="small" style="margin-left: 8px"
             @click="assignDialogVisible = true"
-          >派单</el-button>
+          >
+            派单
+          </el-button>
           <el-button
             v-if="detail.order.fulfillmentStatus === 'assigned'"
             type="warning" size="small" style="margin-left: 8px"
             @click="reassignDialogVisible = true"
-          >改派</el-button>
+          >
+            改派
+          </el-button>
         </template>
 
         <el-empty v-if="!detail.fulfillments || detail.fulfillments.length === 0" description="暂无履约记录" />

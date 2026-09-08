@@ -36,7 +36,9 @@
                   :loading="bannerActionKey === `status-${row.id}`"
                   link
                   @click="toggleBannerStatus(row)"
-                >{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
+                >
+                  {{ row.status === 1 ? '禁用' : '启用' }}
+                </el-button>
                 <el-button type="danger" :loading="bannerActionKey === `delete-${row.id}`" link @click="deleteBanner(row)">删除</el-button>
               </template>
             </el-table-column>
@@ -209,8 +211,8 @@
         <div class="page-card" v-loading="aboutLoading">
           <div class="form-tip" style="margin-bottom: 12px;">保存后由小程序「用户服务协议」页面通过公开接口实时读取；留空时小程序展示内置默认协议。</div>
           <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%; max-width: 960px;">
-            <Toolbar :editor="termsEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
-            <Editor v-model="aboutForm.termsContent" :defaultConfig="editorConfig" mode="default" style="height: 560px; overflow-y: hidden" @onCreated="termsCreated" />
+            <Toolbar :editor="termsEditorRef" :default-config="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
+            <Editor v-model="aboutForm.termsContent" :default-config="editorConfig" mode="default" style="height: 560px; overflow-y: hidden" @on-created="termsCreated" />
           </div>
         </div>
       </el-tab-pane>
@@ -224,8 +226,8 @@
         <div class="page-card" v-loading="aboutLoading">
           <div class="form-tip" style="margin-bottom: 12px;">保存后由小程序「隐私政策」页面通过公开接口实时读取；留空时小程序展示内置默认政策。</div>
           <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%; max-width: 960px;">
-            <Toolbar :editor="privacyEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
-            <Editor v-model="aboutForm.privacyContent" :defaultConfig="editorConfig" mode="default" style="height: 560px; overflow-y: hidden" @onCreated="privacyCreated" />
+            <Toolbar :editor="privacyEditorRef" :default-config="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
+            <Editor v-model="aboutForm.privacyContent" :default-config="editorConfig" mode="default" style="height: 560px; overflow-y: hidden" @on-created="privacyCreated" />
           </div>
         </div>
       </el-tab-pane>
@@ -239,8 +241,8 @@
         <div class="page-card" v-loading="aboutLoading">
           <div class="form-tip" style="margin-bottom: 12px;">保存后由小程序「材料真实性承诺书」页面通过公开接口实时读取；留空时小程序展示内置默认文案。</div>
           <div style="border: 1px solid #dcdfe6; border-radius: 4px; width: 100%; max-width: 960px;">
-            <Toolbar :editor="materialEditorRef" :defaultConfig="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
-            <Editor v-model="aboutForm.materialCommitment" :defaultConfig="editorConfig" mode="default" style="height: 560px; overflow-y: hidden" @onCreated="materialCreated" />
+            <Toolbar :editor="materialEditorRef" :default-config="editorToolbarConfig" mode="default" style="border-bottom: 1px solid #dcdfe6" />
+            <Editor v-model="aboutForm.materialCommitment" :default-config="editorConfig" mode="default" style="height: 560px; overflow-y: hidden" @on-created="materialCreated" />
           </div>
         </div>
       </el-tab-pane>

@@ -261,7 +261,9 @@
             effect="light"
             size="small"
             style="margin-left:8px"
-          >全国统一定价：此价格对所有城市生效</el-tag>
+          >
+            全国统一定价：此价格对所有城市生效
+          </el-tag>
           <span v-else style="color:#999;font-size:12px;margin-left:8px">基准价（默认）</span>
         </el-form-item>
         <el-form-item label="定价方式">
@@ -366,7 +368,9 @@
             effect="light"
             size="small"
             style="margin-left:8px"
-          >全国统一定价：此价格对所有城市生效</el-tag>
+          >
+            全国统一定价：此价格对所有城市生效
+          </el-tag>
           <span v-else style="color:#999;font-size:12px;margin-left:8px">基准价（默认）</span>
         </el-form-item>
         <el-form-item label="定价方式">

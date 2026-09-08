@@ -17,8 +17,10 @@
     </div>
 
     <!-- 订单数超限提示 -->
-    <el-alert v-if="ordersTruncated" type="warning" :closable="false" show-icon
-      title="当前仅显示最近 100 条订单，超出部分不可见" style="margin-bottom: 12px" />
+    <el-alert
+      v-if="ordersTruncated" type="warning" :closable="false" show-icon
+      title="当前仅显示最近 100 条订单，超出部分不可见" style="margin-bottom: 12px"
+    />
 
     <!-- 通知抽屉 -->
     <el-drawer v-model="notifyDrawer" title="消息通知" size="380px" @open="onDrawerOpen">

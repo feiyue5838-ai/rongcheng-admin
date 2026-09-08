@@ -3,7 +3,7 @@
     <div class="error-content">
       <div class="error-icon">
         <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
-          <circle cx="60" cy="60" r="56" stroke="#f5222d" stroke-width="4" stroke-dasharray="8 4" opacity="0.3"/>
+          <circle cx="60" cy="60" r="56" stroke="#f5222d" stroke-width="4" stroke-dasharray="8 4" opacity="0.3" />
           <text x="60" y="72" text-anchor="middle" font-size="36" font-weight="bold" fill="#f5222d">403</text>
         </svg>
       </div>

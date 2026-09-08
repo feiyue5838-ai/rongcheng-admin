@@ -6,7 +6,6 @@
     </div>
 
     <div class="page-card">
-
       <!-- 统计卡片 -->
       <div class="summary-grid">
         <div class="summary-card summary-total">
@@ -105,7 +104,6 @@
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-
       </div>
 
       <!-- 批量选中条 -->
@@ -224,7 +222,6 @@
       <el-button type="primary" :loading="templateSubmitting" @click="submitTemplateForm">保存</el-button>
     </template>
     <el-form ref="templateFormRef" :model="templateForm" :rules="templateRules" label-width="100px">
-
       <el-form-item label="所属分类" prop="categoryId">
         <el-select v-model="templateForm.categoryId" placeholder="选择所属分类" style="width:100%" @change="onTemplateCatChange" filterable>
           <el-option v-for="c in categoryList" :key="c.id" :label="c.name" :value="c.id" />
@@ -281,7 +278,7 @@
           v-model="templateForm.sampleData"
           type="textarea"
           :rows="2"
-          placeholder='JSON 格式，如 {"name":"示例公司","date":"2024-01-01"}'
+          placeholder="JSON 格式，如 {&quot;name&quot;:&quot;示例公司&quot;,&quot;date&quot;:&quot;2024-01-01&quot;}"
         />
       </el-form-item>
 

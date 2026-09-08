@@ -82,7 +82,7 @@
         <el-option label="已暂停" :value="4" />
         <el-option label="已终止" :value="5" />
       </el-select>
-            <el-select v-model="businessType" placeholder="全部类型" clearable style="width: 120px; margin-right: 12px" @change="onFilterChange">
+      <el-select v-model="businessType" placeholder="全部类型" clearable style="width: 120px; margin-right: 12px" @change="onFilterChange">
         <el-option label="全部类型" value="" />
         <el-option label="刻章" value="seal" />
         <el-option label="登报" value="newspaper" />
@@ -329,11 +329,13 @@
         <p style="margin-bottom:12px;color:#666">
           {{ passwordDialogMode === 'create' ? '履约供应商初始登录密码为：' : '新密码为：' }}
         </p>
-        <div style="
+        <div
+          style="
           display:inline-flex;align-items:center;gap:12px;
           background:#FFF7E6;border:2px solid #E6A23C;border-radius:8px;
           padding:16px 24px;margin-bottom:12px;
-        ">
+        "
+        >
           <span style="font-size:28px;font-weight:700;letter-spacing:4px;color:#E6A23C;font-family:monospace">
             {{ showPwd ? passwordResult : maskedPwd }}
           </span>

@@ -223,7 +223,7 @@
             <el-option label="华南" value="华南" />
             <el-option label="西南" value="西南" />
             <el-option label="西北" value="西北" />
-          <el-option label="港澳台" value="港澳台" />
+            <el-option label="港澳台" value="港澳台" />
           </el-select>
         </el-form-item>
         <el-form-item label="覆盖省份" required>

@@ -165,9 +165,11 @@
             <template #default="{ row }"><el-button type="primary" link size="small" @click="viewTransDetail(row)">详情</el-button></template>
           </el-table-column>
         </el-table>
-        <el-pagination v-model:current-page="transPage" v-model:page-size="transPageSize" :total="transTotal" :page-sizes="[10,20,50]"
+        <el-pagination
+          v-model:current-page="transPage" v-model:page-size="transPageSize" :total="transTotal" :page-sizes="[10,20,50]"
           layout="total, sizes, prev, pager, next" style="margin-top:12px;justify-content:flex-end"
-          @size-change="loadData" @current-change="loadData" />
+          @size-change="loadData" @current-change="loadData"
+        />
       </el-card>
     </div>
 
@@ -191,7 +193,6 @@
         <el-descriptions-item label="交易时间" :span="2">{{ formatDateTime(transDetailRow.createdAt) }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
-
   </div>
 </template>
 

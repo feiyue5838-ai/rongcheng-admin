@@ -53,7 +53,9 @@
         :key="item.value"
         :checked="filterParams.quickRange === item.value"
         @click="onQuickFilter(item.value)"
-      >{{ item.label }}</el-check-tag>
+      >
+        {{ item.label }}
+      </el-check-tag>
     </div>
 
     <!-- 筛选栏 -->
