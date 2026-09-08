@@ -89,16 +89,16 @@ const pathLabels: Record<string, string> = {
   '/outlets': '网点管理',
   '/outlets/overview': '网点总览',
   '/outlets/dashboard': '网点工作台',
-  '/outlets/assign': '订单分配',
-  '/outlets/receipts': '收款单据',
-  '/orders': '订单管理',
-  '/orders/seal': '刻章订单',
-  '/orders/newspaper': '登报订单',
-  '/orders/bookkeeping': '记账订单',
-  '/orders/dispatch-records': '派单记录',
-  '/after-sales': '售后管理',
-  '/after-sales/orders': '售后工单',
-  '/after-sales/refund-records': '退款记录',
+  '/outlets/assign': '订单分配（旧）',
+  '/outlets/receipts': '收款单据（旧）',
+  '/orders': '订单管理（旧）',
+  '/orders/seal': '刻章订单（旧）',
+  '/orders/newspaper': '登报订单（旧）',
+  '/orders/bookkeeping': '记账订单（旧）',
+  '/orders/dispatch-records': '派单记录（旧）',
+  '/after-sales': '售后管理（旧）',
+  '/after-sales/orders': '售后工单（旧）',
+  '/after-sales/refund-records': '退款记录（旧）',
   '/products': '产品管理',
   '/products/seals/enterprise': '企业刻章',
   '/products/seals/personal': '个人印章',
@@ -124,7 +124,13 @@ const pathLabels: Record<string, string> = {
   '/system/menu-roles': '菜单权限',
   '/faq': '常见问题',
   '/finance': '财务中心',
+  '/v2/orders': '供应链订单(V2)',
+  '/v2/orders/unassigned': '待派单池(V2)',
   '/v2/settlements': '结算管理(V2.0)',
+  '/v2/settlement-rules': '结算规则(V2)',
+  '/v2/refunds': '退款管理(V2)',
+  '/v2/invoices': '开票管理(V2)',
+  '/v2/suppliers': '供应商(V2)',
 }
 const tableData = ref<any[]>([])
 const dialogVisible = ref(false)
@@ -163,6 +169,10 @@ function handleEdit(row: any) {
 async function handleSubmit() {
   if (!form.value.path) {
     ElMessage.warning('请填写路径')
+    return
+  }
+  if (!form.value.path.startsWith('/')) {
+    ElMessage.warning('路径须以 / 开头')
     return
   }
   if (editId.value) {

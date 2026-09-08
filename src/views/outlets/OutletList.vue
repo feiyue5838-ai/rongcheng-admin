@@ -13,31 +13,34 @@
       <div class="stat-card stat-total">
         <div class="stat-icon"><el-icon><LocationFilled /></el-icon></div>
         <div class="stat-info">
-          <div class="stat-value">{{ total }}</div>
+          <div class="stat-value">{{ summary.totalOutlets ?? total }}</div>
           <div class="stat-label">履约供应商总数</div>
         </div>
       </div>
       <div class="stat-card stat-active">
         <div class="stat-icon"><el-icon><CircleCheckFilled /></el-icon></div>
         <div class="stat-info">
-          <div class="stat-value">{{ statusCountMap[1] || 0 }}</div>
+          <div class="stat-value">{{ summary.activeOutlets ?? 0 }}</div>
           <div class="stat-label">营业中</div>
         </div>
       </div>
       <div class="stat-card stat-inactive">
         <div class="stat-icon"><el-icon><VideoPause /></el-icon>️</div>
         <div class="stat-info">
-          <div class="stat-value">{{ (statusCountMap[0] || 0) + (statusCountMap[2] || 0) + (statusCountMap[4] || 0) + (statusCountMap[5] || 0) }}</div>
+          <div class="stat-value">{{ summary.inactiveOutlets ?? 0 }}</div>
           <div class="stat-label">非营业</div>
         </div>
       </div>
       <div class="stat-card stat-orders">
         <div class="stat-icon"><el-icon><Box /></el-icon></div>
         <div class="stat-info">
-          <div class="stat-value">{{ totalOrders }}</div>
+          <div class="stat-value">{{ summary.totalOrders ?? 0 }}</div>
           <div class="stat-label">累计订单</div>
         </div>
       </div>
+    </div>
+    <div style="font-size:12px;color:#909399;margin:-4px 0 12px 2px">
+      统计口径：当前筛选条件下的全部结果（非当前页）
     </div>
 
     <!-- 筛选栏 -->
@@ -49,6 +52,7 @@
         prefix-icon="Search"
         style="width: 220px; margin-right: 12px"
         @keyup.enter="() => { currentPage = 1; loadData() }"
+        @clear="onFilterChange"
       />
       <el-select v-model="region" placeholder="全部大区" clearable style="width: 110px; margin-right: 12px" @change="onRegionChange">
         <el-option label="全部大区" value="" />
@@ -82,7 +86,7 @@
         <el-option label="全部类型" value="" />
         <el-option label="刻章" value="seal" />
         <el-option label="登报" value="newspaper" />
-        <el-option label="代理记账" value="accounting" />
+        <el-option label="代理记账" value="bookkeeping" />
       </el-select>
       <el-button @click="resetFilters">重置</el-button>
     </div>
@@ -109,10 +113,18 @@
       <el-table-column prop="totalOrders" label="累计订单" width="100" align="center">
         <template #default="{ row }"><el-tag type="info">{{ row.totalOrders }}</el-tag></template>
       </el-table-column>
-      <el-table-column label="证件" width="130">
+      <el-table-column label="证件" width="200">
         <template #default="{ row }">
           <el-button link type="primary" size="small" :disabled="!row.businessLicense" @click="previewDocs(row, 'biz')">执照</el-button>
+          <el-button link type="primary" size="small" :disabled="!row.idCardFront && !row.idCardBack" @click="previewDocs(row, 'idcard')">身份证</el-button>
           <el-button link type="primary" size="small" :disabled="parsePermits(row.specialPermits).length === 0" @click="previewDocs(row, 'permits')">特种({{ parsePermits(row.specialPermits).length }})</el-button>
+        </template>
+      </el-table-column>
+      <el-table-column label="开票资格" width="120" align="center">
+        <template #default="{ row }">
+          <el-tag v-if="row.invoiceQualified === 1" type="success" size="small">可开票</el-tag>
+          <el-tag v-else type="info" size="small">不可开票</el-tag>
+          <div style="font-size: 11px; color: #999">{{ taxpayerTypeText(row.invoiceTaxpayerType) }}</div>
         </template>
       </el-table-column>
       <el-table-column label="状态" width="90" align="center">
@@ -125,11 +137,12 @@
       <el-table-column prop="createdAt" label="创建时间" width="170">
         <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="300" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
           <el-button type="warning" link size="small" @click="onResetPassword(row)">重置密码</el-button>
           <el-button type="success" link size="small" @click="openAuthDialog(row)">授权</el-button>
+          <el-button type="info" link size="small" @click="openShippingPrefDialog(row)">发货偏好</el-button>
           <el-button type="danger" link size="small" @click="onDelete(row)">删除</el-button>
         </template>
       </el-table-column>
@@ -145,7 +158,7 @@
       <el-pagination
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
-        :page-sizes="[50, 100, 200]"
+        :page-sizes="[50, 100]"
         :total="total"
         layout="sizes, prev, pager, next, total"
         background
@@ -202,11 +215,55 @@
             <el-button type="danger" link size="small" @click="form.businessLicense = ''">移除</el-button>
           </div>
         </el-form-item>
+        <!-- 法人身份证（只读预览，网点端上传） -->
+        <el-form-item label="法人身份证">
+          <div class="idcard-preview-row">
+            <div class="idcard-cell">
+              <div class="idcard-side-label">正面（人像面）</div>
+              <div v-if="form.idCardFront">
+                <el-image
+                  :src="form.idCardFront"
+                  fit="cover"
+                  :preview-src-list="[form.idCardFront]"
+                  style="width:140px;height:90px;border-radius:6px;border:1px solid #ebeef5;display:block;"
+                />
+              </div>
+              <div v-else class="idcard-empty">暂无</div>
+            </div>
+            <div class="idcard-cell">
+              <div class="idcard-side-label">背面（国徽面）</div>
+              <div v-if="form.idCardBack">
+                <el-image
+                  :src="form.idCardBack"
+                  fit="cover"
+                  :preview-src-list="[form.idCardBack]"
+                  style="width:140px;height:90px;border-radius:6px;border:1px solid #ebeef5;display:block;"
+                />
+              </div>
+              <div v-else class="idcard-empty">暂无</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#909399;margin-top:6px">由网点端上传，管理员可点击放大查看</div>
+        </el-form-item>
         <el-form-item label="特种证件">
-          <el-upload list-type="picture-card" :auto-upload="true" :before-upload="beforeUpload" :http-request="uploadPermit" v-model:file-list="permitFiles" :limit="6" multiple>
+          <el-upload list-type="picture-card" :auto-upload="true" :before-upload="beforeUpload" :http-request="uploadPermit" v-model:file-list="permitFiles" :limit="9" multiple>
             <el-icon><Plus /></el-icon>
           </el-upload>
-          <div style="font-size:12px;color:#999">支持多张（特种行业许可证等），最多 6 张</div>
+          <div style="font-size:12px;color:#999">支持多张（特种行业许可证等），最多 9 张</div>
+        </el-form-item>
+        <el-form-item label="承接业务">
+          <el-select
+            v-model="form.businessTypeCodes"
+            multiple
+            clearable
+            style="width:100%"
+            placeholder="请选择可承接的业务类型"
+          >
+            <el-option v-for="bt in businessTypeList" :key="bt.id" :label="bt.name" :value="bt.code" />
+          </el-select>
+          <div style="font-size:12px;color:#999;margin-top:4px">
+            提交 code 列表由后端按业务类型关联；也可在列表中用「授权」按钮单独设置
+          </div>
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
@@ -237,6 +294,17 @@
             <el-option label="周六" :value="6" />
           </el-select>
         </el-form-item>
+        <el-form-item label="开票资格" prop="invoiceQualified">
+          <el-switch v-model="form.invoiceQualified" :active-value="1" :inactive-value="0" active-text="可开票" inactive-text="不可开票" />
+          <div style="font-size:12px;color:#999;margin-top:4px">开启后网点可向平台开具履约服务发票（P1 进项侧）</div>
+        </el-form-item>
+        <el-form-item label="纳税人类型" prop="invoiceTaxpayerType">
+          <el-select v-model="form.invoiceTaxpayerType" style="width:100%" clearable>
+            <el-option label="小规模纳税人" value="small" />
+            <el-option label="一般纳税人" value="general" />
+            <el-option label="个体工商户" value="individual" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -245,7 +313,12 @@
     </el-dialog>
 
     <!-- 重置密码 -->
-    <el-dialog v-model="passwordDialogVisible" title="重置密码" width="420px" @closed="passwordResult = ''; showPwd = false">
+    <el-dialog
+      v-model="passwordDialogVisible"
+      :title="passwordDialogMode === 'create' ? '初始密码' : '重置密码'"
+      width="420px"
+      @closed="passwordResult = ''; showPwd = false; passwordDialogMode = 'reset'"
+    >
       <!-- 确认阶段 -->
       <div v-if="!passwordResult">
         <p>确定要重置履约供应商「<strong>{{ currentOutlet?.name }}</strong>」的登录密码吗？</p>
@@ -253,7 +326,9 @@
       </div>
       <!-- 结果阶段 -->
       <div v-else style="text-align:center;padding:16px 0">
-        <p style="margin-bottom:12px;color:#666">新密码为：</p>
+        <p style="margin-bottom:12px;color:#666">
+          {{ passwordDialogMode === 'create' ? '履约供应商初始登录密码为：' : '新密码为：' }}
+        </p>
         <div style="
           display:inline-flex;align-items:center;gap:12px;
           background:#FFF7E6;border:2px solid #E6A23C;border-radius:8px;
@@ -293,32 +368,57 @@
     <!-- 业务授权弹窗 -->
     <el-dialog v-model="authDialogVisible" :title="'业务授权 - ' + (authOutlet?.name || '')" width="460px">
       <div style="padding:8px 0 16px;color:#666;font-size:14px">勾选该网点可承接的业务类型：</div>
-      <el-checkbox-group v-model="authForm.checkedTypes">
-        <el-checkbox label="bf454c50-4633-4720-bca1-9f13d1ed0c1b" style="display:block;margin-bottom:12px">
-          <span style="font-weight:600">刻章</span>
-          <span style="color:#999;font-size:12px;margin-left:8px">企业刻章、个人印章等</span>
-        </el-checkbox>
-        <el-checkbox label="03d494c6-4a38-43ad-88d5-0d29c55fab85" style="display:block;margin-bottom:12px">
-          <span style="font-weight:600">登报</span>
-          <span style="color:#999;font-size:12px;margin-left:8px">遗失声明、公告发布等</span>
-        </el-checkbox>
-        <el-checkbox label="49476a65-8257-45da-a826-7ef80d0cfb61" style="display:block">
-          <span style="font-weight:600">代理记账</span>
-          <span style="color:#999;font-size:12px;margin-left:8px">月度记账、税务申报等</span>
+      <el-checkbox-group v-if="businessTypeList.length" v-model="authForm.checkedTypes">
+        <el-checkbox
+          v-for="bt in businessTypeList"
+          :key="bt.id"
+          :label="bt.id"
+          style="display:block;margin-bottom:12px"
+        >
+          <span style="font-weight:600">{{ bt.name }}</span>
+          <span style="color:#999;font-size:12px;margin-left:8px">{{ bt.code }}</span>
         </el-checkbox>
       </el-checkbox-group>
+      <div v-else style="color:#999;font-size:12px">业务类型加载中…</div>
       <template #footer>
         <el-button @click="authDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="authSubmitting" @click="onAuthSubmit">保存授权</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 发货偏好查看弹窗（只读，网点端编辑） -->
+    <el-dialog v-model="shippingPrefVisible" :title="'发货偏好 - ' + (shippingPrefOutlet?.name || '')" width="560px" @closed="shippingPrefData = null">
+      <div v-if="shippingPrefLoading" style="text-align:center;padding:24px">
+        <el-icon class="is-loading" style="font-size:24px"><Loading /></el-icon>
+      </div>
+      <div v-else-if="shippingPrefData">
+        <el-descriptions :column="1" border style="margin-bottom:16px">
+          <el-descriptions-item label="默认快递">
+            {{ shippingPrefData.defaultCourier || '未设置' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="发货备注">
+            {{ shippingPrefData.shippingRemark || '无' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="常用快递">
+            <template v-if="shippingPrefData.preferredCouriers && shippingPrefData.preferredCouriers.length">
+              <el-tag v-for="(c, i) in shippingPrefData.preferredCouriers" :key="i" size="small" style="margin-right:6px">{{ c }}</el-tag>
+            </template>
+            <span v-else style="color:#999">未设置</span>
+          </el-descriptions-item>
+        </el-descriptions>
+        <div style="font-size:12px;color:#909399">由网点端在「设置 → 发货偏好」中维护，管理端只读查看</div>
+      </div>
+      <template #footer>
+        <el-button @click="shippingPrefVisible = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, type ComponentPublicInstance } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getOutletsAPI, createOutletAPI, updateOutletAPI, deleteOutletAPI, resetOutletPasswordAPI, uploadImage, setOutletBusinessTypesAPI } from '@/api'
+import { getOutletsAPI, createOutletAPI, updateOutletAPI, deleteOutletAPI, resetOutletPasswordAPI, uploadImage, setOutletBusinessTypesAPI, getOutletShippingPreferencesAPI, getBusinessTypesAPI } from '@/api'
 import { formatDate } from '@/utils/format'
 
 // ============ 行政区划数据（与报纸仓库对齐）============
@@ -617,18 +717,14 @@ function resetFilters() {
   loadData()
 }
 
-// 统计计算属性
-const statusCountMap = computed(() => {
-  const map: Record<number, number> = {}
-  tableData.value.forEach(item => {
-    map[item.status] = (map[item.status] || 0) + 1
-  })
-  return map
-})
-
-const totalOrders = computed(() => {
-  return tableData.value.reduce((sum, item) => sum + (item.totalOrders || 0), 0)
-})
+// 统计摘要：后端按「当前筛选条件的全部结果」聚合（2026-09-07），
+// 此前用当前页 tableData 统计，与「总数(total)」口径不一致、翻页还会跳变。
+const summary = ref<{
+  totalOutlets?: number
+  activeOutlets?: number
+  inactiveOutlets?: number
+  totalOrders?: number
+}>({})
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -640,13 +736,18 @@ const status = ref('')
 const region = ref('')
 const province = ref('')
 const city = ref('')
-const district = ref('')
 const businessType = ref('')
-const businessTypeOptions = [
-  { label: '刻章', value: 'seal' },
-  { label: '登报', value: 'newspaper' },
-  { label: '代理记账', value: 'accounting' },
-]
+// 业务类型字典（后端 GET /business-types；此前前端硬编码 3 个 UUID，换库/新增类型即失效）
+const businessTypeList = ref<Array<{ id: string; name: string; code: string }>>([])
+async function loadBusinessTypes() {
+  try {
+    const res: any = await getBusinessTypesAPI()
+    const list = Array.isArray(res) ? res : ((res as any)?.data ?? (res as any)?.list ?? [])
+    businessTypeList.value = Array.isArray(list) ? list : []
+  } catch {
+    businessTypeList.value = []
+  }
+}
 const MUNICIPALITIES = ['北京市', '天津市', '上海市', '重庆市']
 const isMunicipality = (province: string) => MUNICIPALITIES.includes(province)
 
@@ -668,6 +769,28 @@ const previewList = ref<any[]>([])
 const authDialogVisible = ref(false)
 const authOutlet = ref<any>(null)
 const authSubmitting = ref(false)
+// 发货偏好查看弹窗（只读）
+const shippingPrefVisible = ref(false)
+const shippingPrefOutlet = ref<any>(null)
+const shippingPrefLoading = ref(false)
+const shippingPrefData = ref<any>(null)
+function openShippingPrefDialog(row: any) {
+  shippingPrefOutlet.value = row
+  shippingPrefVisible.value = true
+  shippingPrefData.value = null
+  loadShippingPref(row.id)
+}
+async function loadShippingPref(id: string) {
+  shippingPrefLoading.value = true
+  try {
+    const res: any = await getOutletShippingPreferencesAPI(id)
+    shippingPrefData.value = res
+  } catch (err: any) {
+    ElMessage.error(err?.response?.data?.message || '获取发货偏好失败')
+  } finally {
+    shippingPrefLoading.value = false
+  }
+}
 const authForm = reactive({
   checkedTypes: [] as string[],
 })
@@ -695,9 +818,13 @@ async function onAuthSubmit() {
   }
 }
 function previewDocs(row: any, type: string) {
-  previewList.value = type === 'biz'
-    ? (row.businessLicense ? [row.businessLicense] : [])
-    : parsePermits(row.specialPermits)
+  if (type === 'idcard') {
+    previewList.value = [row.idCardFront, row.idCardBack].filter(Boolean)
+  } else {
+    previewList.value = type === 'biz'
+      ? (row.businessLicense ? [row.businessLicense] : [])
+      : parsePermits(row.specialPermits)
+  }
   previewVisible.value = true
 }
 
@@ -705,6 +832,8 @@ const dialogVisible = ref(false)
 const passwordDialogVisible = ref(false)
 const passwordResult = ref('')
 const showPwd = ref(false)
+// create=展示新增后的初始密码，reset=展示重置后的新密码（同一弹窗复用）
+const passwordDialogMode = ref<'create' | 'reset'>('reset')
 const maskedPwd = computed(() => '•'.repeat((passwordResult.value || '').length || 8))
 const isEdit = ref(false)
 const submitting = ref(false)
@@ -721,13 +850,21 @@ const form = reactive({
   address: '',
   businessLicense: '',
   status: 1,
-  businessTypeIds: [] as string[],
+  // 承接业务：提交 code 列表（后端 create/update 按 code 关联；授权弹窗用的是 id 列表）
+  businessTypeCodes: [] as string[],
   settlementCycle: null as string | null,
   settlementWeeklyStartDay: 1,
+  invoiceQualified: 0,
+  invoiceTaxpayerType: '',
+  idCardFront: '',
+  idCardBack: '',
 })
 const permitFiles = ref<any[]>([])
 function parsePermits(str: any) {
   try { const a = JSON.parse(str); return Array.isArray(a) ? a : [] } catch { return [] }
+}
+function taxpayerTypeText(t: any) {
+  return ({ individual: '个体工商户', small: '小规模', general: '一般纳税人' } as any)[t] || ''
 }
 function beforeUpload(file: any) {
   const ok = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
@@ -739,8 +876,15 @@ async function uploadBiz(option: any) {
   catch (e: any) { option.onError(e) }
 }
 async function uploadPermit(option: any) {
-  try { const res: any = await uploadImage(option.file); option.file.url = res.data?.url ?? res.url; option.onSuccess(res, option.file) }
-  catch (e: any) { option.onError(e) }
+  try {
+    const res: any = await uploadImage(option.file)
+    const url: string = res.data?.url ?? res.url
+    // 关键：真实 URL 写回列表项（handleSuccess 只设 response 不更新 url，否则保存提取到 blob:URL）
+    const item = permitFiles.value.find((f: any) => f.uid === option.file.uid)
+    if (item) item.url = url
+    option.file.url = url // 兜底
+    option.onSuccess(res, option.file)
+  } catch (e: any) { option.onError(e) }
 }
 
 const rules = {
@@ -754,9 +898,9 @@ const rules = {
 
 function openCreateDialog() {
   isEdit.value = false
-  Object.assign(form, { name: '', contact: '', phone: '', province: '', city: '', district: '', address: '', businessLicense: '', status: 1, settlementCycle: null, settlementWeeklyStartDay: 1 })
+  Object.assign(form, { name: '', contact: '', phone: '', province: '', city: '', district: '', address: '', businessLicense: '', status: 1, settlementCycle: null, settlementWeeklyStartDay: 1, invoiceQualified: 0, invoiceTaxpayerType: '', idCardFront: '', idCardBack: '' })
   permitFiles.value = []
-  form.businessTypeIds = []
+  form.businessTypeCodes = []
   currentOutlet.value = null
   dialogVisible.value = true
 }
@@ -776,10 +920,15 @@ function openEditDialog(row: any) {
     district: row.district || '',
     address: row.address || '',
     businessLicense: row.businessLicense || '',
+    idCardFront: row.idCardFront || '',
+    idCardBack: row.idCardBack || '',
     status: row.status,
     settlementCycle: row.settlementCycle ?? null,
     settlementWeeklyStartDay: row.settlementWeeklyStartDay ?? 1,
+    invoiceQualified: row.invoiceQualified ?? 0,
+    invoiceTaxpayerType: row.invoiceTaxpayerType || '',
   })
+  form.businessTypeCodes = (row.businessTypes || []).map((bt: any) => bt.code).filter(Boolean)
   permitFiles.value = parsePermits(row.specialPermits).map(url => ({ url, name: url.split('/').pop() || '证件' }))
   currentOutlet.value = row
   dialogVisible.value = true
@@ -803,7 +952,13 @@ async function onSubmit() {
       business_license: form.businessLicense,
       special_permits: permitFiles.value
         .filter(f => f.url || f.response?.url)
-        .map(f => f.url || f.response?.url),
+        .map(f => {
+          const u: string = f.url || f.response?.url || ''
+          return u.startsWith('blob:') ? (f.response?.url || '') : u // 剔除 blob 兜底，只存真实 URL
+        })
+        .filter(u => !!u),
+      idCardFront: form.idCardFront || null,
+      idCardBack: form.idCardBack || null,
     }
     // 后端 OutletService 只读 camelCase 字段（settlementCycle / settlementWeeklyStartDay），
     // 此前提交 snake_case 会被静默丢弃，结算周期设置永不生效。
@@ -813,16 +968,37 @@ async function onSubmit() {
     } else {
       payload.settlementCycle = null
     }
+    payload.invoice_qualified = form.invoiceQualified ?? 0
+    if (form.invoiceTaxpayerType) {
+      payload.invoice_taxpayer_type = form.invoiceTaxpayerType
+    } else if (isEdit.value) {
+      // 2026-09-07：清空纳税人类型时显式传空串，否则后端视为「未传」，旧值不会被清掉
+      payload.invoice_taxpayer_type = ''
+    }
+    // 业务类型（提交 code 列表；后端 create/update 用 linkBusinessTypesByCode 按 code 关联）
+    payload.businessTypeIds = form.businessTypeCodes
+
     if (isEdit.value) {
       await updateOutletAPI(currentOutlet.value.id, payload)
       ElMessage.success('编辑成功')
+      dialogVisible.value = false
+      // 编辑后停留在当前页（不再强制跳回第 1 页）
+      loadData(currentPage.value)
     } else {
-      await createOutletAPI(payload)
+      const created: any = await createOutletAPI(payload)
       ElMessage.success('新增成功')
+      dialogVisible.value = false
+      // 新增回第 1 页便于看到新记录
+      loadData(1)
+      // 后端 create 返回 initPassword；不展示则新账号无法登录（只能再走一次重置密码）
+      const initPwd = created?.data?.initPassword ?? created?.initPassword
+      if (initPwd) {
+        passwordDialogMode.value = 'create'
+        passwordResult.value = initPwd
+        showPwd.value = false
+        passwordDialogVisible.value = true
+      }
     }
-    dialogVisible.value = false
-    // 编辑后停留在当前页（不再强制跳回第 1 页）；新增回第 1 页便于看到新记录
-    loadData(isEdit.value ? currentPage.value : 1)
   } catch (err: any) {
     ElMessage.error(err?.response?.data?.message || '操作失败')
   } finally {
@@ -870,19 +1046,12 @@ async function loadData(page?: number) {
   if (page) currentPage.value = page; else currentPage.value = 1
   loading.value = true
   try {
-    const res = await getOutletsAPI({
-      page: currentPage.value,
-      pageSize: pageSize.value,
-      keyword: keyword.value,
-      status: status.value === '' ? undefined : status.value,
-      region: region.value === '' ? undefined : region.value,
-      province: province.value === '' ? undefined : province.value,
-      city: isMunicipality(province.value) ? (province.value || undefined) : (city.value === '' ? undefined : city.value),
-      district: isMunicipality(province.value) ? (city.value === '' ? undefined : city.value) : undefined,
-      businessType: businessType.value === '' ? undefined : businessType.value,
-    })
-    tableData.value = (res as any).data?.list ?? (res as any).list ?? []
-    total.value = (res as any).data?.pagination?.total ?? (res as any).pagination?.total ?? 0
+    await fetchPage()
+    // 当前页已无数据且不在第 1 页（删完最后一条 / 状态变更被筛选条件排除）→ 回退一页
+    if (tableData.value.length === 0 && currentPage.value > 1) {
+      currentPage.value -= 1
+      await fetchPage()
+    }
   } catch (err: any) {
     console.error('Load error:', err)
     ElMessage.error('加载失败')
@@ -891,7 +1060,29 @@ async function loadData(page?: number) {
   }
 }
 
-onMounted(loadData)
+async function fetchPage() {
+  const res = await getOutletsAPI({
+    page: currentPage.value,
+    pageSize: pageSize.value,
+    keyword: keyword.value,
+    // 2026-09-07：不传 status 时后端只返回 IN(0,1)，会导致合作中/审核中/已暂停/已终止
+    // 的供应商在「全部」下不可见；显式传 all = 不过滤状态（后端仅排除软删 -1）
+    status: status.value === '' ? 'all' : status.value,
+    region: region.value === '' ? undefined : region.value,
+    province: province.value === '' ? undefined : province.value,
+    city: isMunicipality(province.value) ? (province.value || undefined) : (city.value === '' ? undefined : city.value),
+    district: isMunicipality(province.value) ? (city.value === '' ? undefined : city.value) : undefined,
+    businessType: businessType.value === '' ? undefined : businessType.value,
+  })
+  tableData.value = (res as any).data?.list ?? (res as any).list ?? []
+  total.value = (res as any).data?.pagination?.total ?? (res as any).pagination?.total ?? 0
+  summary.value = (res as any).data?.summary ?? (res as any).summary ?? {}
+}
+
+onMounted(() => {
+  loadData()
+  loadBusinessTypes()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -929,6 +1120,31 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.idcard-preview-row {
+  display: flex;
+  gap: 16px;
+}
+.idcard-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.idcard-side-label {
+  font-size: 12px;
+  color: #909399;
+}
+.idcard-empty {
+  width: 140px;
+  height: 90px;
+  border-radius: 6px;
+  border: 1px dashed #dcdfe6;
+  background: #f5f7fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #c0c4cc;
 }
 /* 特种证件 picture-card 缩到 100x100 */
 :deep(.el-form-item:has(.el-upload--picture-card) .el-upload--picture-card),

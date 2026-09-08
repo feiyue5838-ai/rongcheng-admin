@@ -13,7 +13,7 @@ function spaFallbackPlugin() {
     name: 'spa-fallback',
     configureServer(server) {
       const indexPath = path.join(import.meta.url, '..', 'index.html')
-      server.middlewares.use((req: any, res: any, next: Function) => {
+      server.middlewares.use((req: any, res: any, next: () => void) => {
         const url = req.url || ''
         if (
           !url.startsWith('/api') &&

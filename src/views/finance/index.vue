@@ -264,14 +264,15 @@ async function loadModuleMonth() {
 
 async function loadOutletPending() {
   try {
-    // V2 结算（供应商=网点维度，2026-08-29 替代 V1 getOutletPendingSummary）：按供应商聚合未付款单
-    const res = await v2GetSettlements({ pageSize: 100 })
-    const list = (res.list || []).filter((it) => it.status === 'pending' || it.status === 'confirmed')
+    // V2 结算（供应商=网点维度，2026-08-29 替代 V1 getOutletPendingSummary）：按供应商聚合未付款单，拉 500 条避免截断
+    const res = await v2GetSettlements({ pageSize: 500 })
+    const raw = res?.list ?? res?.data?.list ?? []
+    const list = (Array.isArray(raw) ? raw : []).filter((it) => it.status === 'pending' || it.status === 'confirmed')
     const bySupplier = {}
     for (const it of list) {
-      const key = it.supplierId || 'unknown'
-      if (!bySupplier[key]) bySupplier[key] = { outletId: it.supplierId, outletName: it.supplierName || '未知供应商', pendingAmount: 0 }
-      bySupplier[key].pendingAmount += Number(it.payableAmount || 0)
+      const key = it.supplierId || it.outletId || it.supplier_id || 'unknown'
+      if (!bySupplier[key]) bySupplier[key] = { outletId: it.supplierId || it.outletId, outletName: it.supplierName || it.outletName || '未知供应商', pendingAmount: 0 }
+      bySupplier[key].pendingAmount += Number(it.payableAmount ?? it.payable_amount ?? 0)
     }
     outletPending.value = Object.values(bySupplier).filter((it) => Number(it?.pendingAmount || 0) > 0)
   } catch (e) { console.error(e) }
@@ -329,9 +330,10 @@ const transDetailRow = ref(null)
 async function loadOutletOpts() {
   try {
     const res = await getOutletsWithFlows()
-    const data = res?.data ?? res ?? {}
-    const list = Array.isArray(data) ? data : (data?.items || [])
-    outletOptions.value = (list || []).map((o) => ({ label: o.outletName, value: o.outletId }))
+    const raw = res?.data ?? res ?? {}
+    const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.items) ? raw.items : (raw?.data ?? []))
+    const arr = Array.isArray(list) ? list : []
+    outletOptions.value = arr.map((o) => ({ label: o.outletName ?? o.outlet_name ?? o.name ?? '未知', value: o.outletId ?? o.outlet_id ?? o.id }))
   } catch (e) { console.error(e) }
 }
 
@@ -342,7 +344,9 @@ async function loadTransStats() {
       ...(dateRange2.value?.[1] && { endDate: dateRange2.value[1] }),
     }
     const res = await getTransactionStats(params)
-    transStats.value = (res?.data && typeof res?.data === 'object') ? res.data : (res || {})
+    // getTransactionStats 已 unwrapV2，返回裸 stats {today,month}；兼容旧包裹形态
+    const raw = res?.data?.today ? res.data : (res?.today ? res : (res?.data ?? res))
+    transStats.value = raw && typeof raw === 'object' ? raw : {}
   }
   catch (e) { console.error(e) }
 }
@@ -431,14 +435,14 @@ function tradeTypeText(type) { return { income:'订单支付', refund:'退款', 
 // ==================== 公共工具 ====================
 function formatDateTime(date) {
   if (!date) return '—'
-  var d = new Date(date)
+  const d = new Date(date)
   if (isNaN(d.getTime())) return '—'
-  var y = d.getFullYear()
-  var m = String(d.getMonth()+1).padStart(2,'0')
-  var day = String(d.getDate()).padStart(2,'0')
-  var h = String(d.getHours()).padStart(2,'0')
-  var min = String(d.getMinutes()).padStart(2,'0')
-  var s = String(d.getSeconds()).padStart(2,'0')
+  const y = d.getFullYear()
+  const m = String(d.getMonth()+1).padStart(2,'0')
+  const day = String(d.getDate()).padStart(2,'0')
+  const h = String(d.getHours()).padStart(2,'0')
+  const min = String(d.getMinutes()).padStart(2,'0')
+  const s = String(d.getSeconds()).padStart(2,'0')
   return y+'-'+m+'-'+day+' '+h+':'+min+':'+s
 }
 

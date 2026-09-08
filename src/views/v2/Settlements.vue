@@ -34,10 +34,11 @@
         <el-table-column prop="createdAt" label="创建时间" width="170">
           <template #default="{ row }">{{ fmtTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button v-if="row.status === 'pending'" link type="primary" size="small" @click="confirm(row)">确认</el-button>
             <el-button v-if="row.status === 'confirmed'" link type="success" size="small" @click="openPayDialog(row)">付款</el-button>
+            <el-button v-if="row.status === 'paid'" link type="warning" size="small" @click="openInvoiceDialog(row)">进项票</el-button>
             <el-button link size="small" @click="showItems(row)">明细</el-button>
           </template>
         </el-table-column>
@@ -130,13 +131,58 @@
         <el-button type="warning" :loading="paying" @click="doPay">确认付款</el-button>
       </template>
     </el-dialog>
+    <!-- 进项票登记/核销（P1：网点开票 → 平台付款后凭票登记核销，入成本凭证） -->
+    <el-dialog v-model="invoiceDialogVisible" title="进项票登记/核销" width="560px">
+      <template v-if="invoiceTarget">
+        <el-descriptions :column="2" border size="small" style="margin-bottom: 16px">
+          <el-descriptions-item label="付款单号">{{ invoiceTarget.settlementNo }}</el-descriptions-item>
+          <el-descriptions-item label="供应商">{{ invoiceTarget.supplierName }}</el-descriptions-item>
+          <el-descriptions-item label="付款金额">¥{{ Number(invoiceTarget.payableAmount || 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="核销状态">
+            <el-tag v-if="invoicePayout?.invoiceStatus === 'verified'" size="small" type="success">已核销</el-tag>
+            <el-tag v-else size="small" type="info">未登记</el-tag>
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <!-- 已核销：只读展示 -->
+        <el-form v-if="invoicePayout?.invoiceStatus === 'verified'" label-width="110px">
+          <el-form-item label="发票号码">
+            <span style="font-weight: 600">{{ invoicePayout.invoiceNo }}</span>
+          </el-form-item>
+          <el-form-item label="发票金额">¥{{ Number(invoicePayout.invoiceAmount || 0).toFixed(2) }}</el-form-item>
+          <el-form-item label="税率">{{ invoicePayout.invoiceTaxRate != null ? invoicePayout.invoiceTaxRate + '%' : '-' }}</el-form-item>
+          <el-form-item label="税额">¥{{ Number(invoicePayout.invoiceTaxAmount || 0).toFixed(2) }}</el-form-item>
+          <el-form-item label="核销时间">{{ fmtTime(invoicePayout.invoiceVerifiedAt) }}</el-form-item>
+        </el-form>
+
+        <!-- 未登记：录入表单 -->
+        <el-form v-else label-width="110px">
+          <el-form-item label="发票号码" required>
+            <el-input v-model="invoiceForm.invoiceNo" placeholder="网点开具的进项发票号" />
+          </el-form-item>
+          <el-form-item label="发票金额">
+            <el-input-number v-model="invoiceForm.invoiceAmount" :min="0" :precision="2" :controls="false" style="width: 200px" />
+            <span style="color: #909399; font-size: 12px; margin-left: 8px">留空默认按付款金额</span>
+          </el-form-item>
+          <el-form-item label="税率 %">
+            <el-input-number v-model="invoiceForm.invoiceTaxRate" :min="0" :max="100" :precision="2" :controls="false" style="width: 200px" />
+            <span style="color: #909399; font-size: 12px; margin-left: 8px">小规模默认 1%（可配置）</span>
+          </el-form-item>
+        </el-form>
+      </template>
+      <template #footer>
+        <el-button @click="invoiceDialogVisible = false">关闭</el-button>
+        <el-button v-if="invoicePayout?.invoiceStatus === 'verified'" type="danger" plain :loading="invoiceSaving" @click="clearInvoice">撤销核销</el-button>
+        <el-button v-else type="primary" :loading="invoiceSaving" @click="saveInvoice">登记核销</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { v2GetSettlements, v2GenerateSettlement, v2ConfirmSettlement, v2PaySettlement, v2GetSettlementDetail, v2GetSuppliers } from '@/api'
+import { v2GetSettlements, v2GenerateSettlement, v2ConfirmSettlement, v2PaySettlement, v2GetSettlementDetail, v2GetSuppliers, v2RegisterPayoutInvoice, v2ClearPayoutInvoice } from '@/api'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -155,6 +201,13 @@ const payDialogVisible = ref(false)
 const paying = ref(false)
 const payTarget = ref<any>(null)
 const payForm = reactive({ paymentMethod: 'bank_transfer', transactionNo: '', bankName: '', bankAccountName: '', bankAccountNo: '' })
+
+// 进项票登记/核销（P1）
+const invoiceDialogVisible = ref(false)
+const invoiceSaving = ref(false)
+const invoiceTarget = ref<any>(null)
+const invoicePayout = ref<any>(null)
+const invoiceForm = reactive({ invoiceNo: '', invoiceAmount: undefined as number | undefined, invoiceTaxRate: 1 })
 
 const statusMap: Record<string, string> = { pending: '待确认', confirmed: '已确认', paid: '已付款', cancelled: '已取消' }
 const statusTag = (s: string) => ({ pending: 'warning', confirmed: 'primary', paid: 'success', cancelled: 'danger' } as any)[s] || 'info'
@@ -264,6 +317,69 @@ async function showItems(row: any) {
     itemsDialogVisible.value = true
   } catch (e: any) {
     ElMessage.error(e?.message || '加载明细失败')
+  }
+}
+async function openInvoiceDialog(row: any) {
+  invoiceTarget.value = row
+  invoicePayout.value = null
+  invoiceForm.invoiceNo = ''
+  invoiceForm.invoiceAmount = Number(row.payableAmount || 0)
+  invoiceForm.invoiceTaxRate = 1
+  invoiceDialogVisible.value = true
+  try {
+    // 拉详情取付款单（含进项字段）
+    const d: any = await v2GetSettlementDetail(row.id)
+    if (d?.payout) {
+      invoicePayout.value = d.payout
+      if (d.payout.invoiceStatus !== 'verified') {
+        invoiceForm.invoiceAmount = Number(d.payout.amount ?? row.payableAmount ?? 0)
+      }
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '加载付款单失败')
+  }
+}
+async function saveInvoice() {
+  if (!invoicePayout.value?.payoutNo) {
+    ElMessage.warning('付款单不存在，请刷新重试')
+    return
+  }
+  if (!invoiceForm.invoiceNo?.trim()) {
+    ElMessage.warning('请填写发票号码')
+    return
+  }
+  invoiceSaving.value = true
+  try {
+    await v2RegisterPayoutInvoice(invoicePayout.value.payoutNo, {
+      invoiceNo: invoiceForm.invoiceNo.trim(),
+      invoiceAmount: invoiceForm.invoiceAmount != null && invoiceForm.invoiceAmount > 0 ? invoiceForm.invoiceAmount : undefined,
+      invoiceTaxRate: invoiceForm.invoiceTaxRate != null ? invoiceForm.invoiceTaxRate : undefined,
+    })
+    ElMessage.success('进项票已登记核销')
+    invoiceDialogVisible.value = false
+    load()
+  } catch (e: any) {
+    ElMessage.error(e?.message || '登记失败')
+  } finally {
+    invoiceSaving.value = false
+  }
+}
+async function clearInvoice() {
+  try {
+    await ElMessageBox.confirm('撤销进项票核销？核销信息将被清空。', '撤销核销', { type: 'warning' })
+  } catch {
+    return
+  }
+  invoiceSaving.value = true
+  try {
+    await v2ClearPayoutInvoice(invoicePayout.value.payoutNo)
+    ElMessage.success('已撤销')
+    invoiceDialogVisible.value = false
+    load()
+  } catch (e: any) {
+    ElMessage.error(e?.message || '撤销失败')
+  } finally {
+    invoiceSaving.value = false
   }
 }
 onMounted(() => {

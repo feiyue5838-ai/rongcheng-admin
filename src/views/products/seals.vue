@@ -17,6 +17,23 @@
     </div>
 
     <div class="page-card">
+      <!-- ====== 批量改城市价 ====== -->
+      <div class="batch-bar">
+        <span class="batch-count">已选 <b>{{ batchSelectedIds.length }}</b> 项（印章/套餐可混选）</span>
+        <el-cascader
+          v-model="batchRegionPath"
+          :options="cityOptions"
+          placeholder="选择省 / 市 / 区"
+          size="small"
+          style="width: 240px"
+          clearable
+        />
+        <el-input-number v-model="batchPrice" :min="0" :precision="2" size="small" style="width: 130px" placeholder="价格" />
+        <el-button type="primary" size="small" :loading="batchApplying" :disabled="!batchSelectedIds.length" @click="batchApplyRegionPrice">
+          批量设为该价
+        </el-button>
+        <el-button size="small" :disabled="!batchSelectedIds.length" @click="clearBatchSelection">清空选中</el-button>
+      </div>
       <!-- ====== 路由类型：enterprise（8 业务场景） ====== -->
       <el-tabs
         v-if="routeType === 'enterprise'"
@@ -134,7 +151,9 @@
               v-for="row in filteredSeals"
               :key="row.id"
               class="seal-card"
+              :class="{ 'is-selected': isSelected(row.id) }"
             >
+              <el-checkbox class="card-check" :model-value="isSelected(row.id)" @change="toggleSelect(row.id)" @click.stop />
               <div class="card-image">
                 <el-image
                   v-if="row.image"
@@ -174,7 +193,9 @@
               v-for="row in filteredPackages"
               :key="row.id"
               class="seal-card is-pkg"
+              :class="{ 'is-selected': isSelected(row.id) }"
             >
+              <el-checkbox class="card-check" :model-value="isSelected(row.id)" @change="toggleSelect(row.id)" @click.stop />
               <div class="card-image">
                 <el-carousel
                   v-if="row.images?.length"
@@ -489,7 +510,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { provinceToCities, cityToDistricts, regionCodeByPath, regionPathByCode, regionPathByLegacyName } from '@/data/region-data'
 import { Box, Postcard } from '@element-plus/icons-vue'
-import { getSealCategories, getSealSceneProducts, createSeal, updateSeal, deleteSeal, uploadImage, updatePackage, deletePackage, getAdminScenes, getSeals, getSealPackages, createPackage, createScene, updateScene, deleteScene } from '@/api'
+import { getSealCategories, getSealSceneProducts, createSeal, updateSeal, deleteSeal, uploadImage, updatePackage, deletePackage, batchSetRegionPrice, getAdminScenes, getSeals, getSealPackages, createPackage, createScene, updateScene, deleteScene } from '@/api'
 const route = useRoute()
 
 // 路由逻辑分类 key（不依赖数据，初始化即可确定）
@@ -681,7 +702,6 @@ const pricingMode = ref<'nationwide' | 'regional'>('nationwide')
 
 function getRegionPricesRows() {
   const rp = form.region_prices || form.regionPrices || {}
-  // @ts-ignore
   regionPricesRows.value = Object.entries(rp).map(([regionKey, price]) => createRegionPriceRow(regionKey, price))
 }
 
@@ -690,11 +710,23 @@ function addRegionPrice() {
 }
 
 function onPricingModeChange(mode: string) {
-  if (mode === 'nationwide') regionPricesRows.value = []
+  if (mode === 'nationwide' && regionPricesRows.value.length > 0) {
+    ElMessageBox.confirm('切回全国价将清空所有城市差异化定价，确定？', '提示', { type: 'warning' }).then(() => {
+      regionPricesRows.value = []
+    }).catch(() => {
+      pricingMode.value = 'regional'
+    })
+  }
 }
 
 function onPkgPricingModeChange(mode: string) {
-  if (mode === 'nationwide') pkgRegionPricesRows.value = []
+  if (mode === 'nationwide' && pkgRegionPricesRows.value.length > 0) {
+    ElMessageBox.confirm('切回全国价将清空所有城市差异化定价，确定？', '提示', { type: 'warning' }).then(() => {
+      pkgRegionPricesRows.value = []
+    }).catch(() => {
+      pkgPricingMode.value = 'regional'
+    })
+  }
 }
 
 function removeRegionPrice(idx: number) {
@@ -707,6 +739,63 @@ async function clearAllRegionPrices() {
     regionPricesRows.value = []
   } catch {
     // user cancelled
+  }
+}
+
+// ====== 批量改城市价（单选/多选，印章+套餐可混选） ======
+const batchSelectedIds = ref<string[]>([])
+const batchRegionPath = ref<string[]>([])
+const batchPrice = ref<number>(0)
+const batchApplying = ref(false)
+
+function isSelected(id: string) {
+  return batchSelectedIds.value.includes(id)
+}
+function toggleSelect(id: string) {
+  const i = batchSelectedIds.value.indexOf(id)
+  if (i >= 0) batchSelectedIds.value.splice(i, 1)
+  else batchSelectedIds.value.push(id)
+}
+function clearBatchSelection() {
+  batchSelectedIds.value = []
+}
+
+async function batchApplyRegionPrice() {
+  if (!batchSelectedIds.value.length) { ElMessage.warning('请先勾选要改价的印章/套餐'); return }
+  const path = batchRegionPath.value || []
+  if (path.length < 2) { ElMessage.warning('请选择省 / 市（可精确到区）'); return }
+  const code = getRegionCode(path)
+  if (!code) { ElMessage.warning('该地区无编码，请重选'); return }
+  const price = Number(batchPrice.value)
+  if (!(price > 0)) { ElMessage.warning('请填写大于 0 的价格'); return }
+  try {
+    await ElMessageBox.confirm(`将 ${batchSelectedIds.value.length} 项的「${path.join(' / ')}」设为 ¥${price}？其余城市价保留。`, '批量改价', { type: 'warning' })
+  } catch { return }
+  batchApplying.value = true
+  try {
+    // 选中 id 按印章/套餐分流，一次请求一个事务，后端合并指定 regionCode 后回写 JSONB + 明细表
+    const sealIds = batchSelectedIds.value.filter((id) => seals.value.some((s: any) => s.id === id))
+    const packageIds = batchSelectedIds.value.filter((id) => !seals.value.some((s: any) => s.id === id))
+    const res: any = await batchSetRegionPrice({
+      sealIds, packageIds, regionCode: code,
+      province: path[0] || '', city: path[1] || '', district: path[2] || '', price,
+    })
+    const data = res?.data ?? res ?? {}
+    const okCount = Number(data.ok ?? 0)
+    const failed: string[] = Array.isArray(data.failed) ? data.failed : []
+    if (okCount) ElMessage.success(`已批量改价 ${okCount} 项`)
+    if (failed.length) ElMessage.warning(`${failed.length} 项失败（不存在或异常），请重试`)
+    if (!okCount && !failed.length) ElMessage.info('后端无响应或返回为空，请确认后端 8080 已启动后重试')
+    batchSelectedIds.value = []
+    if (routeType.value === 'enterprise' && activeSceneId.value) {
+      await fetchSealsByCategory(activeSceneId.value)
+    } else {
+      await fetchSealsByCategory(defaultCategory.value)
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '批量改价请求失败：请确认后端 8080 已启动后重试')
+  } finally {
+    batchApplying.value = false
   }
 }
 
@@ -1026,7 +1115,7 @@ function showDialog(type: string, row?: any) {
   isEdit.value = type === 'edit'
   if (row) {
     // 编辑：回显当前所属场景 + 个人子分类，允许改所属场景
-    let ctxSceneId = ''
+    let ctxSceneId: string
     if (isPersonal.value) ctxSceneId = row._sceneId || activePersonalSceneId.value || personalScene.value?.id || ''
     else if (isElectronic.value) ctxSceneId = row._sceneId || activeElectronicSceneId.value || electronicScene.value?.id || ''
     else ctxSceneId = activeSceneId.value || ''
@@ -1045,7 +1134,7 @@ function showDialog(type: string, row?: any) {
     pricingMode.value = Object.keys(form.region_prices || {}).length > 0 ? 'regional' : 'nationwide'
   } else {
     // 新增：预选当前所属场景（企业=当前 Tab；个人/电子=对应场景）
-    let defaultSceneId = ''
+    let defaultSceneId: string
     if (isPersonal.value) defaultSceneId = activePersonalSceneId.value || personalScene.value?.id || ''
     else if (isElectronic.value) defaultSceneId = activeElectronicSceneId.value || electronicScene.value?.id || ''
     else defaultSceneId = activeSceneId.value || ''
@@ -1083,8 +1172,16 @@ async function saveSeal() {
     // 从行编辑数据还原 region_prices 对象（全国价模式强制清空，仅用基准价）
     const region_prices: Record<string, RegionPriceValue> = {}
     if (pricingMode.value === 'regional') {
+      const seen = new Set<string>()
       for (const row of regionPricesRows.value) {
-        if (row.regionCode.trim()) region_prices[row.regionCode.trim()] = buildRegionPriceValue(row)
+        const code = row.regionCode.trim()
+        if (!code) continue
+        if (seen.has(code)) {
+          ElMessage.warning(`地区 ${code} 重复，已忽略重复行`)
+          continue
+        }
+        seen.add(code)
+        region_prices[code] = buildRegionPriceValue(row)
       }
     }
 
@@ -1179,7 +1276,6 @@ const pkgRegionPricesRows = ref<RegionPriceRow[]>([])
 const pkgPricingMode = ref<'nationwide' | 'regional'>('nationwide')
 function getPkgRegionPricesRows() {
   const rp = pkgForm.region_prices || pkgForm.regionPrices || {}
-  // @ts-ignore
   pkgRegionPricesRows.value = Object.entries(rp).map(([regionKey, price]) => createRegionPriceRow(regionKey, price))
 }
 function addPkgRegionPrice() {
@@ -1198,9 +1294,16 @@ async function clearAllPkgRegionPrices() {
 }
 function buildPkgRegionPrices() {
   const rp: Record<string, RegionPriceValue> = {}
+  const seen = new Set<string>()
   for (const row of pkgRegionPricesRows.value) {
     if (row.regionCode && row.price !== undefined && row.price !== null) {
-      rp[row.regionCode] = buildRegionPriceValue(row)
+      const code = row.regionCode.trim()
+      if (seen.has(code)) {
+        ElMessage.warning(`地区 ${code} 重复，已忽略重复行`)
+        continue
+      }
+      seen.add(code)
+      rp[code] = buildRegionPriceValue(row)
     }
   }
   return rp
@@ -1457,6 +1560,36 @@ watch(activeSceneId, async (newId, oldId) => {
   border-color: #5B6FE8;
   box-shadow: 0 8px 24px rgba(91, 111, 232, 0.15);
   transform: translateY(-4px);
+}
+.seal-card.is-selected {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.25);
+}
+.card-check {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+.seal-card {
+  position: relative;
+}
+.batch-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  background: #f0f5ff;
+  border: 1px solid #adc6ff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.batch-count b {
+  color: #1d39c4;
 }
 .seal-card.is-pkg {
   border-color: #f5dab1;

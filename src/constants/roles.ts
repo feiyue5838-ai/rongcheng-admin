@@ -105,6 +105,7 @@ export function hasAccess(role: string, path: string): boolean {
     '/products/bookkeeping-packages': ['superadmin', 'product_admin'],
     '/users': ['superadmin', 'content_admin'],
     '/reviews': ['superadmin', 'content_admin'],
+    '/complaints': ['superadmin', 'content_admin'],
     '/points': ['superadmin', 'content_admin'],
     '/questions': ['superadmin', 'content_admin'],
     '/faq': ['superadmin', 'content_admin'],

@@ -153,7 +153,7 @@ async function fetchConfigs() {
               sealConfig.licenseCopyCities = arr
               sealConfig.licenseCopyCitiesText = arr.join('，')
             }
-          } else if (cfg.hasOwnProperty(item.key)) {
+          } else if (Object.prototype.hasOwnProperty.call(cfg, item.key)) {
             if ((key === 'payment' && ['apiV3Key', 'privateKey', 'certificate'].includes(item.key)) || (key === 'wechat' && item.key === 'appSecret')) return
             if (key === 'business' && ['minOrderAmount', 'freeShippingAmount', 'reviewRewardPoints'].includes(item.key)) {
               const value = Number(item.value)

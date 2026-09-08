@@ -95,8 +95,8 @@ async function load() {
       module: filters.module || undefined,
       keyword: filters.keyword.trim() || undefined,
     })
-    list.value = res.list || []
-    total.value = res.total || 0
+    list.value = res?.list ?? res?.data?.list ?? []
+    total.value = res?.pagination?.total ?? res?.total ?? res?.data?.total ?? 0
   } catch (e: any) {
     ElMessage.error(e?.message || '加载失败')
   } finally {

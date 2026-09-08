@@ -28,7 +28,7 @@
         </el-table-column>
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link :disabled="!row.phone" @click="viewOrders(row)">订单</el-button>
+            <el-button type="primary" link @click="viewOrders(row)">订单</el-button>
             <el-button type="warning" link @click="handleToggleStatus(row)">{{ row.status === 1 ? '禁用' : '启用' }}</el-button>
             <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
@@ -69,17 +69,17 @@ async function fetchUsers() {
   }
 }
 function viewOrders(row: any) {
-  if (!row.phone) return
-  router.push({ path: '/orders/seal', query: { keyword: row.phone } })
+  router.push({ path: '/v2/orders', query: { keyword: row.phone || row.id } })
 }
 async function handleToggleStatus(row: any) {
   const newStatus = row.status === 1 ? 0 : 1
+  const oldStatus = row.status
   try {
     await ElMessageBox.confirm(`确定要${newStatus === 1 ? '启用' : '禁用'}该用户吗？`, '提示', { type: 'warning' })
     await updateUser(row.id, { status: newStatus })
     row.status = newStatus
     ElMessage.success(newStatus === 1 ? '已启用' : '已禁用')
-  } catch (e: any) { if (e !== 'cancel' && e !== 'close') ElMessage.error(e.message || '操作失败') }
+  } catch (e: any) { if (e !== 'cancel' && e !== 'close') { row.status = oldStatus; ElMessage.error(e.message || '操作失败') } }
 }
 async function handleDelete(row: any) {
   try {

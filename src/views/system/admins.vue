@@ -125,7 +125,7 @@ async function saveAdmin() {
       delete payload.role
       delete payload.status
     }
-    if (isEdit.value) { await updateAdmin(form.id, payload) } else { await createAdmin(payload) }
+    if (isEdit.value) { await updateAdmin(editingId.value, payload) } else { await createAdmin(payload) }
     ElMessage.success('保存成功'); dialogVisible.value = false; await fetchAdmins()
   } finally { saving.value = false }
 }

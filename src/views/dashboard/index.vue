@@ -455,9 +455,13 @@ function bizLabel(b: any) {
   return '业务'
 }
 
-// 动态生成 hero sparkline SVG points（基于后端 /dashboard/trend 返回的 trendData.seal）
+// 动态生成 hero sparkline SVG points（基于后端 /dashboard/trend 返回的 trendData 全量合计）
 const sparklinePoints = computed(() => {
-  const raw = trendData.seal
+  const rawSeal = trendData.seal || []
+  const rawNews = trendData.newspaper || []
+  const rawBk = trendData.bookkeeping || []
+  // 合计三条线，避免单品类为0时火花线塌陷
+  const raw = rawSeal.length ? rawSeal.map((v, i) => v + (rawNews[i]||0) + (rawBk[i]||0)) : []
   if (!raw || raw.length === 0) {
     const flat = '0,40 53,40 107,40 160,40 213,40 267,40 320,40'
     return { poly: flat, fill: flat + ' 320,80 0,80' }
@@ -480,11 +484,14 @@ function formatMoney(n: number) {
 function animateValue(key: string, target: number, duration = 1100) {
   const start = performance.now()
   const startVal = 0
+  const isMoney = key === 'totalRevenue'
   function step(now: number) {
     const t = Math.min(1, (now - start) / duration)
     const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
-    ;(stats as any)[key].value = Math.round(startVal + (target - startVal) * eased)
+    const cur = startVal + (target - startVal) * eased
+    ;(stats as any)[key].value = isMoney ? Number(cur.toFixed(2)) : Math.round(cur)
     if (t < 1) requestAnimationFrame(step)
+    else if (isMoney) (stats as any)[key].value = Number(Number(target).toFixed(2))
   }
   requestAnimationFrame(step)
 }
@@ -523,11 +530,12 @@ async function loadOutlets() {
     const oRes: any = await getOutletsAPI({ page: 1, pageSize: 100 })
     const oData = oRes.data ?? oRes
     outletList.value = oData.list || []
-    // V2 结算（供应商=网点维度，2026-08-29 替代 V1 getSettlementRecords）：待结算 = 未付款单（pending/confirmed）
-    const sRes: any = await v2GetSettlements({ pageSize: 100 })
-    pendingSettlements.value = (sRes.list || [])
+    // V2 结算（供应商=网点维度，2026-08-29 替代 V1 getSettlementRecords）：待结算 = 未付款单（pending/confirmed），拉 500 条避免截断
+    const sRes: any = await v2GetSettlements({ pageSize: 500 })
+    const rawList: any[] = sRes.list ?? sRes.data?.list ?? []
+    pendingSettlements.value = rawList
       .filter((r: any) => r.status === 'pending' || r.status === 'confirmed')
-      .map((r: any) => ({ outletId: r.supplierId, outletAmount: Number(r.payableAmount ?? 0) }))
+      .map((r: any) => ({ outletId: r.supplierId ?? r.outletId ?? r.supplier_id, outletAmount: Number(r.payableAmount ?? r.payable_amount ?? r.outletAmount ?? 0) }))
   } catch (e) {
     console.error('获取网点/结算数据失败', e)
   }

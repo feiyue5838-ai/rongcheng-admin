@@ -538,8 +538,8 @@ async function saveBanner() {
   const link = bannerForm.link.trim()
   if (!title) { ElMessage.warning('请输入 Banner 标题'); return }
   if (!image) { ElMessage.warning('请上传 Banner 图片'); return }
-  if (link && !/^(\/|https?:\/\/)/.test(link)) {
-    ElMessage.warning('跳转链接须以 /、http:// 或 https:// 开头')
+  if (link && !/^(\/[^/]|https?:\/\/)/.test(link)) {
+    ElMessage.warning('跳转链接须以单斜杠 / 开头或 http(s):// 开头，禁止 // 开头')
     return
   }
   bannerSaving.value = true
@@ -963,9 +963,9 @@ function sanitizeRichText(html: string): string {
           const src = el.getAttribute('src') || ''
           if (!RICH_TEXT_SAFE_URL.test(src)) { el.remove(); continue }
         }
-        // 剥离全部事件属性（onclick/onerror/onload...）
+        // 剥离全部事件属性（onclick/onerror/onload...）与 style（防 javascript: url() 绕过）
         for (const attr of Array.from(el.attributes)) {
-          if (/^on/i.test(attr.name)) el.removeAttribute(attr.name)
+          if (/^on/i.test(attr.name) || attr.name === 'style') el.removeAttribute(attr.name)
         }
         walk(el)
       }
@@ -1046,10 +1046,16 @@ async function saveMaterialCommitment() {
   } catch (e) { ElMessage.error(errorMessage(e, '承诺书保存失败')) } finally { materialSaving.value = false }
 }
 
-// 首次切到某 tab 时才加载（减少无意义请求）
+// 首次切到某 tab 时才加载（减少无意义请求）；关于我们系（about/terms/privacy/material-commitment）共用 aboutForm，需实时重载避免覆盖
 function onTabChange(name: string | number) {
   const tabName = String(name)
-  if (loadedTabs.has(tabName)) return
+  const aboutFamily = new Set(['about', 'terms', 'privacy', 'material-commitment'])
+  if (!aboutFamily.has(tabName) && loadedTabs.has(tabName)) return
+  if (aboutFamily.has(tabName) && loadedTabs.has(tabName)) {
+    // 已加载过的关于我们系仍重载以拉最新 terms/privacy（共用接口，单 Tab 保存后其余 Tab 缓存会脏）
+    loadAbout(tabName)
+    return
+  }
   if (tabName === 'banners') loadBanners()
   else if (tabName === 'announcements') loadAnnouncements()
   else if (tabName === 'intros') loadIntros()

@@ -1082,7 +1082,7 @@ const TEMPLATES_MAX_PAGES = 20 // 上限 20000 条，防死循环
 async function fetchAllTemplates(): Promise<{ list: any[]; total: number }> {
   const first = await getAdminTemplates({ page: 1, pageSize: TEMPLATES_PAGE_SIZE })
   const list = normalize(first)
-  let total = (first as any)?.total ?? list.length
+  const total = (first as any)?.total ?? list.length
   let all = [...list]
   let page = 2
   while (all.length < total && page <= TEMPLATES_MAX_PAGES) {

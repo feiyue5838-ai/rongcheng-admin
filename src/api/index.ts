@@ -114,6 +114,8 @@ export const deleteRecordQuery = (id: string) => request.delete(`/seals/admin/re
 export const createPackage = (data: any) => request.post('/seals/packages', data)
 export const updatePackage = (id: string, data: any) => request.put(`/seals/packages/${id}`, data)
 export const deletePackage = (id: string) => request.delete(`/seals/packages/${id}`)
+// 批量设置城市价（一次请求一个事务）：{ sealIds, packageIds, regionCode, province, city, district, price }
+export const batchSetRegionPrice = (data: any) => request.post('/seals/batch-region-prices', data)
 
 export const getNewspapers = (params?: any) => request.get('/newspapers', { params })
 export const getAllNewspapers = () => request.get('/newspapers/all')
@@ -142,6 +144,10 @@ export const replyReview = (id: string, reply: string) => request.put(`/reviews/
 export const deleteReview = (id: string) => request.delete(`/reviews/${id}`)
 export const updateReviewStatus = (id: string, status: 'pending' | 'approved' | 'rejected') =>
   request.put(`/reviews/${id}/status`, { status })
+
+// ==================== 投诉接口 ====================
+export const getComplaints = (params?: any) => request.get('/complaints/admin/list', { params })
+export const updateComplaintStatus = (id: string, status: string) => request.put(`/complaints/${id}/status`, { status })
 
 // ==================== 问答接口 ====================
 export const getQuestions = (params?: any) => request.get('/questions/admin/list', { params })
@@ -194,6 +200,11 @@ export const acceptOutletOrderAdminAPI = (outletId: string, orderId: string) => 
 export const shipOutletOrderAdminAPI = (outletId: string, orderId: string, data: { expressCompany: string; trackingNo: string; remark?: string; receipts: Array<{ type?: string; url: string; remark?: string }> }) => request.put(`/outlets/${outletId}/orders/${orderId}/ship`, data)
 export const setOutletBusinessTypesAPI = (id: string, businessTypeIds: string[]) =>
   request.put(`/outlets/${id}/business-types`, { businessTypeIds })
+// 管理端：查看指定网点发货偏好（网点端编辑，管理端只读；2026-09-06 新增）
+export const getOutletShippingPreferencesAPI = (id: string) =>
+  request.get(`/outlets/${id}/shipping-preferences`)
+// 管理端：业务类型列表（2026-09-07 新增，替代前端硬编码 UUID）
+export const getBusinessTypesAPI = () => request.get('/business-types')
 
 // ==================== 订单分配 API（V1 退役 2026-08-29：派单走 v2AssignOrder / v2 待派单池） ====================
 
@@ -350,18 +361,18 @@ export const v2GetDashboard = () => v2Request.get('/v2/admin/dashboard')
 export const v2GetOrders = (params: any) => v2Request.get('/v2/admin/orders', { params })
 
 // 订单详情（供应链视图）GET /api/v2/admin/orders/:orderNo
-export const v2GetOrderDetail = (orderNo: string) => v2Request.get(`/v2/admin/orders/${orderNo}`)
+export const v2GetOrderDetail = (orderNo: string) => v2Request.get(`/v2/admin/orders/${encodeURIComponent(orderNo)}`)
 
 // 待派单池 GET /api/v2/admin/orders/unassigned
 export const v2GetUnassigned = (params: any) => v2Request.get('/v2/admin/orders/unassigned', { params })
 
 // 派单 POST /api/v2/admin/orders/:orderNo/assign
 export const v2AssignOrder = (orderNo: string, data: { supplierId: string; remark?: string }) =>
-  v2Request.post(`/v2/admin/orders/${orderNo}/assign`, data)
+  v2Request.post(`/v2/admin/orders/${encodeURIComponent(orderNo)}/assign`, data)
 
 // 改派 POST /api/v2/admin/orders/:orderNo/reassign
 export const v2ReassignOrder = (orderNo: string, data: { supplierId: string; cancelRemark?: string }) =>
-  v2Request.post(`/v2/admin/orders/${orderNo}/reassign`, data)
+  v2Request.post(`/v2/admin/orders/${encodeURIComponent(orderNo)}/reassign`, data)
 
 // ---------- 管理端 V2.0 结算 ----------
 // 结算单列表 GET /api/v2/admin/settlements
@@ -379,6 +390,13 @@ export const v2ConfirmSettlement = (id: string) => v2Request.put(`/v2/admin/sett
 
 // 结算付款 POST /api/v2/admin/settlements/:id/pay
 export const v2PaySettlement = (id: string, data?: any) => v2Request.post(`/v2/admin/settlements/${id}/pay`, data || {})
+
+// 登记/核销进项票 PUT /api/v2/admin/settlements/payouts/:payoutNo/invoice（P1 真总包进项侧闭环）
+export const v2RegisterPayoutInvoice = (payoutNo: string, data: { invoiceNo: string; invoiceAmount?: number; invoiceTaxRate?: number; invoiceFileUrl?: string }) =>
+  v2Request.put(`/v2/admin/settlements/payouts/${payoutNo}/invoice`, data)
+
+// 撤销进项票登记 DELETE /api/v2/admin/settlements/payouts/:payoutNo/invoice
+export const v2ClearPayoutInvoice = (payoutNo: string) => v2Request.delete(`/v2/admin/settlements/payouts/${payoutNo}/invoice`)
 
 // ---------- 管理端 V2.0 结算规则（2026-09-05 真·总包差价机制） ----------
 // 结算规则列表 GET /api/v2/admin/settlement-rules

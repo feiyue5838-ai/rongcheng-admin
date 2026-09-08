@@ -46,21 +46,51 @@
       </el-card>
 
       <!-- 办理内容 -->
-      <el-card v-if="detail.sealDetails || detail.newspaperDetails" shadow="hover" style="margin-bottom: 16px">
+      <el-card v-if="detail.sealDetails || detail.newspaperDetails || detail.bookkeepingDetails" shadow="hover" style="margin-bottom: 16px">
         <template #header><span>办理内容</span></template>
         <el-descriptions v-if="detail.sealDetails" :column="3" border>
-          <el-descriptions-item label="企业名称">{{ detail.sealDetails.companyName }}</el-descriptions-item>
-          <el-descriptions-item label="法人">{{ detail.sealDetails.legalPerson }}</el-descriptions-item>
-          <el-descriptions-item label="印章数量">{{ detail.sealDetails.sealCount }}</el-descriptions-item>
+          <el-descriptions-item label="企业名称">{{ detail.sealDetails.companyName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="法人">{{ detail.sealDetails.legalPerson || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="印章数量">{{ detail.sealDetails.sealCount ?? '-' }}</el-descriptions-item>
           <el-descriptions-item label="印章类型">{{ (detail.sealDetails.sealTypes || []).join('、') || '-' }}</el-descriptions-item>
           <el-descriptions-item label="套系">{{ detail.sealDetails.sealPackageName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="是否备案">{{ detail.sealDetails.filingRequired ? '是' : '否' }}</el-descriptions-item>
         </el-descriptions>
         <el-descriptions v-if="detail.newspaperDetails" :column="2" border>
-          <el-descriptions-item label="报纸">{{ detail.newspaperDetails.newspaperName }}</el-descriptions-item>
-          <el-descriptions-item label="字数">{{ detail.newspaperDetails.contentCharCount }}</el-descriptions-item>
-          <el-descriptions-item label="公告内容" :span="2">{{ detail.newspaperDetails.content }}</el-descriptions-item>
+          <el-descriptions-item label="报纸">{{ detail.newspaperDetails.newspaperName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="字数">{{ detail.newspaperDetails.contentCharCount ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="公告内容" :span="2">{{ detail.newspaperDetails.content || '-' }}</el-descriptions-item>
         </el-descriptions>
+        <!-- 记账办理内容（2026-09-06：补齐，字段与网点端/小程序统一口径） -->
+        <el-descriptions v-if="detail.bookkeepingDetails" :column="2" border>
+          <el-descriptions-item label="企业名称">{{ detail.bookkeepingDetails.companyName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="服务套餐">{{ detail.bookkeepingDetails.packageName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="纳税人类型">{{ taxpayerTypeLabel(detail.bookkeepingDetails.taxpayerType) }}</el-descriptions-item>
+          <el-descriptions-item label="服务周期">{{ servicePeriodLabel(detail.bookkeepingDetails.servicePeriod) }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.bookkeepingDetails.currentPeriod || detail.bookkeepingDetails.periodsCompleted" label="账期进度">
+            当前第 {{ detail.bookkeepingDetails.currentPeriod || '-' }} 期 · 已完成 {{ detail.bookkeepingDetails.periodsCompleted || 0 }} 期
+          </el-descriptions-item>
+        </el-descriptions>
+      </el-card>
+
+      <!-- 客户上传资质证件（materials，2026-09-06：V2 详情补回，对齐 V1 管理端可见性） -->
+      <el-card v-if="detail.materials && detail.materials.length > 0" shadow="hover" style="margin-bottom: 16px">
+        <template #header><span>上传资质证件（{{ detail.materials.length }}）</span></template>
+        <div class="material-grid">
+          <div v-for="mt in detail.materials" :key="mt.id" class="material-item">
+            <el-image
+              :src="mt.url"
+              :preview-src-list="[mt.url]"
+              preview-teleported
+              fit="cover"
+              class="material-img"
+            />
+            <div class="material-meta">
+              <el-tag size="small" type="info">{{ mt.typeLabel }}</el-tag>
+              <el-tag v-if="mt.statusText" size="small" :type="mt.status === 1 ? 'success' : mt.status === 2 ? 'danger' : 'warning'">{{ mt.statusText }}</el-tag>
+            </div>
+          </div>
+        </div>
       </el-card>
 
       <!-- 供应链：派单链/履约时间线 -->
@@ -82,7 +112,7 @@
         <el-empty v-if="!detail.fulfillments || detail.fulfillments.length === 0" description="暂无履约记录" />
         <el-timeline v-else>
           <el-timeline-item
-            v-for="(f, idx) in detail.fulfillments"
+            v-for="f in detail.fulfillments"
             :key="f.id"
             :type="f.status === 'cancelled' ? 'danger' : f.status === 'completed' ? 'success' : 'primary'"
             :timestamp="`${fmt(f.assignedAt)}`"
@@ -215,6 +245,11 @@ const refundStatusMap: Record<string, string> = { none: '无', applying: '申请
 const fulfillmentStatusMap: Record<string, string> = FULFILLMENT_STATUS_TEXT
 const moduleLabel = (m: string) => ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' } as any)[m] || m
 const moduleType = (m: string) => ({ seal: 'primary', newspaper: 'success', bookkeeping: 'warning' } as any)[m] || 'info'
+// 2026-09-06：记账纳税人类型/服务周期文案（与小程序/网点端统一口径）
+const taxpayerTypeLabel = (t: string) =>
+  ({ small: '小规模纳税人', general: '一般纳税人', individual: '个体户' } as any)[t] || t || '-'
+const servicePeriodLabel = (s: string) =>
+  ({ year: '全年', half: '半年', preorder: '9.9 预定' } as any)[s] || s || '-'
 const statusTag = (s: string) => ({ pending_payment: 'warning', paid: 'success', completed: 'info', cancelled: 'danger', processing: 'primary' } as any)[s] || 'info'
 const fulfillmentTag = (s: string) => fulfillmentStatusTag(s)
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
@@ -234,6 +269,10 @@ async function load() {
   loading.value = true
   try {
     detail.value = await v2GetOrderDetail(orderNo.value) as any
+    // 详情已拿到 module 后按品类重拉供应商，避免首屏 module=undefined 的全量/错类
+    if (detail.value?.order?.module) {
+      await loadSuppliers()
+    }
   } catch (e: any) {
     ElMessage.error(e?.message || '加载失败')
   } finally {
@@ -243,9 +282,12 @@ async function load() {
 
 async function loadSuppliers() {
   try {
-    const res: any = await v2GetSuppliers({ pageSize: 100 })
-    // 仅启用供应商可派单/改派（停用的选了也会被后端拒绝，直接不展示）
-    suppliers.value = (res.list || []).filter((s: any) => s.status === 1)
+    // 按订单业务类型过滤：仅返回能承接该业务的供应商（刻章/登报/记账不混交）
+    const module = detail.value?.order?.module
+    const res: any = await v2GetSuppliers({ pageSize: 100, module: module || undefined })
+    // 仅启用供应商可派单/改派（停用的选了也会被后端拒绝，直接不展示），兼容 list/data.list
+    const raw = res?.list ?? res?.data?.list ?? res?.data ?? []
+    suppliers.value = (Array.isArray(raw) ? raw : []).filter((s: any) => s.status === 1)
   } catch { /* 忽略 */ }
 }
 
@@ -321,5 +363,29 @@ onMounted(async () => {
 }
 .fulfillment-item {
   padding-bottom: 4px;
+}
+/* 上传资质证件网格（2026-09-06） */
+.material-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.material-item {
+  width: 148px;
+}
+.material-img {
+  width: 148px;
+  height: 148px;
+  border-radius: 6px;
+  border: 1px solid var(--el-border-color-lighter);
+  cursor: zoom-in;
+  display: block;
+}
+.material-meta {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 </style>

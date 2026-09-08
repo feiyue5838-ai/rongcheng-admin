@@ -543,7 +543,7 @@ function onComplete(order) {
 }
 
 async function loadPreferences() {
-  try { const r = await getShippingPreferencesAPI(); Object.assign(preferenceForm, { preferredCouriers: r.preferredCouriers || [], defaultCourier: r.defaultCourier || '', shippingRemark: r.shippingRemark || '' }); commonCouriers.value = r.commonCouriers || [] } catch (_) {}
+  try { const r = await getShippingPreferencesAPI(); Object.assign(preferenceForm, { preferredCouriers: r.preferredCouriers || [], defaultCourier: r.defaultCourier || '', shippingRemark: r.shippingRemark || '' }); commonCouriers.value = r.commonCouriers || [] } catch (_) { /* 发货偏好接口未就绪时静默跳过 */ }
 }
 async function savePreferences() {
   preferenceSaving.value = true

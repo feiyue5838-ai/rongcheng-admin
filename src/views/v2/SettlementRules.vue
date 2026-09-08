@@ -26,13 +26,13 @@
             <el-tag :type="moduleTag(row.module)" size="small">{{ moduleText(row.module) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="抽成方式" width="120" align="center">
+        <el-table-column label="分成方式" width="120" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.type === 'percent'" type="danger" size="small">比例 {{ Number(row.percent || 0).toFixed(2) }}%</el-tag>
-            <el-tag v-else type="warning" size="small">固定 ￥{{ Number(row.fixedAmount || 0).toFixed(2) }}</el-tag>
+            <el-tag v-if="row.type === 'percent'" type="success" size="small">给网点 {{ Number(row.percent || 0).toFixed(2) }}%</el-tag>
+            <el-tag v-else type="warning" size="small">给网点 ￥{{ Number(row.fixedAmount || 0).toFixed(2) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="minOrderAmount" label="起抽金额(元)" width="120" align="right">
+        <el-table-column prop="minOrderAmount" label="起分金额(元)" width="120" align="right">
           <template #default="{ row }">￥{{ Number(row.minOrderAmount || 0).toFixed(2) }}</template>
         </el-table-column>
         <el-table-column label="状态" width="90" align="center">
@@ -80,23 +80,23 @@
           </el-select>
           <div style="font-size:12px; color:#909399; line-height:1.5; margin-top:4px">不选表示对全部业务生效；如与业务专用规则同时存在，优先匹配业务专用</div>
         </el-form-item>
-        <el-form-item label="抽成类型" required>
+        <el-form-item label="分成类型" required>
           <el-radio-group v-model="form.type">
             <el-radio value="percent">按比例（%）</el-radio>
             <el-radio value="fixed">按固定金额（元）</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item v-if="form.type === 'percent'" label="抽成比例 %" required>
+        <el-form-item v-if="form.type === 'percent'" label="给网点比例 %" required>
           <el-input-number v-model="form.percent" :min="0" :max="100" :precision="2" :step="0.5" style="width: 200px" />
-          <div style="font-size:12px; color:#909399; margin-left:8px">供应商结算价 = 订单实付 × (1 − 比例)</div>
+          <div style="font-size:12px; color:#909399; margin-left:8px">供应商结算价 = 订单实付 × 比例（例：18% = 每单给网点 18%，平台留差价 82%）</div>
         </el-form-item>
-        <el-form-item v-else label="抽成金额(元)" required>
+        <el-form-item v-else label="给网点金额(元)" required>
           <el-input-number v-model="form.fixedAmount" :min="0" :precision="2" :step="1" style="width: 200px" />
-          <div style="font-size:12px; color:#909399; margin-left:8px">供应商结算价 = 订单实付 − 固定金额</div>
+          <div style="font-size:12px; color:#909399; margin-left:8px">供应商结算价 = 每单固定给网点该金额，平台留差价</div>
         </el-form-item>
-        <el-form-item label="起抽金额(元)">
+        <el-form-item label="起分金额(元)">
           <el-input-number v-model="form.minOrderAmount" :min="0" :precision="2" :step="10" style="width: 200px" />
-          <div style="font-size:12px; color:#909399; margin-left:8px">订单实付低于此值时不抽成（全额结算）</div>
+          <div style="font-size:12px; color:#909399; margin-left:8px">订单实付低于此值时规则不适用（全额结算）</div>
         </el-form-item>
         <el-form-item label="启用状态">
           <el-switch v-model="form.statusOn" />
@@ -233,12 +233,12 @@ async function save() {
     ElMessage.warning('请填写规则名称')
     return
   }
-  if (form.type === 'percent' && Number(form.percent) <= 0) {
-    ElMessage.warning('抽成比例须大于 0')
+  if (form.type === 'percent' && (Number(form.percent) < 0 || Number(form.percent) > 100)) {
+    ElMessage.warning('给网点比例须在 0~100 之间')
     return
   }
-  if (form.type === 'fixed' && Number(form.fixedAmount) <= 0) {
-    ElMessage.warning('抽成金额须大于 0')
+  if (form.type === 'fixed' && Number(form.fixedAmount) < 0) {
+    ElMessage.warning('给网点金额不能为负')
     return
   }
   submitting.value = true
@@ -260,7 +260,7 @@ async function save() {
 }
 async function remove(row: any) {
   try {
-    await ElMessageBox.confirm(`确定删除规则「${row.name}」？删除后相关订单将按全额结算（无抽成）。`, '删除结算规则', {
+    await ElMessageBox.confirm(`确定删除规则「${row.name}」？删除后相关订单将按全额结算（平台零差价）。`, '删除结算规则', {
       type: 'warning',
     })
   } catch {

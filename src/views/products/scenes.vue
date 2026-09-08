@@ -69,7 +69,7 @@
             <template #default="{ row }">¥{{ row.price }}</template>
           </el-table-column>
           <el-table-column label="操作" width="80">
-            <template #default="{ row, $index }">
+            <template #default="{ $index }">
               <el-button type="danger" link @click="packageList.splice($index, 1)">移除</el-button>
             </template>
           </el-table-column>

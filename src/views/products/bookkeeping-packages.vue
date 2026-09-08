@@ -180,7 +180,7 @@ const handleSubmit = async () => {
     return
   }
 
-  // 新增时检查纳税人类型+服务周期组合是否已存在
+  // 新增时检查纳税人类型+服务周期组合是否已存在（内存去重 + 服务端唯一约束双保险）
   if (!editId.value) {
     const dup = packages.value.find(p =>
       p.taxpayerType === form.value.taxpayerType && p.cycle === form.value.cycle
@@ -204,8 +204,13 @@ const handleSubmit = async () => {
     }
     dialogVisible.value = false
     await fetchData()
-  } catch {
-    // 接口错误由全局响应拦截器统一提示
+  } catch (e: any) {
+    const msg = e?.response?.data?.message || e?.message || ''
+    // 后端唯一键冲突（Duplicate entry）友好提示
+    if (msg.includes('Duplicate') || msg.includes('已存在')) {
+      ElMessage.error('该类型套餐已存在，请勿重复创建')
+    }
+    // 其余由全局拦截器已提示，此处不再重复
   } finally {
     submitting.value = false
   }

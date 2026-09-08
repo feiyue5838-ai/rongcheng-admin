@@ -145,8 +145,8 @@ async function load() {
     if (filters.fulfillmentStatus) params.fulfillmentStatus = filters.fulfillmentStatus
     if (filters.keyword) params.keyword = filters.keyword
     const res: any = await v2GetOrders(params)
-    list.value = res.list || []
-    total.value = res.total || 0
+    list.value = res?.list ?? res?.data?.list ?? []
+    total.value = res?.pagination?.total ?? res?.total ?? res?.data?.total ?? 0
   } catch (e: any) {
     ElMessage.error(e?.message || '加载失败')
   } finally {
@@ -157,7 +157,7 @@ async function load() {
 async function loadUnassignedCount() {
   try {
     const res: any = await v2GetUnassigned({ pageSize: 1 })
-    unassignedCount.value = res.total || 0
+    unassignedCount.value = res?.pagination?.total ?? res?.total ?? res?.data?.total ?? 0
   } catch { /* 忽略 */ }
 }
 

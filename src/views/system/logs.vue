@@ -43,7 +43,8 @@
         :total="pagination.total"
         :page-sizes="[20, 50, 100]"
         layout="total, sizes, prev, pager, next"
-        @change="fetchLogs"
+        @current-change="fetchLogs"
+        @size-change="handleSizeChange"
       />
     </div>
 
@@ -80,11 +81,12 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { getLogs, getLogModules } from '@/api'
+import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
 const logs = ref<any[]>([])
-const pagination = ref({ page: 1, pageSize: 20, total: 0 })
+const pagination = ref({ total: 0 })
 const query = reactive({ module: '', startDate: '', endDate: '', page: 1, pageSize: 20 })
 const dateRange = ref<string[]>([])
 
@@ -96,8 +98,11 @@ const modulesLoading = ref(false)
 const detailVisible = ref(false)
 const currentLog = ref<any>(null)
 
-function formatDate(d: string) { return dayjs(d).format('YYYY-MM-DD HH:mm') }
-
+function formatDate(d: string) {
+  if (!d) return '-'
+  const v = dayjs(d)
+  return v.isValid() ? v.format('YYYY-MM-DD HH:mm') : String(d)
+}
 // 解析 detail JSON，缓存到 _parsedDetail 避免重复解析
 function parseDetail(detail: string): any {
   if (!detail) return null
@@ -134,27 +139,32 @@ function parseDetailSummary(detail: string, action: string): string {
   return extractSummary(parsed?.result, action)
 }
 
-async function loadModules() {
+async function loadModules(visible?: boolean) {
+  if (visible === false) return
   if (moduleOptions.value.length > 0) return
   modulesLoading.value = true
   try {
     const res = await getLogModules()
-    moduleOptions.value = Array.isArray(res) ? res : []
+    moduleOptions.value = Array.isArray(res) ? res : (Array.isArray((res as any)?.data) ? (res as any).data : [])
+  } catch (e: any) {
+    // 降级：不阻塞表格，静默失败仅提示
+    console.warn('[logs] loadModules failed', e?.message || e)
   } finally {
     modulesLoading.value = false
   }
 }
 
 function openDetail(row: any) {
-  row._parsedDetail = parseDetail(row.detail)
-  currentLog.value = row
+  const parsed = parseDetail(row.detail)
+  // 不直接变异表格行，避免污染列表响应式
+  currentLog.value = { ...row, _parsedDetail: parsed }
   detailVisible.value = true
 }
 
 function formatJson(obj: any): string {
-  if (!obj) return '(空)'
-  // 后端对超长日志按分区返回字符串预览，直接展示以避免二次 JSON 转义。
+  if (obj == null) return '(空)'
   if (typeof obj === 'string') return obj
+  if (typeof obj === 'object' && Object.keys(obj).length === 0) return '(空)'
   return JSON.stringify(obj, null, 2)
 }
 
@@ -163,17 +173,34 @@ async function fetchLogs() {
   query.startDate = dateRange.value?.[0] || ''
   query.endDate = dateRange.value?.[1] || ''
   try {
-    const res: any = await getLogs(query)
-    logs.value = res.list
-    pagination.value = res.pagination
+    const res: any = await getLogs({ ...query })
+    logs.value = Array.isArray(res?.list) ? res.list : []
+    const pg = res?.pagination
+    pagination.value.total = Number(pg?.total ?? 0)
+    // 服务端可能纠正页码/页大小，保持前端一致但不触发二次请求
+    if (pg?.page && pg.page !== query.page) query.page = pg.page
+    if (pg?.pageSize && pg.pageSize !== query.pageSize) query.pageSize = pg.pageSize
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || e?.message || '加载日志失败')
+    logs.value = []
+    pagination.value.total = 0
   } finally {
     loading.value = false
   }
 }
 
+function handleSizeChange(size: number) {
+  query.pageSize = size
+  query.page = 1
+  fetchLogs()
+}
+
 function search() { query.page = 1; fetchLogs() }
 function reset() { query.module = ''; dateRange.value = []; search() }
-onMounted(fetchLogs)
+onMounted(() => {
+  fetchLogs()
+  loadModules(true)
+})
 </script>
 
 <style scoped>

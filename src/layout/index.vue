@@ -72,6 +72,7 @@
           <template #title><el-icon><User /></el-icon><span>用户管理</span></template>
           <el-menu-item v-if="canAccess('/users')" index="/users">用户列表</el-menu-item>
           <el-menu-item v-if="canAccess('/reviews')" index="/reviews">评价管理</el-menu-item>
+          <el-menu-item v-if="canAccess('/complaints')" index="/complaints">投诉管理</el-menu-item>
           <el-menu-item v-if="canAccess('/points')" index="/points">积分兑奖</el-menu-item>
           <el-menu-item v-if="canAccess('/questions')" index="/questions">问答管理</el-menu-item>
         </el-sub-menu>
@@ -182,7 +183,7 @@ const showBookkeepingMgmt = computed(() =>
   canAccess('/products/bookkeeping-packages'),
 )
 const showUserMgmt = computed(() =>
-  canAccess('/users') || canAccess('/reviews') || canAccess('/questions') || canAccess('/points'),
+  canAccess('/users') || canAccess('/reviews') || canAccess('/complaints') || canAccess('/questions') || canAccess('/points'),
 )
 const showContentOps = computed(() =>
   canAccess('/faq') || canAccess('/content'),
