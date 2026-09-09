@@ -28,6 +28,13 @@
             <el-option v-for="(label, key) in fulfillmentStatusMap" :key="key" :label="label" :value="key" />
           </el-select>
         </el-form-item>
+        <el-form-item v-if="filters.module === 'seal'" label="印章类型">
+          <el-select v-model="filters.routeType" clearable placeholder="全部" style="width: 140px" @change="search">
+            <el-option label="企业刻章" value="enterprise" />
+            <el-option label="个人印章" value="personal" />
+            <el-option label="电子印章" value="electronic" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="关键词">
           <el-input v-model="filters.keyword" placeholder="订单号/备注" clearable style="width: 180px" @keyup.enter="search" @clear="search" />
         </el-form-item>
@@ -44,6 +51,11 @@
         <el-table-column label="类型" width="80">
           <template #default="{ row }">
             <el-tag size="small" :type="moduleType(row.module)">{{ moduleLabel(row.module) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="filters.module === 'seal'" label="印章类型" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="routeTypeTag(row.routeType)">{{ routeTypeLabel(row.routeType) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="订单状态" width="110">
@@ -93,6 +105,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { v2GetOrders, v2GetUnassigned } from '@/api'
+import { toPaged } from '@/api/unwrap'
+import { useLatest } from '@/composables/useLatest'
 import { FULFILLMENT_STATUS_TEXT, fulfillmentStatusTag } from '@/utils/fulfillment-status'
 
 const router = useRouter()
@@ -107,6 +121,7 @@ const unassignedCount = ref(0)
 
 const filters = reactive<any>({
   module: '',
+  routeType: '',
   orderStatus: '',
   fulfillmentStatus: '',
   keyword: '',
@@ -127,26 +142,36 @@ const moduleType = (m: string) => ({ seal: 'primary', newspaper: 'success', book
 const statusTag = (s: string) =>
   ({ pending_payment: 'warning', paid: 'success', completed: 'info', cancelled: 'danger', processing: 'primary' } as any)[s] || 'info'
 const fulfillmentTag = (s: string) => fulfillmentStatusTag(s)
+const routeTypeLabel = (t: string) => ({ enterprise: '企业刻章', personal: '个人印章', electronic: '电子印章' } as any)[t] || t || '-'
+const routeTypeTag = (t: string) => ({ enterprise: 'primary', personal: 'success', electronic: 'warning' } as any)[t] || 'info'
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
 const formatDate = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
 
 /** 筛选/查询入口：重置到第 1 页，避免在高页码下改筛选导致空列表 */
 function search() {
+  // 切离刻章时清空印章类型，避免残留过滤条件
+  if (filters.module !== 'seal') filters.routeType = ''
   page.value = 1
   load()
 }
 
+const latest = useLatest()
+
 async function load() {
   loading.value = true
+  const my = latest.next()
   try {
     const params: any = { page: page.value, pageSize: pageSize.value }
     if (filters.module) params.module = filters.module
+    if (filters.module === 'seal' && filters.routeType) params.routeType = filters.routeType
     if (filters.orderStatus) params.orderStatus = filters.orderStatus
     if (filters.fulfillmentStatus) params.fulfillmentStatus = filters.fulfillmentStatus
     if (filters.keyword) params.keyword = filters.keyword
     const res: any = await v2GetOrders(params)
-    list.value = res?.list ?? res?.data?.list ?? []
-    total.value = res?.pagination?.total ?? res?.total ?? res?.data?.total ?? 0
+    if (!latest.isCurrent(my)) return // 旧请求后到，直接丢弃
+    const { list: rows, total: n } = toPaged(res)
+    list.value = rows
+    total.value = n
   } catch (e: any) {
     ElMessage.error(e?.message || '加载失败')
   } finally {
@@ -157,7 +182,7 @@ async function load() {
 async function loadUnassignedCount() {
   try {
     const res: any = await v2GetUnassigned({ pageSize: 1 })
-    unassignedCount.value = res?.pagination?.total ?? res?.total ?? res?.data?.total ?? 0
+    unassignedCount.value = toPaged(res).total
   } catch { /* 忽略 */ }
 }
 

@@ -49,6 +49,9 @@
       <el-card v-if="detail.sealDetails || detail.newspaperDetails || detail.bookkeepingDetails" shadow="hover" style="margin-bottom: 16px">
         <template #header><span>办理内容</span></template>
         <el-descriptions v-if="detail.sealDetails" :column="3" border>
+          <el-descriptions-item label="印章类型">
+            <el-tag size="small" type="primary">{{ sealRouteTypeLabel(detail.sealDetails.routeType) }}</el-tag>
+          </el-descriptions-item>
           <el-descriptions-item label="企业名称">{{ detail.sealDetails.companyName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="法人">{{ detail.sealDetails.legalPerson || '-' }}</el-descriptions-item>
           <el-descriptions-item label="印章数量">{{ detail.sealDetails.sealCount ?? '-' }}</el-descriptions-item>
@@ -226,6 +229,7 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
 import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers } from '@/api'
+import { toArray } from '@/api/unwrap'
 import { FULFILLMENT_STATUS_TEXT, fulfillmentStatusTag } from '@/utils/fulfillment-status'
 
 const route = useRoute()
@@ -254,6 +258,9 @@ const taxpayerTypeLabel = (t: string) =>
   ({ small: '小规模纳税人', general: '一般纳税人', individual: '个体户' } as any)[t] || t || '-'
 const servicePeriodLabel = (s: string) =>
   ({ year: '全年', half: '半年', preorder: '9.9 预定' } as any)[s] || s || '-'
+// 印章三类隔离：enterprise=企业刻章 / personal=个人印章 / electronic=电子印章
+const sealRouteTypeLabel = (t: string) =>
+  ({ enterprise: '企业刻章', personal: '个人印章', electronic: '电子印章' } as any)[t] || t || '-'
 const statusTag = (s: string) => ({ pending_payment: 'warning', paid: 'success', completed: 'info', cancelled: 'danger', processing: 'primary' } as any)[s] || 'info'
 const fulfillmentTag = (s: string) => fulfillmentStatusTag(s)
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
@@ -289,9 +296,8 @@ async function loadSuppliers() {
     // 按订单业务类型过滤：仅返回能承接该业务的供应商（刻章/登报/记账不混交）
     const module = detail.value?.order?.module
     const res: any = await v2GetSuppliers({ pageSize: 100, module: module || undefined })
-    // 仅启用供应商可派单/改派（停用的选了也会被后端拒绝，直接不展示），兼容 list/data.list
-    const raw = res?.list ?? res?.data?.list ?? res?.data ?? []
-    suppliers.value = (Array.isArray(raw) ? raw : []).filter((s: any) => s.status === 1)
+    // 仅启用供应商可派单/改派（停用的选了也会被后端拒绝，直接不展示）
+    suppliers.value = toArray(res).filter((s: any) => s.status === 1)
   } catch { /* 忽略 */ }
 }
 
