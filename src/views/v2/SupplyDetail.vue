@@ -9,10 +9,10 @@
     </div>
 
     <template v-if="detail">
-      <!-- 订单基本信息 -->
+      <!-- ① 状态轨：客服/运营一眼定生死 -->
       <el-card shadow="hover" style="margin-bottom: 16px">
         <template #header>
-          <span>订单基本信息</span>
+          <span>订单状态</span>
           <el-tag :type="moduleType(detail.order?.module)" style="margin-left: 8px">{{ moduleLabel(detail.order?.module) }}</el-tag>
         </template>
         <el-descriptions :column="4" border>
@@ -23,19 +23,67 @@
           <el-descriptions-item label="支付状态">
             <el-tag :type="detail.order.paymentStatus === 'paid' ? 'success' : 'info'">{{ paymentStatusMap[detail.order.paymentStatus] || detail.order.paymentStatus }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="退款状态">{{ refundStatusMap[detail.order.refundStatus] || detail.order.refundStatus || '-' }}</el-descriptions-item>
           <el-descriptions-item label="履约状态">
             <el-tag :type="fulfillmentTag(detail.order.fulfillmentStatus)">{{ fulfillmentStatusMap[detail.order.fulfillmentStatus] || detail.order.fulfillmentStatus }}</el-tag>
           </el-descriptions-item>
+          <el-descriptions-item label="退款状态">{{ refundStatusMap[detail.order.refundStatus] || detail.order.refundStatus || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="用户备注" :span="2">{{ detail.order.customerRemark || '-' }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.order.adminRemark" label="管理员备注">{{ detail.order.adminRemark }}</el-descriptions-item>
+        </el-descriptions>
+        <el-steps :active="trackActive" finish-status="success" style="margin-top: 16px">
+          <el-step title="下单" :description="fmt(detail.order.createdAt)" />
+          <el-step title="支付" :description="fmt(detail.order.paidAt)" />
+          <el-step title="派单" :description="fmt(firstAssignedAt)" />
+          <el-step title="完成" :description="fmt(detail.order.completedAt)" />
+        </el-steps>
+      </el-card>
+
+      <!-- ② 订单金额：财务对账 -->
+      <el-card shadow="hover" style="margin-bottom: 16px">
+        <template #header><span>订单金额</span></template>
+        <el-descriptions :column="4" border>
           <el-descriptions-item label="总金额">¥{{ Number(detail.order.totalAmount || 0).toFixed(2) }}</el-descriptions-item>
           <el-descriptions-item label="实付金额">¥{{ Number(detail.order.payAmount || 0).toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="下单时间">{{ fmt(detail.order.createdAt) }}</el-descriptions-item>
+          <el-descriptions-item label="已付金额">¥{{ Number(detail.order.paidAmount || 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="支付方式">{{ detail.order.payMethod || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="交易流水号" :span="2">{{ detail.order.transactionId || '-' }}</el-descriptions-item>
           <el-descriptions-item label="支付时间">{{ fmt(detail.order.paidAt) }}</el-descriptions-item>
           <el-descriptions-item label="完成时间">{{ fmt(detail.order.completedAt) }}</el-descriptions-item>
-          <el-descriptions-item label="用户备注" :span="2">{{ detail.order.customerRemark || '-' }}</el-descriptions-item>
+        </el-descriptions>
+      </el-card>
+
+      <!-- ③ 企业与执照：企业章独有，执照过期是驳回主因 -->
+      <el-card v-if="detail.sealDetails" shadow="hover" style="margin-bottom: 16px">
+        <template #header><span>企业与执照</span></template>
+        <el-descriptions :column="3" border>
+          <el-descriptions-item label="企业名称">{{ detail.sealDetails.companyName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="法人">{{ detail.sealDetails.legalPerson || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="法人电话">{{ detail.sealDetails.legalPhone || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="执照号">{{ detail.sealDetails.licenseNo || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="执照归属地">{{ detail.sealDetails.licenseRegion || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="执照有效期">{{ fmtDate(detail.sealDetails.licenseExpiryDate) }}</el-descriptions-item>
+        </el-descriptions>
+      </el-card>
+
+      <!-- ④ 印章明细 -->
+      <el-card v-if="detail.sealDetails" shadow="hover" style="margin-bottom: 16px">
+        <template #header><span>印章明细</span></template>
+        <el-descriptions :column="3" border>
+          <el-descriptions-item label="印章类型">
+            <el-tag size="small" type="primary">{{ sealRouteTypeLabel(detail.sealDetails.routeType) }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="套系">{{ detail.sealDetails.sealPackageName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="印章数量">{{ detail.sealDetails.sealCount ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="印章类型明细" :span="2">{{ (detail.sealDetails.sealTypes || []).join('、') || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="是否备案">{{ detail.sealDetails.filingRequired ? '是' : '否' }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.sealDetails.filingRequired" label="备案地">{{ detail.sealDetails.filingRegion || '-' }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.sealDetails.filingRequired" label="备案号">{{ detail.sealDetails.filingNo || '-' }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.sealDetails.filingRequired && detail.sealDetails.filedAt" label="备案时间">{{ fmt(detail.sealDetails.filedAt) }}</el-descriptions-item>
+          <el-descriptions-item label="制作要求" :span="3">{{ detail.sealDetails.productionRequirement || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="交付要求" :span="3">{{ detail.sealDetails.deliveryRequirement || '-' }}</el-descriptions-item>
         </el-descriptions>
 
-        <!-- 收货地址 -->
+        <!-- 收货地址：交付相关，归印章明细 -->
         <el-descriptions v-if="detail.order.addressSnapshot" :column="3" border style="margin-top: 12px" title="收货地址">
           <el-descriptions-item label="收货人">{{ detail.order.addressSnapshot.receiver_name || detail.order.addressSnapshot.name || '-' }}</el-descriptions-item>
           <el-descriptions-item label="电话">{{ detail.order.addressSnapshot.receiver_phone || detail.order.addressSnapshot.phone || '-' }}</el-descriptions-item>
@@ -45,21 +93,9 @@
         </el-descriptions>
       </el-card>
 
-      <!-- 办理内容 -->
-      <el-card v-if="detail.sealDetails || detail.newspaperDetails || detail.bookkeepingDetails" shadow="hover" style="margin-bottom: 16px">
+      <!-- 办理内容（登报/记账：保持原样） -->
+      <el-card v-if="detail.newspaperDetails || detail.bookkeepingDetails" shadow="hover" style="margin-bottom: 16px">
         <template #header><span>办理内容</span></template>
-        <el-descriptions v-if="detail.sealDetails" :column="3" border>
-          <el-descriptions-item label="印章类型">
-            <el-tag size="small" type="primary">{{ sealRouteTypeLabel(detail.sealDetails.routeType) }}</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="企业名称">{{ detail.sealDetails.companyName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="法人">{{ detail.sealDetails.legalPerson || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="法人电话">{{ detail.sealDetails.legalPhone || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="印章数量">{{ detail.sealDetails.sealCount ?? '-' }}</el-descriptions-item>
-          <el-descriptions-item label="印章类型">{{ (detail.sealDetails.sealTypes || []).join('、') || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="套系">{{ detail.sealDetails.sealPackageName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="是否备案">{{ detail.sealDetails.filingRequired ? '是' : '否' }}</el-descriptions-item>
-        </el-descriptions>
         <el-descriptions v-if="detail.newspaperDetails" :column="2" border>
           <el-descriptions-item label="报纸">{{ detail.newspaperDetails.newspaperName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="字数">{{ detail.newspaperDetails.contentCharCount ?? '-' }}</el-descriptions-item>
@@ -79,7 +115,7 @@
 
       <!-- 客户上传资质证件（materials，2026-09-06：V2 详情补回，对齐 V1 管理端可见性） -->
       <el-card v-if="detail.materials && detail.materials.length > 0" shadow="hover" style="margin-bottom: 16px">
-        <template #header><span>上传资质证件（{{ detail.materials.length }}）</span></template>
+        <template #header><span>⑤ 上传资质证件（{{ detail.materials.length }}）</span></template>
         <div class="material-grid">
           <div v-for="mt in detail.materials" :key="mt.id" class="material-item">
             <el-image
@@ -100,7 +136,7 @@
       <!-- 供应链：派单链/履约时间线 -->
       <el-card shadow="hover" style="margin-bottom: 16px">
         <template #header>
-          <span>供应链履约</span>
+          <span>⑥ 供应链履约</span>
           <el-button
             v-if="detail.order.orderStatus === 'paid' && detail.order.paymentStatus === 'paid' && detail.order.fulfillmentStatus === 'pending_assignment'"
             type="primary" size="small" style="margin-left: 8px"
@@ -170,7 +206,7 @@
 
       <!-- 事件时间线 -->
       <el-card shadow="hover" style="margin-bottom: 16px">
-        <template #header><span>订单事件</span></template>
+        <template #header><span>⑦ 订单事件</span></template>
         <el-timeline v-if="detail.events && detail.events.length">
           <el-timeline-item
             v-for="(ev, i) in detail.events"
@@ -226,7 +262,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
 import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers } from '@/api'
@@ -266,6 +302,21 @@ const statusTag = (s: string) => ({ pending_payment: 'warning', paid: 'success',
 const fulfillmentTag = (s: string) => fulfillmentStatusTag(s)
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
 const fmt = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
+// 日期型字段只取年月日
+const fmtDate = (d?: string) => (d ? d.slice(0, 10) : '-')
+// 状态轨进度：完成4 > 已派单3 > 已支付2 > 已下单1
+const firstAssignedAt = computed(() =>
+  detail.value?.fulfillments && detail.value.fulfillments.length > 0
+    ? detail.value.fulfillments[0].assignedAt : null)
+const trackActive = computed(() => {
+  const o = detail.value?.order
+  if (!o) return 0
+  if (o.completedAt) return 4
+  if (firstAssignedAt.value) return 3
+  if (o.paidAt) return 2
+  if (o.createdAt) return 1
+  return 0
+})
 
 /** 履约回执照片分组（仅返回非空组） */
 function receiptPhotoGroups(f: any) {
