@@ -50,20 +50,35 @@
         <el-tab-pane label="刻章配置" name="seal">
           <el-form :model="sealConfig" label-width="160px" style="max-width: 640px">
             <el-form-item label="手持身份证地区">
-              <el-input v-model="sealConfig.handheldIdCitiesText" type="textarea" :rows="3" placeholder="多个地区用逗号、顿号或空格分隔，如：上海, 山东, 新疆, 贵阳" />
-              <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">企业刻章时，这些地区的法人需上传手持身份证拍照。地区名需与小程序 region 字段匹配（region 为“省 市 区”空格连接，填 上海/山东/新疆/贵阳 即可命中）。</div>
+              <RegionMultiPicker v-model="sealConfig.handheldIdCities" />
+              <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">企业刻章时，这些地区的法人需上传手持身份证拍照。省/市/区县可混选，命中任一即要求；存完整官方名（如新疆维吾尔自治区），与小程序同一份区划数据。</div>
             </el-form-item>
             <el-form-item label="白底自拍照地区">
-              <el-input v-model="sealConfig.legalPhotoCitiesText" type="textarea" :rows="3" placeholder="多个地区用逗号、顿号或空格分隔，如：上海, 山东, 新疆, 贵阳" />
-              <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">企业/个体户刻章时，这些地区的法人需上传白底自拍照。地区名需与小程序 region 字段匹配；留空则所有地区都不显示该模块。</div>
+              <RegionMultiPicker v-model="sealConfig.legalPhotoCities" />
+              <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">企业/个体户刻章时，这些地区的法人需上传白底自拍照；留空则所有地区都不显示该模块。</div>
             </el-form-item>
             <el-form-item label="营业执照正本地区">
-              <el-input v-model="sealConfig.licenseOriginalCitiesText" type="textarea" :rows="3" placeholder="多个地区用逗号、顿号或空格分隔，如：上海" />
+              <RegionMultiPicker v-model="sealConfig.licenseOriginalCities" />
               <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">命中地区时，营业执照正本照片必传；可与副本地区同时命中。</div>
             </el-form-item>
             <el-form-item label="营业执照副本地区">
-              <el-input v-model="sealConfig.licenseCopyCitiesText" type="textarea" :rows="3" placeholder="多个地区用逗号、顿号或空格分隔，如：上海" />
+              <RegionMultiPicker v-model="sealConfig.licenseCopyCities" />
               <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">命中地区时，营业执照副本照片必传；上海同时配置两项时正本、副本都必传。</div>
+            </el-form-item>
+            <el-form-item label="电子印章必传材料">
+              <el-checkbox-group v-model="sealConfig.electronicRequired">
+                <el-checkbox label="license">营业执照</el-checkbox>
+                <el-checkbox label="licenseOriginal">营业执照正本</el-checkbox>
+                <el-checkbox label="licenseCopy">营业执照副本</el-checkbox>
+                <el-checkbox label="idCardFront">身份证正面</el-checkbox>
+                <el-checkbox label="idCardBack">身份证反面</el-checkbox>
+                <el-checkbox label="legalPhoto">法人白底自拍照</el-checkbox>
+                <el-checkbox label="handheldIdPhoto">法人手持身份证</el-checkbox>
+                <el-checkbox label="professionalCert">执业证书</el-checkbox>
+                <el-checkbox label="signature">个人签名</el-checkbox>
+                <el-checkbox label="additional">补充材料</el-checkbox>
+              </el-checkbox-group>
+              <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">电子印章独立分支，默认全不勾选=不收任何材料（与后端拒收对齐）。勾选后小程序电子单即要求对应材料；注意后端 V1 仍拒收电子材料，仅 V2 下单路径生效。</div>
             </el-form-item>
             <el-form-item>
               <el-button type="primary" :loading="sealSaving" @click="saveSealConfig">保存</el-button>
@@ -89,6 +104,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import request from '@/api'
 import { ElMessage } from 'element-plus'
+import RegionMultiPicker from '@/components/RegionMultiPicker.vue'
 
 const activeGroup = ref('basic')
 const basicConfig = reactive({ companyName: '', phone: '', serviceTime: '', address: '' })
@@ -109,10 +125,11 @@ const sealSaving = ref(false)
 const serviceDetail = ref('')
 const serviceSaving = ref(false)
 const sealConfig = reactive({
-  handheldIdCities: [] as string[], handheldIdCitiesText: '',
-  legalPhotoCities: [] as string[], legalPhotoCitiesText: '',
-  licenseOriginalCities: [] as string[], licenseOriginalCitiesText: '',
-  licenseCopyCities: [] as string[], licenseCopyCitiesText: '',
+  handheldIdCities: [] as string[],
+  legalPhotoCities: [] as string[],
+  licenseOriginalCities: [] as string[],
+  licenseCopyCities: [] as string[],
+  electronicRequired: [] as string[],
 })
 
 function asStringArray(value: unknown): string[] {
@@ -136,21 +153,15 @@ async function fetchConfigs() {
         res.forEach((item: any) => {
           if (key === 'seal') {
             if (item.key === 'handheldIdCities') {
-              const arr = asStringArray(item.value)
-              sealConfig.handheldIdCities = arr
-              sealConfig.handheldIdCitiesText = arr.join('，')
+              sealConfig.handheldIdCities = asStringArray(item.value)
             } else if (item.key === 'legalPhotoCities') {
-              const arr = asStringArray(item.value)
-              sealConfig.legalPhotoCities = arr
-              sealConfig.legalPhotoCitiesText = arr.join('，')
+              sealConfig.legalPhotoCities = asStringArray(item.value)
             } else if (item.key === 'licenseOriginalCities') {
-              const arr = asStringArray(item.value)
-              sealConfig.licenseOriginalCities = arr
-              sealConfig.licenseOriginalCitiesText = arr.join('，')
+              sealConfig.licenseOriginalCities = asStringArray(item.value)
             } else if (item.key === 'licenseCopyCities') {
-              const arr = asStringArray(item.value)
-              sealConfig.licenseCopyCities = arr
-              sealConfig.licenseCopyCitiesText = arr.join('，')
+              sealConfig.licenseCopyCities = asStringArray(item.value)
+            } else if (item.key === 'electronicRequiredMaterials') {
+              sealConfig.electronicRequired = asStringArray(item.value)
             }
           } else if (Object.prototype.hasOwnProperty.call(cfg, item.key)) {
             if ((key === 'payment' && ['apiV3Key', 'privateKey', 'certificate'].includes(item.key)) || (key === 'wechat' && item.key === 'appSecret')) return
@@ -254,33 +265,18 @@ async function saveBasicConfig() {
 }
 
 async function saveSealConfig() {
-  const parseRegions = (text: string) => [...new Set(text
-    .split(/[，,、\s]+/)
-    .map((s: string) => s.trim())
-    .filter(Boolean))]
   sealSaving.value = true
   try {
-    const handheld = parseRegions(sealConfig.handheldIdCitiesText)
-    const legal = parseRegions(sealConfig.legalPhotoCitiesText)
-    const licenseOriginal = parseRegions(sealConfig.licenseOriginalCitiesText)
-    const licenseCopy = parseRegions(sealConfig.licenseCopyCitiesText)
     await request.put('/config/batch', {
       group: 'seal',
       items: [
-        { key: 'handheldIdCities', value: handheld },
-        { key: 'legalPhotoCities', value: legal },
-        { key: 'licenseOriginalCities', value: licenseOriginal },
-        { key: 'licenseCopyCities', value: licenseCopy },
+        { key: 'handheldIdCities', value: [...sealConfig.handheldIdCities] },
+        { key: 'legalPhotoCities', value: [...sealConfig.legalPhotoCities] },
+        { key: 'licenseOriginalCities', value: [...sealConfig.licenseOriginalCities] },
+        { key: 'licenseCopyCities', value: [...sealConfig.licenseCopyCities] },
+        { key: 'electronicRequiredMaterials', value: [...sealConfig.electronicRequired] },
       ],
     })
-    sealConfig.handheldIdCities = handheld
-    sealConfig.legalPhotoCities = legal
-    sealConfig.licenseOriginalCities = licenseOriginal
-    sealConfig.licenseCopyCities = licenseCopy
-    sealConfig.handheldIdCitiesText = handheld.join('，')
-    sealConfig.legalPhotoCitiesText = legal.join('，')
-    sealConfig.licenseOriginalCitiesText = licenseOriginal.join('，')
-    sealConfig.licenseCopyCitiesText = licenseCopy.join('，')
     ElMessage.success('保存成功')
   } catch (e) {
     ElMessage.error('保存失败')
