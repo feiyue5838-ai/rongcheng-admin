@@ -127,7 +127,6 @@
             />
             <div class="material-meta">
               <el-tag size="small" type="info">{{ mt.typeLabel }}</el-tag>
-              <el-tag v-if="mt.statusText" size="small" :type="mt.status === 1 ? 'success' : mt.status === 2 ? 'danger' : 'warning'">{{ mt.statusText }}</el-tag>
               <a :href="mt.url" :download="materialFileName(mt)" class="material-download">下载</a>
             </div>
           </div>
