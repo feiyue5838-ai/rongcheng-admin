@@ -254,7 +254,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
 import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers } from '@/api'
@@ -424,10 +424,6 @@ watch(
   },
   { immediate: true },
 )
-
-onMounted(async () => {
-  await loadSuppliers()
-})
 </script>
 
 <style scoped>
