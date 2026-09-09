@@ -305,8 +305,6 @@ const materialFileName = (mt: any) => {
 }
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
 const fmt = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
-// 日期型字段只取年月日
-const fmtDate = (d?: string) => (d ? d.slice(0, 10) : '-')
 // 状态轨进度：完成4 > 已派单3 > 已支付2 > 已下单1
 const firstAssignedAt = computed(() =>
   detail.value?.fulfillments && detail.value.fulfillments.length > 0
