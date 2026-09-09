@@ -128,6 +128,7 @@
             <div class="material-meta">
               <el-tag size="small" type="info">{{ mt.typeLabel }}</el-tag>
               <el-tag v-if="mt.statusText" size="small" :type="mt.status === 1 ? 'success' : mt.status === 2 ? 'danger' : 'warning'">{{ mt.statusText }}</el-tag>
+              <a :href="mt.url" :download="materialFileName(mt)" class="material-download">下载</a>
             </div>
           </div>
         </div>
@@ -300,6 +301,12 @@ const sealRouteTypeLabel = (t: string) =>
   ({ enterprise: '企业刻章', personal: '个人印章', electronic: '电子印章' } as any)[t] || t || '-'
 const statusTag = (s: string) => ({ pending_payment: 'warning', paid: 'success', completed: 'info', cancelled: 'danger', processing: 'primary' } as any)[s] || 'info'
 const fulfillmentTag = (s: string) => fulfillmentStatusTag(s)
+// 材料下载文件名：类型_订单号_ID.扩展名（取 URL 后缀，默认 jpg）
+const materialFileName = (mt: any) => {
+  const m = String(mt?.url || '').split('?')[0].match(/\.([a-zA-Z0-9]+)$/)
+  const ext = m ? m[1] : 'jpg'
+  return `${mt?.typeLabel || '证件'}_${detail.value?.order?.orderNo || ''}_${mt?.id || ''}.${ext}`
+}
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
 const fmt = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
 // 日期型字段只取年月日
@@ -446,8 +453,13 @@ onMounted(async () => {
 .material-meta {
   display: flex;
   gap: 4px;
+  align-items: center;
+  margin-top: 4px;
+}
+.material-download {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--el-color-primary);
   margin-top: 6px;
-  justify-content: center;
-  flex-wrap: wrap;
 }
 </style>
