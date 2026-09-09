@@ -117,7 +117,7 @@
       <el-card v-if="detail.materials && detail.materials.length > 0" shadow="hover" style="margin-bottom: 16px">
         <template #header><span>⑤ 上传资质证件（{{ detail.materials.length }}）</span></template>
         <div class="material-grid">
-          <div v-for="mt in detail.materials" :key="mt.id" class="material-item">
+          <div v-for="mt in sortedMaterials" :key="mt.id" class="material-item">
             <el-image
               :src="mt.url"
               :preview-src-list="[mt.url]"
@@ -324,6 +324,24 @@ const trackActive = computed(() => {
   return 0
 })
 
+/** ⑤区证件排序：法人身份证正/反 → 执照正本 → 执照副本 → 法人白底照 → 手持身份证 → 补充材料（未知类型沉底，同序按上传时间） */
+const MATERIAL_ORDER: Record<string, number> = {
+  id_card_front: 1, id_card_back: 2,
+  license: 3, license_original: 4, license_copy: 5,
+  photo: 6, legal_photo: 6,
+  handheld_id_photo: 7, handheld_id: 7,
+  professional_cert: 8, signature: 8, newspaper_proof: 8,
+  additional: 99,
+}
+const sortedMaterials = computed(() => {
+  const list = detail.value?.materials || []
+  return [...list].sort((a: any, b: any) => {
+    const oa = MATERIAL_ORDER[a?.type] ?? 50
+    const ob = MATERIAL_ORDER[b?.type] ?? 50
+    if (oa !== ob) return oa - ob
+    return String(a?.createdAt || '').localeCompare(String(b?.createdAt || ''))
+  })
+})
 /** 履约回执照片分组（仅返回非空组） */
 function receiptPhotoGroups(f: any) {
   const groups = [
