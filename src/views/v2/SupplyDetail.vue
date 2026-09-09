@@ -69,13 +69,8 @@
           <el-descriptions-item label="印章类型">
             <el-tag size="small" type="primary">{{ sealRouteTypeLabel(detail.sealDetails.routeType) }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="套系">{{ detail.sealDetails.sealPackageName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="印章数量">{{ detail.sealDetails.sealCount ?? '-' }}</el-descriptions-item>
           <el-descriptions-item label="印章类型明细" :span="2">{{ (detail.sealDetails.sealTypes || []).join('、') || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="是否备案">{{ detail.sealDetails.filingRequired ? '是' : '否' }}</el-descriptions-item>
-          <el-descriptions-item v-if="detail.sealDetails.filingRequired" label="备案地">{{ detail.sealDetails.filingRegion || '-' }}</el-descriptions-item>
-          <el-descriptions-item v-if="detail.sealDetails.filingRequired" label="备案号">{{ detail.sealDetails.filingNo || '-' }}</el-descriptions-item>
-          <el-descriptions-item v-if="detail.sealDetails.filingRequired && detail.sealDetails.filedAt" label="备案时间">{{ fmt(detail.sealDetails.filedAt) }}</el-descriptions-item>
           <el-descriptions-item label="制作要求" :span="3">{{ detail.sealDetails.productionRequirement || '-' }}</el-descriptions-item>
           <el-descriptions-item label="交付要求" :span="3">{{ detail.sealDetails.deliveryRequirement || '-' }}</el-descriptions-item>
         </el-descriptions>

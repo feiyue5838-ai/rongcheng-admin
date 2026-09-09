@@ -58,3 +58,13 @@ export function isPagedItems<T>(res: any): res is PagedItems<T> {
 export function isPagedRows<T>(res: any): res is PagedRows<T> {
   return !!res && typeof res === 'object' && Array.isArray(res.rows) && typeof res.total === 'number'
 }
+
+/** 上传回执取 url：兼容 {url} / {data:{url}}（fetch 直调与 el-upload 回调两种形态） */
+export function unwrapUploadUrl(res: any): string {
+  if (!res || typeof res !== 'object') return ''
+  if (typeof (res as any).url === 'string') return (res as any).url
+  const d = (res as any).data
+  if (d && typeof d === 'object' && typeof d.url === 'string') return d.url
+  if (typeof d === 'string') return d
+  return ''
+}
