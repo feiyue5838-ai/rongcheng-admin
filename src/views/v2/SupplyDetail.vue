@@ -54,6 +54,7 @@
           </el-descriptions-item>
           <el-descriptions-item label="企业名称">{{ detail.sealDetails.companyName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="法人">{{ detail.sealDetails.legalPerson || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="法人电话">{{ detail.sealDetails.legalPhone || '-' }}</el-descriptions-item>
           <el-descriptions-item label="印章数量">{{ detail.sealDetails.sealCount ?? '-' }}</el-descriptions-item>
           <el-descriptions-item label="印章类型">{{ (detail.sealDetails.sealTypes || []).join('、') || '-' }}</el-descriptions-item>
           <el-descriptions-item label="套系">{{ detail.sealDetails.sealPackageName || '-' }}</el-descriptions-item>
