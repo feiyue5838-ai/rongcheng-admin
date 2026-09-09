@@ -79,6 +79,7 @@
         <el-descriptions v-if="detail.order.addressSnapshot" :column="3" border style="margin-top: 12px" title="收货地址">
           <el-descriptions-item label="收货人">{{ detail.order.addressSnapshot.receiver_name || detail.order.addressSnapshot.name || '-' }}</el-descriptions-item>
           <el-descriptions-item label="电话">{{ detail.order.addressSnapshot.receiver_phone || detail.order.addressSnapshot.phone || '-' }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.order.addressSnapshot.contactPhone" label="联系号码">{{ detail.order.addressSnapshot.contactPhone }}</el-descriptions-item>
           <el-descriptions-item label="地址">
             {{ [detail.order.addressSnapshot.province, detail.order.addressSnapshot.city, detail.order.addressSnapshot.district, detail.order.addressSnapshot.address || detail.order.addressSnapshot.detail].filter(Boolean).join(' ') }}
           </el-descriptions-item>
