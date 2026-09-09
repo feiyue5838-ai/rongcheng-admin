@@ -57,11 +57,8 @@
         <template #header><span>企业与执照</span></template>
         <el-descriptions :column="3" border>
           <el-descriptions-item label="企业名称">{{ detail.sealDetails.companyName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="法人">{{ detail.sealDetails.legalPerson || '-' }}</el-descriptions-item>
           <el-descriptions-item label="法人电话">{{ detail.sealDetails.legalPhone || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="执照号">{{ detail.sealDetails.licenseNo || '-' }}</el-descriptions-item>
           <el-descriptions-item label="执照归属地">{{ detail.sealDetails.licenseRegion || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="执照有效期">{{ fmtDate(detail.sealDetails.licenseExpiryDate) }}</el-descriptions-item>
         </el-descriptions>
       </el-card>
 
