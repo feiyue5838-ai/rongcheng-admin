@@ -374,6 +374,10 @@ export const v2AssignOrder = (orderNo: string, data: { supplierId: string; remar
 export const v2ReassignOrder = (orderNo: string, data: { supplierId: string; cancelRemark?: string }) =>
   v2Request.post(`/v2/admin/orders/${encodeURIComponent(orderNo)}/reassign`, data)
 
+// 人工确认收货 POST /api/v2/admin/orders/:orderNo/confirm-receipt
+export const v2ConfirmReceipt = (orderNo: string) =>
+  v2Request.post(`/v2/admin/orders/${encodeURIComponent(orderNo)}/confirm-receipt`, {})
+
 // ---------- 管理端 V2.0 结算 ----------
 // 结算单列表 GET /api/v2/admin/settlements
 export const v2GetSettlements = (params: any) => v2Request.get('/v2/admin/settlements', { params })

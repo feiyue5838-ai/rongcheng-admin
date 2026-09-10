@@ -144,6 +144,13 @@
           >
             改派
           </el-button>
+          <el-button
+            v-if="detail.order.fulfillmentStatus === 'delivering'"
+            type="success" size="small" style="margin-left: 8px"
+            @click="onConfirmReceipt"
+          >
+            确认收货
+          </el-button>
         </template>
 
         <el-empty v-if="!detail.fulfillments || detail.fulfillments.length === 0" description="暂无履约记录" />
@@ -256,9 +263,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRoute } from 'vue-router'
-import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers } from '@/api'
+import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers, v2ConfirmReceipt } from '@/api'
 import { toArray } from '@/api/unwrap'
 import { FULFILLMENT_STATUS_TEXT, fulfillmentStatusTag } from '@/utils/fulfillment-status'
 
@@ -393,6 +400,22 @@ async function doReassign() {
     load()
   } catch (e: any) {
     ElMessage.error(e?.message || '改派失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function onConfirmReceipt() {
+  try {
+    await ElMessageBox.confirm('确认该订单已收货？确认后订单进入已完成并可结算。', '人工确认收货', { type: 'warning' })
+  } catch { return }
+  submitting.value = true
+  try {
+    await v2ConfirmReceipt(orderNo.value)
+    ElMessage.success('已确认收货')
+    load()
+  } catch (e: any) {
+    ElMessage.error(e?.message || '确认失败')
   } finally {
     submitting.value = false
   }
