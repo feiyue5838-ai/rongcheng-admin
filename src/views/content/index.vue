@@ -101,6 +101,13 @@
                 </el-tag>
               </template>
             </el-table-column>
+            <el-table-column label="展示渠道" width="130">
+              <template #default="{ row }">
+                <el-tag size="small" :type="row.audience === 'outlet' ? 'warning' : row.audience === 'user' ? '' : 'success'">
+                  {{ ({ all: '全部', outlet: '仅网点', user: '仅用户' } as any)[row.audience] || '全部' }}
+                </el-tag>
+              </template>
+            </el-table-column>
             <el-table-column prop="publishedAt" label="发布时间" width="170">
               <template #default="{ row }">{{ formatDate(row.publishedAt) }}</template>
             </el-table-column>
@@ -134,6 +141,13 @@
             </el-form-item>
             <el-form-item label="下线时间">
               <el-date-picker v-model="annForm.expiredAt" type="datetime" placeholder="选择下线时间（选填）" style="width:100%" value-format="YYYY-MM-DDTHH:mm:ss" />
+            </el-form-item>
+            <el-form-item label="展示渠道">
+              <el-select v-model="annForm.audience" placeholder="选择展示渠道" style="width:100%">
+                <el-option label="全部（网点+用户）" value="all" />
+                <el-option label="仅网点端" value="outlet" />
+                <el-option label="仅用户端" value="user" />
+              </el-select>
             </el-form-item>
             <el-form-item label="状态">
               <el-switch v-model="annForm.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="禁用" />
@@ -593,7 +607,8 @@ const annForm = reactive<{
   publishedAt: string | null
   expiredAt: string | null
   status: number
-}>({ id: null, title: '', content: '', publishedAt: null, expiredAt: null, status: 1 })
+  audience: string
+}>({ id: null, title: '', content: '', publishedAt: null, expiredAt: null, status: 1, audience: 'all' })
 
 async function loadAnnouncements() {
   annLoading.value = true
@@ -626,9 +641,9 @@ function openAnnDialog(row?: ContentRow) {
   if (row) Object.assign(annForm, {
     id: row.id, title: row.title || '', content: row.content || '',
     publishedAt: normalizeDateTime(row.publishedAt), expiredAt: normalizeDateTime(row.expiredAt),
-    status: row.status ?? 1
+    status: row.status ?? 1, audience: row.audience || 'all'
   })
-  else Object.assign(annForm, { id: null, title: '', content: '', publishedAt: null, expiredAt: null, status: 1 })
+  else Object.assign(annForm, { id: null, title: '', content: '', publishedAt: null, expiredAt: null, status: 1, audience: 'all' })
   annVisible.value = true
 }
 async function saveAnnouncement() {
