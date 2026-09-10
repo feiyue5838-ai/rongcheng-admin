@@ -152,6 +152,16 @@ const moduleText = (m?: string) =>
 const moduleTag = (m?: string) =>
   m === 'seal' ? 'danger' : m === 'newspaper' ? 'primary' : m === 'bookkeeping' ? 'warning' : 'info'
 const fmtDate = (d?: string) => (d ? d.slice(0, 10) : '不限')
+// 后端时间为「本地时间 + Z 后缀」格式：去 Z 按本地解析/按本地回传，避免 new Date/toISOString 造成 ±8h 漂移
+const parseLocal = (s?: string) => {
+  if (!s) return null
+  const d = new Date(s.endsWith('Z') ? s.slice(0, -1) : s)
+  return isNaN(d.getTime()) ? null : d
+}
+const formatLocal = (d: Date) => {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+}
 
 function resetForm() {
   form.id = ''
@@ -206,7 +216,7 @@ function openEdit(row: any) {
     isDefault: !!row.isDefault,
     remark: row.remark || '',
     validRange:
-      row.validFrom && row.validTo ? [new Date(row.validFrom), new Date(row.validTo)] : null,
+      row.validFrom && row.validTo ? [parseLocal(row.validFrom), parseLocal(row.validTo)] : null,
   })
   dialogVisible.value = true
 }
@@ -223,8 +233,8 @@ function toPayload() {
   }
   if (form.module) p.module = form.module
   if (form.validRange && form.validRange.length === 2) {
-    p.validFrom = form.validRange[0].toISOString()
-    p.validTo = form.validRange[1].toISOString()
+    p.validFrom = formatLocal(form.validRange[0])
+    p.validTo = formatLocal(form.validRange[1])
   }
   return p
 }
