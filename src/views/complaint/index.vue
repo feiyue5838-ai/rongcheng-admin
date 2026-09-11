@@ -16,10 +16,13 @@
         <el-form-item>
           <el-button type="primary" @click="search">搜索</el-button>
           <el-button @click="reset">重置</el-button>
+          <el-button type="success" :disabled="selected.length === 0" @click="handleBatch('resolved')">批量已处理 ({{ selected.length }})</el-button>
+          <el-button type="info" :disabled="selected.length === 0" @click="handleBatch('closed')">批量关闭 ({{ selected.length }})</el-button>
         </el-form-item>
       </el-form>
 
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe @selection-change="selected = $event">
+        <el-table-column type="selection" width="45" />
         <el-table-column prop="id" label="ID" width="200" show-overflow-tooltip />
         <el-table-column prop="type" label="类型" width="110" />
         <el-table-column prop="orderNo" label="订单号" width="180" show-overflow-tooltip />
@@ -73,7 +76,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
-import { getComplaints, updateComplaintStatus } from '@/api'
+import { getComplaints, updateComplaintStatus, batchComplaintStatus } from '@/api'
 
 const loading = ref(false)
 const list = ref<any[]>([])
@@ -86,6 +89,20 @@ const detailVisible = ref(false)
 const detailRow = ref<any>(null)
 const replyText = ref('')
 const replying = ref(false)
+const selected = ref<any[]>([])
+async function handleBatch(status: string) {
+  const ids = selected.value.map(r => r.id).filter(Boolean)
+  if (ids.length === 0) return
+  try {
+    await ElMessageBox.confirm(`确认批量${status === 'resolved' ? '标记已处理' : '关闭'} ${ids.length} 条投诉？`, '提示', { type: status === 'resolved' ? 'success' : 'warning' })
+    const res: any = await batchComplaintStatus(ids, status)
+    const ok = res?.successCount ?? 0
+    const fail = res?.failedCount ?? 0
+    ElMessage[fail > 0 ? 'warning' : 'success'](fail > 0 ? `成功 ${ok} 条，失败 ${fail} 条` : `批量处理成功 ${ok} 条`)
+    selected.value = []
+    fetchData()
+  } catch (e: any) { if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.message || '操作失败') }
+}
 function handleView(row: any) { detailRow.value = row; replyText.value = row.reply || ''; detailVisible.value = true }
 
 async function handleReply() {

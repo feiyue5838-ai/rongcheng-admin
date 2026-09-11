@@ -2,7 +2,12 @@
   <div>
     <div class="page-header">
       <h2>待派单池 ({{ total }})</h2>
-      <el-button @click="load">刷新</el-button>
+      <div>
+        <el-button type="warning" :disabled="selected.length === 0" @click="batchDialogVisible = true">
+          批量派单 ({{ selected.length }})
+        </el-button>
+        <el-button @click="load">刷新</el-button>
+      </div>
     </div>
 
     <el-card shadow="never">
@@ -21,7 +26,8 @@
           <el-button type="primary" @click="search">查询</el-button>
         </el-form-item>
       </el-form>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe @selection-change="selected = $event">
+        <el-table-column type="selection" width="45" />
         <el-table-column prop="orderNo" label="订单号" width="200" show-overflow-tooltip />
         <el-table-column label="类型" width="80">
           <template #default="{ row }">
@@ -65,6 +71,18 @@
         @change="load"
       />
     </el-card>
+
+    <!-- 批量派单弹窗 -->
+    <el-dialog v-model="batchDialogVisible" title="批量派单" width="480px">
+      <p style="margin-bottom: 12px">已选 {{ selected.length }} 单，将统一派给：</p>
+      <el-select v-model="batchSupplierId" filterable placeholder="选择供应商" style="width: 100%">
+        <el-option v-for="s in suppliers" :key="s.id" :label="s.name || s.id" :value="s.id" />
+      </el-select>
+      <template #footer>
+        <el-button @click="batchDialogVisible = false">取消</el-button>
+        <el-button type="warning" :loading="batchSubmitting" @click="doBatchAssign">确认派单</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -72,7 +90,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { v2GetUnassigned } from '@/api'
+import { v2GetUnassigned, v2AssignBatch, v2GetSuppliers } from '@/api'
 
 const moduleLabel = (m: any) => ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' } as any)[m] || m
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
@@ -111,7 +129,42 @@ function search() {
 function openAssign(row: any) {
   router.push({ path: '/v2/orders/detail', query: { orderNo: row.orderNo, assign: '1' } })
 }
-onMounted(load)
+
+/* 批量派单：勾选多单 → 同一供应商一次派完，后端逐单独立事务 */
+const selected = ref<any[]>([])
+const batchDialogVisible = ref(false)
+const batchSupplierId = ref('')
+const batchSubmitting = ref(false)
+const suppliers = ref<any[]>([])
+async function loadSuppliers() {
+  try {
+    const res: any = await v2GetSuppliers({})
+    suppliers.value = Array.isArray(res) ? res : res?.list ?? []
+  } catch { suppliers.value = [] }
+}
+async function doBatchAssign() {
+  if (!batchSupplierId.value) { ElMessage.warning('请先选择供应商'); return }
+  batchSubmitting.value = true
+  try {
+    const res: any = await v2AssignBatch(selected.value.map(r => ({ orderNo: r.orderNo, supplierId: batchSupplierId.value })))
+    const ok = res?.successCount ?? 0
+    const fail = res?.failedCount ?? 0
+    if (fail > 0) {
+      const reasons = (res?.failed ?? []).slice(0, 3).map((f: any) => `${f.orderNo}：${f.reason}`).join('；')
+      ElMessage.warning(`成功 ${ok} 单，失败 ${fail} 单：${reasons}`)
+    } else {
+      ElMessage.success(`批量派单成功 ${ok} 单`)
+    }
+    batchDialogVisible.value = false
+    selected.value = []
+    load()
+  } catch (e: any) {
+    ElMessage.error(e?.message || '操作失败')
+  } finally {
+    batchSubmitting.value = false
+  }
+}
+onMounted(() => { load(); loadSuppliers() })
 </script>
 
 <style scoped>

@@ -120,8 +120,16 @@
             />
             <div class="material-meta">
               <el-tag size="small" type="info">{{ mt.typeLabel }}</el-tag>
+              <el-tag v-if="mt.status === 1" size="small" type="success">已通过</el-tag>
+              <el-tag v-else-if="mt.status === 2" size="small" type="danger">已驳回</el-tag>
+              <el-tag v-else size="small" type="warning">待审核</el-tag>
               <a :href="mt.url" :download="materialFileName(mt)" class="material-download">下载</a>
             </div>
+            <div v-if="mt.status !== 1 && mt.status !== 2" class="material-audit">
+              <el-button type="success" link size="small" :loading="auditing" @click="doAuditMaterial(mt, 1)">通过</el-button>
+              <el-button type="danger" link size="small" :loading="auditing" @click="doAuditMaterial(mt, 2)">驳回</el-button>
+            </div>
+            <div v-else-if="mt.remark" class="material-remark" :title="mt.remark">驳回原因：{{ mt.remark }}</div>
           </div>
         </div>
       </el-card>
@@ -265,7 +273,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRoute } from 'vue-router'
-import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers, v2ConfirmReceipt } from '@/api'
+import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers, v2ConfirmReceipt, v2AuditMaterial } from '@/api'
 import { toArray } from '@/api/unwrap'
 import { FULFILLMENT_STATUS_TEXT, fulfillmentStatusTag } from '@/utils/fulfillment-status'
 
@@ -273,6 +281,31 @@ const route = useRoute()
 const orderNo = ref('')
 const loading = ref(false)
 const submitting = ref(false)
+const auditing = ref(false)
+
+/** 材料审核：通过直接过，驳回必须填原因（后端强制） */
+async function doAuditMaterial(mt: any, status: 1 | 2) {
+  try {
+    let remark: string | undefined
+    if (status === 2) {
+      const { value } = await ElMessageBox.prompt('请填写驳回原因（必填，将同步给用户）', '驳回材料', {
+        inputPlaceholder: '如：营业执照模糊，请重新上传',
+      })
+      remark = String(value || '').trim()
+      if (!remark) { ElMessage.warning('驳回必须填写原因'); return }
+    } else {
+      await ElMessageBox.confirm(`确认通过该材料（${mt.typeLabel || ''}）？`, '提示', { type: 'success' })
+    }
+    auditing.value = true
+    await v2AuditMaterial(mt.id, remark ? { status, remark } : { status })
+    ElMessage.success(status === 1 ? '已通过' : '已驳回')
+    await load()
+  } catch (e: any) {
+    if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.message || '操作失败')
+  } finally {
+    auditing.value = false
+  }
+}
 const detail = ref<any>(null)
 const suppliers = ref<any[]>([])
 const assignDialogVisible = ref(false)

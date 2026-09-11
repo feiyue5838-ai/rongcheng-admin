@@ -149,6 +149,8 @@ export const updateReviewStatus = (id: string, status: 'pending' | 'approved' | 
 export const getComplaints = (params?: any) => request.get('/complaints/admin/list', { params })
 export const updateComplaintStatus = (id: string, status: string, reply?: string) =>
   request.put(`/complaints/${id}/status`, reply ? { status, reply } : { status })
+export const batchComplaintStatus = (ids: string[], status: string, reply?: string) =>
+  request.post('/complaints/admin/batch-status', { ids, status, reply })
 
 // ==================== 问答接口 ====================
 export const getQuestions = (params?: any) => request.get('/questions/admin/list', { params })
@@ -370,6 +372,18 @@ export const v2GetUnassigned = (params: any) => v2Request.get('/v2/admin/orders/
 // 派单 POST /api/v2/admin/orders/:orderNo/assign
 export const v2AssignOrder = (orderNo: string, data: { supplierId: string; remark?: string }) =>
   v2Request.post(`/v2/admin/orders/${encodeURIComponent(orderNo)}/assign`, data)
+
+// 批量派单 POST /api/v2/admin/orders/assign-batch
+export const v2AssignBatch = (items: Array<{ orderNo: string; supplierId: string }>) =>
+  v2Request.post('/v2/admin/orders/assign-batch', { items })
+
+// 材料单条审核 POST /api/v2/admin/materials/:id/audit
+export const v2AuditMaterial = (id: string, data: { status: 1 | 2; remark?: string }) =>
+  v2Request.post(`/v2/admin/materials/${encodeURIComponent(id)}/audit`, data)
+
+// 材料批量审核 POST /api/v2/admin/materials/audit-batch
+export const v2AuditMaterialBatch = (items: Array<{ materialId: string; status: 1 | 2; remark?: string }>) =>
+  v2Request.post('/v2/admin/materials/audit-batch', { items })
 
 // 改派 POST /api/v2/admin/orders/:orderNo/reassign
 export const v2ReassignOrder = (orderNo: string, data: { supplierId: string; cancelRemark?: string }) =>
