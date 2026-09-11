@@ -52,14 +52,15 @@
         </el-descriptions>
       </el-card>
 
-      <!-- ③ 企业与执照：企业章独有，执照过期是驳回主因 -->
-      <el-card v-if="detail.sealDetails" shadow="hover" style="margin-bottom: 16px">
-        <template #header><span>企业与执照</span></template>
+      <!-- ③ 主体卡：按 routeType 切卡（阶段 5），空卡不渲染 -->
+      <el-card v-if="subjectCard.visible" shadow="hover" style="margin-bottom: 16px">
+        <template #header><span>{{ subjectCard.title }}</span></template>
         <el-descriptions :column="3" border>
-          <el-descriptions-item label="企业名称">{{ detail.sealDetails.companyName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="法人电话">{{ detail.sealDetails.legalPhone || '-' }}</el-descriptions-item>
-          <el-descriptions-item v-if="detail.order.addressSnapshot?.contactPhone" label="联系号码">{{ detail.order.addressSnapshot.contactPhone }}</el-descriptions-item>
-          <el-descriptions-item label="执照归属地">{{ detail.sealDetails.licenseRegion || '-' }}</el-descriptions-item>
+          <el-descriptions-item
+            v-for="row in subjectCard.rows"
+            :key="row.label"
+            :label="row.label"
+          >{{ row.value }}</el-descriptions-item>
         </el-descriptions>
       </el-card>
 
@@ -331,6 +332,46 @@ const servicePeriodLabel = (s: string) =>
 // 印章三类隔离：enterprise=企业刻章 / personal=个人印章 / electronic=电子印章
 const sealRouteTypeLabel = (t: string) =>
   ({ enterprise: '企业刻章', personal: '个人印章', electronic: '电子印章' } as any)[t] || t || '-'
+/** ③ 主体卡：按 routeType 切卡（阶段 5）——企业看执照、个人看持章人、电子看签发；全空不渲染 */
+const subjectCard = computed(() => {
+  const sd: any = detail.value?.sealDetails
+  if (!sd) return { visible: false, title: '', rows: [] as any[] }
+  const route = sd.routeType || 'enterprise'
+  const contactPhone = (detail.value?.order as any)?.addressSnapshot?.contactPhone || ''
+  const row = (label: string, value: any) => ({ label, value: value || '-' })
+  const has = (v: any) => v !== undefined && v !== null && String(v).trim() !== ''
+  if (route === 'personal') {
+    const rows = [
+      row('持章人', sd.legalPerson),
+      row('联系电话', sd.legalPhone),
+      ...(has(contactPhone) ? [row('下单联系号码', contactPhone)] : []),
+    ]
+    const visible = has(sd.legalPerson) || has(sd.legalPhone) || has(contactPhone)
+    return { visible, title: '持章人（个人印章）', rows }
+  }
+  if (route === 'electronic') {
+    const rows = [
+      row('企业名称', sd.companyName),
+      row('申请人', sd.legalPerson),
+      row('联系电话', sd.legalPhone),
+      ...(has(sd.licenseExpiryDate) ? [row('证书有效期至', fmt(sd.licenseExpiryDate))] : []),
+      ...(has(contactPhone) ? [row('下单联系号码', contactPhone)] : []),
+    ]
+    const visible = has(sd.companyName) || has(sd.legalPerson) || has(sd.legalPhone)
+    return { visible, title: '签发信息（电子印章）', rows }
+  }
+  const rows = [
+    row('企业名称', sd.companyName),
+    row('法人', sd.legalPerson),
+    row('法人电话', sd.legalPhone),
+    ...(has(contactPhone) ? [row('下单联系号码', contactPhone)] : []),
+    row('执照归属地', sd.licenseRegion),
+    ...(has(sd.licenseNo) ? [row('统一信用代码', sd.licenseNo)] : []),
+    ...(has(sd.licenseExpiryDate) ? [row('执照有效期至', fmt(sd.licenseExpiryDate))] : []),
+  ]
+  const visible = has(sd.companyName) || has(sd.legalPerson) || has(sd.licenseRegion)
+  return { visible, title: '企业与执照', rows }
+})
 const statusTag = (s: string) => ({ pending_payment: 'warning', paid: 'success', completed: 'info', cancelled: 'danger', processing: 'primary' } as any)[s] || 'info'
 const fulfillmentTag = (s: string) => fulfillmentStatusTag(s)
 // 材料下载文件名：类型_订单号_ID.扩展名（取 URL 后缀，默认 jpg）
