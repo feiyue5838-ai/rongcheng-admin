@@ -147,7 +147,8 @@ export const updateReviewStatus = (id: string, status: 'pending' | 'approved' | 
 
 // ==================== 投诉接口 ====================
 export const getComplaints = (params?: any) => request.get('/complaints/admin/list', { params })
-export const updateComplaintStatus = (id: string, status: string) => request.put(`/complaints/${id}/status`, { status })
+export const updateComplaintStatus = (id: string, status: string, reply?: string) =>
+  request.put(`/complaints/${id}/status`, reply ? { status, reply } : { status })
 
 // ==================== 问答接口 ====================
 export const getQuestions = (params?: any) => request.get('/questions/admin/list', { params })

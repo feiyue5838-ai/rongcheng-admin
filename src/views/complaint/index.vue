@@ -55,7 +55,16 @@
         <el-descriptions-item label="用户ID">{{ detailRow.userId || '-' }}</el-descriptions-item>
         <el-descriptions-item label="提交时间" :span="2">{{ formatDate(detailRow.createdAt) }}</el-descriptions-item>
         <el-descriptions-item label="描述" :span="2"><span style="white-space: pre-wrap; word-break: break-all">{{ detailRow.description }}</span></el-descriptions-item>
+        <el-descriptions-item v-if="detailRow.reply" label="回复内容" :span="2"><span style="white-space: pre-wrap; word-break: break-all">{{ detailRow.reply }}</span></el-descriptions-item>
+        <el-descriptions-item v-if="detailRow.replyAt" label="回复时间">{{ formatDate(detailRow.replyAt) }}</el-descriptions-item>
       </el-descriptions>
+      <div v-if="detailRow && detailRow.status === 'pending'" style="margin-top: 12px">
+        <el-input v-model="replyText" type="textarea" :rows="3" placeholder="填写回复内容（将同步给用户）" />
+        <div style="margin-top: 8px; text-align: right">
+          <el-button @click="detailVisible = false">取消</el-button>
+          <el-button type="primary" :loading="replying" @click="handleReply">回复并标记已处理</el-button>
+        </div>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -75,7 +84,21 @@ function formatDate(d?: string | null) { return d ? dayjs(d).format('YYYY-MM-DD 
 
 const detailVisible = ref(false)
 const detailRow = ref<any>(null)
-function handleView(row: any) { detailRow.value = row; detailVisible.value = true }
+const replyText = ref('')
+const replying = ref(false)
+function handleView(row: any) { detailRow.value = row; replyText.value = row.reply || ''; detailVisible.value = true }
+
+async function handleReply() {
+  if (!detailRow.value) return
+  if (!replyText.value.trim()) { ElMessage.warning('请先填写回复内容'); return }
+  replying.value = true
+  try {
+    await updateComplaintStatus(detailRow.value.id, 'resolved', replyText.value.trim())
+    ElMessage.success('已回复并标记为已处理')
+    detailVisible.value = false
+    fetchData()
+  } catch (e: any) { ElMessage.error(e?.message || '操作失败') } finally { replying.value = false }
+}
 
 async function fetchData() {
   loading.value = true
