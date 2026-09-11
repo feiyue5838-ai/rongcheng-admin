@@ -26,7 +26,10 @@
           <div class="hero-grid">
             <div class="hero-text">
               <div class="hero-label">总营收（元）</div>
-              <div class="hero-value">
+              <div class="hero-value" v-if="revenueMasked">
+                <span style="font-size: 15px; color: #ff7875;">无权限查看</span>
+              </div>
+              <div class="hero-value" v-else>
                 <span class="currency">¥</span>{{ formatMoney(stats.totalRevenue.value) }}
               </div>
               <el-tooltip content="今日订单数 / 总订单数" placement="top">
@@ -37,23 +40,23 @@
               <div class="revenue-breakdown">
                 <div class="rb-item">
                   <div class="rb-label">刻章收入</div>
-                  <div class="rb-value">¥{{ formatMoney(revenueBreakdown.sealRevenue) }}</div>
+                  <div class="rb-value">{{ revenueMasked ? '无权限' : '¥' + formatMoney(revenueBreakdown.sealRevenue) }}</div>
                 </div>
                 <div class="rb-sep"></div>
                 <div class="rb-item">
                   <div class="rb-label">登报收入</div>
-                  <div class="rb-value">¥{{ formatMoney(revenueBreakdown.newspaperRevenue) }}</div>
+                  <div class="rb-value">{{ revenueMasked ? '无权限' : '¥' + formatMoney(revenueBreakdown.newspaperRevenue) }}</div>
                 </div>
                 <div class="rb-sep"></div>
                 <div class="rb-item">
                   <div class="rb-label">代理记账</div>
-                  <div class="rb-value">¥{{ formatMoney(revenueBreakdown.bookkeepingRevenue) }}</div>
+                  <div class="rb-value">{{ revenueMasked ? '无权限' : '¥' + formatMoney(revenueBreakdown.bookkeepingRevenue) }}</div>
                 </div>
               </div>
             </div>
             <div class="hero-chart">
               <div class="hero-chart-head">
-                <span>近 7 天营收</span>
+                <span>近 7 天营收<em v-if="amountMasked && chartType === 'amount'" style="font-style: normal; font-size: 11px; color: #ff7875;">（无权限）</em></span>
                 <span class="hero-chart-delta" :class="trendClass">+{{ trendPercent }}%</span>
               </div>
               <svg class="hero-spark" viewBox="0 0 320 80" preserveAspectRatio="none">
@@ -92,7 +95,7 @@
               <div class="hero-sub-label">已完成</div>
             </div>
             <div class="hero-sub">
-              <div class="hero-sub-value">¥{{ avgOrderValue }}</div>
+              <div class="hero-sub-value">{{ revenueMasked ? avgOrderValue : '¥' + avgOrderValue }}</div>
               <div class="hero-sub-label">客单价</div>
             </div>
           </div>
@@ -397,11 +400,14 @@ const trendClass = computed(() => {
 })
 
 const avgOrderValue = computed(() => {
+  if (revenueMasked.value) return '无权限'
   if (stats.totalOrders.value === 0) return '0.00'
   return formatMoney(stats.totalRevenue.value / stats.totalOrders.value)
 })
 
 const loading = ref(false)
+const revenueMasked = ref(false)
+const amountMasked = ref(false)
 const chartType = ref<'order' | 'amount'>('order')
 const chartRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
@@ -505,7 +511,10 @@ async function fetchData() {
   try {
     const res: any = await getDashboard()
     const data = res.data ?? res
-    animateValue('totalRevenue', data.totalRevenue ?? 0, 1300)
+    revenueMasked.value = data.revenueMasked === true
+    if (!revenueMasked.value) {
+      animateValue('totalRevenue', data.totalRevenue ?? 0, 1300)
+    }
     animateValue('totalOrders', data.totalOrders ?? 0)
     animateValue('pendingOrders', data.pendingOrders ?? 0)
     animateValue('todayOrders', data.todayOrders ?? 0)
@@ -518,9 +527,9 @@ async function fetchData() {
     customerStats.activeCustomers.value = data.activeCustomers ?? 0
     customerStats.silentCustomers.value = data.silentCustomers ?? 0
     customerStats.vipCustomers.value = data.vipCustomers ?? 0
-    revenueBreakdown.sealRevenue = data._detail?.sealRevenue ?? 0
-    revenueBreakdown.newspaperRevenue = data._detail?.newspaperRevenue ?? 0
-    revenueBreakdown.bookkeepingRevenue = data._detail?.bookkeepingRevenue ?? 0
+    revenueBreakdown.sealRevenue = revenueMasked.value ? 0 : (data._detail?.sealRevenue ?? 0)
+    revenueBreakdown.newspaperRevenue = revenueMasked.value ? 0 : (data._detail?.newspaperRevenue ?? 0)
+    revenueBreakdown.bookkeepingRevenue = revenueMasked.value ? 0 : (data._detail?.bookkeepingRevenue ?? 0)
     await loadOutlets()
   } catch (e) {
     console.error('获取统计数据失败', e)
@@ -554,6 +563,7 @@ async function fetchTrend() {
   try {
     const res: any = await getDashboardTrend(chartType.value, 7)
     const data = res.data ?? res
+    amountMasked.value = data.amountMasked === true
     trendData.dates = data.dates || []
     trendData.seal = data.seal || []
     trendData.newspaper = data.newspaper || []
