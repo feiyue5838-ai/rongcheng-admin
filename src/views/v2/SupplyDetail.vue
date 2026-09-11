@@ -341,12 +341,14 @@ const subjectCard = computed(() => {
   const row = (label: string, value: any) => ({ label, value: value || '-' })
   const has = (v: any) => v !== undefined && v !== null && String(v).trim() !== ''
   if (route === 'personal') {
+    const holder = sd.holderName || sd.legalPerson
     const rows = [
-      row('持章人', sd.legalPerson),
+      row('持章人', holder),
       row('联系电话', sd.legalPhone),
+      ...(has(sd.holderIdNo) ? [row('持章人证件号', sd.holderIdNo)] : []),
       ...(has(contactPhone) ? [row('下单联系号码', contactPhone)] : []),
     ]
-    const visible = has(sd.legalPerson) || has(sd.legalPhone) || has(contactPhone)
+    const visible = has(holder) || has(sd.legalPhone) || has(contactPhone)
     return { visible, title: '持章人（个人印章）', rows }
   }
   if (route === 'electronic') {
@@ -354,7 +356,7 @@ const subjectCard = computed(() => {
       row('企业名称', sd.companyName),
       row('申请人', sd.legalPerson),
       row('联系电话', sd.legalPhone),
-      ...(has(sd.licenseExpiryDate) ? [row('证书有效期至', fmt(sd.licenseExpiryDate))] : []),
+      ...(has(sd.certValidUntil) ? [row('证书有效期至', fmt(sd.certValidUntil))] : []),
       ...(has(contactPhone) ? [row('下单联系号码', contactPhone)] : []),
     ]
     const visible = has(sd.companyName) || has(sd.legalPerson) || has(sd.legalPhone)
