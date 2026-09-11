@@ -49,6 +49,9 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
+        <el-table-column label="地区" width="130" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.licenseRegion || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="customerRemark" label="客户备注" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">{{ row.customerRemark || '-' }}</template>
         </el-table-column>
@@ -76,7 +79,7 @@
     <el-dialog v-model="batchDialogVisible" title="批量派单" width="480px">
       <p style="margin-bottom: 12px">已选 {{ selected.length }} 单，将统一派给：</p>
       <el-select v-model="batchSupplierId" filterable placeholder="选择供应商" style="width: 100%">
-        <el-option v-for="s in suppliers" :key="s.id" :label="s.name || s.id" :value="s.id" />
+        <el-option v-for="s in suppliers" :key="s.id" :label="(s.name || s.id) + (s.region ? `（${s.region}）` : '')" :value="s.id" />
       </el-select>
       <template #footer>
         <el-button @click="batchDialogVisible = false">取消</el-button>
