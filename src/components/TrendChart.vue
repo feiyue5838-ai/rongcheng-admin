@@ -24,6 +24,7 @@ interface TrendItem {
   day: string
   income: number
   refund: number
+  expense?: number
 }
 
 interface Props {
@@ -121,7 +122,7 @@ function renderChart() {
       }
     },
     legend: {
-      data: ['收入', '退款'],
+      data: ['收入', '退款', '支出'],
       right: 0,
       top: 0,
       textStyle: { color: '#64748b', fontSize: 12 }
@@ -162,6 +163,12 @@ function renderChart() {
         type: 'bar',
         data: props.data.map(d => d.refund),
         itemStyle: { color: '#ff7875', borderRadius: [4, 4, 0, 0] }
+      },
+      {
+        name: '支出',
+        type: 'bar',
+        data: props.data.map(d => d.expense || 0),
+        itemStyle: { color: '#faad14', borderRadius: [4, 4, 0, 0] }
       }
     ]
   }

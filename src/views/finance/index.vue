@@ -35,7 +35,7 @@
         <div class="stat-body">
           <div class="stat-label">网点分成</div>
           <div class="stat-value">¥{{ fmt(overview.outletSettle) }}</div>
-          <div class="stat-sub">待确认 ¥{{ fmt(overview.pendingOutlet) }}</div>
+          <div class="stat-sub">已付 {{ overview.settleCount || 0 }} 笔 · 待确认 ¥{{ fmt(overview.pendingOutlet) }}</div>
         </div>
       </div>
       <div class="stat-card net">
