@@ -120,34 +120,34 @@
             </div>
           </template>
           <el-table :data="overview.topOutlets" size="small" stripe>
-            <el-table-column type="index" label="#" width="44" />
+            <el-table-column type="index" label="#" width="44" align="center" />
             <el-table-column prop="name" :label="L.name" min-width="110" />
-            <el-table-column :label="L.region" width="60">
+            <el-table-column :label="L.region" width="60" align="center">
               <template #default="{ row }">
                 <el-tag size="small" type="info">{{ row.region }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="totalOrders" :label="L.cumulative" width="70" sortable>
+            <el-table-column prop="totalOrders" :label="L.cumulative" width="70" sortable align="center">
               <template #default="{ row }">
                 <span class="num-strong">{{ row.totalOrders }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="pending" label="待接" width="56" sortable>
+            <el-table-column prop="pending" label="待接" width="56" sortable align="center">
               <template #default="{ row }">
                 <span :class="row.pending > 0 ? 'num-warn' : 'num-muted'">{{ row.pending }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="processing" label="制作" width="56" sortable>
+            <el-table-column prop="processing" label="制作" width="56" sortable align="center">
               <template #default="{ row }">
                 <span class="num-muted">{{ row.processing }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="completed" label="完成" width="56" sortable>
+            <el-table-column prop="completed" label="完成" width="56" sortable align="center">
               <template #default="{ row }">
                 <span class="num-success">{{ row.completed }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="today" label="今日" width="56" sortable>
+            <el-table-column prop="today" label="今日" width="56" sortable align="center">
               <template #default="{ row }">
                 <span :class="row.today > 0 ? 'num-today' : 'num-muted'">{{ row.today }}</span>
               </template>
