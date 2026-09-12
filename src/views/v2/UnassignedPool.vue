@@ -58,6 +58,12 @@
         <el-table-column label="下单时间" width="170">
           <template #default="{ row }">{{ fmt(row.createdAt) }}</template>
         </el-table-column>
+        <el-table-column label="超时" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="isOvertime(row.paidAt || row.createdAt)" size="small" type="danger">超48h</el-tag>
+            <span v-else style="color:#ccc">-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button link type="warning" size="small" @click="openAssign(row)">派单</el-button>
@@ -98,6 +104,13 @@ import { v2GetUnassigned, v2AssignBatch, v2GetSuppliers } from '@/api'
 const moduleLabel = (m: any) => ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' } as any)[m] || m
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
 const fmt = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
+// 超48h未派单（去 Z 按本地解析，避免 +8h 偏移导致晚8小时才标红）
+const OVERDUE_MS = 48 * 3600 * 1000
+function isOvertime(d?: string) {
+  if (!d) return false
+  const t = new Date(d.endsWith('Z') ? d.slice(0, -1) : d).getTime()
+  return !isNaN(t) && Date.now() - t > OVERDUE_MS
+}
 
 const router = useRouter()
 const loading = ref(false)

@@ -138,6 +138,12 @@
           <el-table-column prop="assignedAt" label="分配时间" width="170">
             <template #default="{ row }">{{ formatDate(row.assignedAt) }}</template>
           </el-table-column>
+          <el-table-column label="超时" width="80" align="center">
+            <template #default="{ row }">
+              <el-tag v-if="['assigned', 'accepted', 'processing'].includes(row.status) && isOverdue(row.assignedAt)" size="small" type="danger">超48h</el-tag>
+              <span v-else style="color:#ccc">—</span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="200" align="center">
             <template #default="{ row }">
               <template v-if="row.status === 'assigned'">
@@ -232,6 +238,12 @@ import { Refresh, Clock, Tools, CircleCheck, Calendar, List, OfficeBuilding, Plu
 
 const router = useRouter()
 const loading = ref(false)
+// 超48h未完工（后端本地时间+Z 后缀，去 Z 按本地解析）
+function isOverdue(d?: string) {
+  if (!d) return false
+  const t = new Date(d.endsWith('Z') ? d.slice(0, -1) : d).getTime()
+  return !isNaN(t) && Date.now() - t > 48 * 3600 * 1000
+}
 const outlets = ref<any[]>([])
 const selectedOutlet = ref('')
 const currentOutlet = ref<any>(null)
