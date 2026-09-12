@@ -419,6 +419,11 @@ onMounted(loadData)
 .card-tip { font-size: 12px; color: #999; font-weight: normal; }
 .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
+.num-strong, .num-warn, .num-success, .num-today, .num-muted {
+  font-size: 13px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
 .num-strong { font-weight: 700; color: #333; }
 .num-warn { color: #f5222d; font-weight: 600; }
 .num-success { color: #52c41a; font-weight: 600; }
