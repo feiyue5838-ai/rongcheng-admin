@@ -448,6 +448,7 @@ onMounted(loadData)
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 :deep(.el-table th .caret-wrapper) {
   margin-left: 4px;
