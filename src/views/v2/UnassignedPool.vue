@@ -3,7 +3,7 @@
     <div class="page-header">
       <h2>待派单池 ({{ total }})</h2>
       <div>
-        <el-button type="warning" :disabled="selected.length === 0" @click="batchDialogVisible = true">
+        <el-button type="warning" :disabled="selected.length === 0" @click="openBatch">
           批量派单 ({{ selected.length }})
         </el-button>
         <el-button @click="load">刷新</el-button>
@@ -83,9 +83,10 @@
 
     <!-- 批量派单弹窗 -->
     <el-dialog v-model="batchDialogVisible" title="批量派单" width="480px">
-      <p style="margin-bottom: 12px">已选 {{ selected.length }} 单，将统一派给：</p>
+      <p style="margin-bottom: 12px">已选 {{ selected.length }} 单（{{ selectedModulesText }}），将统一派给：</p>
+      <el-alert v-if="batchSuppliers.length === 0" type="warning" :closable="false" style="margin-bottom: 12px" title="所选订单品类混杂，无一家供应商能全接，请分品类多选派单" />
       <el-select v-model="batchSupplierId" filterable placeholder="选择供应商" style="width: 100%">
-        <el-option v-for="s in suppliers" :key="s.id" :label="(s.name || s.id) + (s.region ? `（${s.region}）` : '')" :value="s.id" />
+        <el-option v-for="s in batchSuppliers" :key="s.id" :label="(s.name || s.id) + (s.region ? `（${s.region}）` : '')" :value="s.id" />
       </el-select>
       <template #footer>
         <el-button @click="batchDialogVisible = false">取消</el-button>
@@ -96,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { v2GetUnassigned, v2AssignBatch, v2GetSuppliers } from '@/api'
@@ -145,6 +146,10 @@ function search() {
 function openAssign(row: any) {
   router.push({ path: '/v2/orders/detail', query: { orderNo: row.orderNo, assign: '1' } })
 }
+function openBatch() {
+  batchSupplierId.value = ''
+  batchDialogVisible.value = true
+}
 
 /* 批量派单：勾选多单 → 同一供应商一次派完，后端逐单独立事务 */
 const selected = ref<any[]>([])
@@ -152,6 +157,15 @@ const batchDialogVisible = ref(false)
 const batchSupplierId = ref('')
 const batchSubmitting = ref(false)
 const suppliers = ref<any[]>([])
+// 已选品类（bookkeeping 与 accounting 归一）；下拉仅留启用且能全接的供应商
+const normBiz = (m: string) => (m === 'bookkeeping' || m === 'accounting' ? 'bookkeeping' : (m || '').toLowerCase())
+const selectedModules = computed(() => [...new Set(selected.value.map((r: any) => r.module).filter(Boolean))])
+const selectedModulesText = computed(() => selectedModules.value.map(moduleLabel).join('、') || '-')
+const batchSuppliers = computed(() => suppliers.value.filter((s: any) => {
+  if (s.status !== 1) return false
+  const biz = String(s.bizTypes || '').split(',').map(normBiz)
+  return selectedModules.value.every(m => biz.includes(normBiz(m)))
+}))
 async function loadSuppliers() {
   try {
     const res: any = await v2GetSuppliers({})
