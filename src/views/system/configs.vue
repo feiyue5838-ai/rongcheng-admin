@@ -65,6 +65,10 @@
               <RegionMultiPicker v-model="sealConfig.licenseCopyCities" />
               <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">命中地区时，营业执照副本照片必传；上海同时配置两项时正本、副本都必传。</div>
             </el-form-item>
+            <el-form-item label="刻章备案查询入口">
+              <el-switch v-model="sealConfig.recordQueryEnabled" active-text="启用" inactive-text="停用" />
+              <div style="margin-top:6px;color:#909399;font-size:12px;line-height:1.6">关闭后小程序刻章页隐藏“刻章备案查询”入口；已进入的查询页不受影响。</div>
+            </el-form-item>
             <el-form-item label="电子印章必传材料">
               <el-checkbox-group v-model="sealConfig.electronicRequired">
                 <el-checkbox label="license">营业执照</el-checkbox>
@@ -130,7 +134,19 @@ const sealConfig = reactive({
   licenseOriginalCities: [] as string[],
   licenseCopyCities: [] as string[],
   electronicRequired: [] as string[],
+  recordQueryEnabled: true,
 })
+
+function asBoolean(value: unknown, fallback = true): boolean {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase()
+    if (['1', 'true', 'on', 'yes'].includes(v)) return true
+    if (['0', 'false', 'off', 'no'].includes(v)) return false
+  }
+  return fallback
+}
 
 function asStringArray(value: unknown): string[] {
   if (Array.isArray(value)) return value.map(String)
@@ -162,6 +178,8 @@ async function fetchConfigs() {
               sealConfig.licenseCopyCities = asStringArray(item.value)
             } else if (item.key === 'electronicRequiredMaterials') {
               sealConfig.electronicRequired = asStringArray(item.value)
+            } else if (item.key === 'sealRecordQueryEnabled') {
+              sealConfig.recordQueryEnabled = asBoolean(item.value, true)
             }
           } else if (Object.prototype.hasOwnProperty.call(cfg, item.key)) {
             if ((key === 'payment' && ['apiV3Key', 'privateKey', 'certificate'].includes(item.key)) || (key === 'wechat' && item.key === 'appSecret')) return
@@ -275,6 +293,7 @@ async function saveSealConfig() {
         { key: 'licenseOriginalCities', value: [...sealConfig.licenseOriginalCities] },
         { key: 'licenseCopyCities', value: [...sealConfig.licenseCopyCities] },
         { key: 'electronicRequiredMaterials', value: [...sealConfig.electronicRequired] },
+        { key: 'sealRecordQueryEnabled', value: sealConfig.recordQueryEnabled ? '1' : '0' },
       ],
     })
     ElMessage.success('保存成功')
