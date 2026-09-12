@@ -181,10 +181,13 @@
     <!-- 完成交货 -->
     <el-dialog v-model="completeDialogVisible" title="完成交货" width="500px">
       <el-form ref="completeFormRef" :model="completeForm" :rules="completeRules" label-width="100px">
-        <el-form-item label="快递公司" prop="expressCompany">
+        <el-form-item label="交货方式">
+          <el-checkbox v-model="completeForm.noExpress">自提 / 同城直送（无需快递）</el-checkbox>
+        </el-form-item>
+        <el-form-item v-if="!completeForm.noExpress" label="快递公司" prop="expressCompany">
           <el-input v-model="completeForm.expressCompany" placeholder="如：顺丰速运、圆通快递" />
         </el-form-item>
-        <el-form-item label="快递单号" prop="expressNo">
+        <el-form-item v-if="!completeForm.noExpress" label="快递单号" prop="expressNo">
           <el-input v-model="completeForm.expressNo" placeholder="请输入快递单号" />
         </el-form-item>
         <el-form-item label="交货备注">
@@ -242,10 +245,17 @@ const actionLoading = ref(false)
 const completeFormRef = ref<any>(null)
 const completeUploadRef = ref<any>(null)
 
-const completeForm = reactive({ expressCompany: '', expressNo: '', remark: '', photos: [] as string[] })
+const completeForm = reactive({ expressCompany: '', expressNo: '', remark: '', photos: [] as string[], noExpress: false })
+const requiredIfExpress = (msg: string) => ({
+  validator: (_r: any, v: string, cb: any) => {
+    if (completeForm.noExpress || (v && v.trim())) cb()
+    else cb(new Error(msg))
+  },
+  trigger: 'blur',
+})
 const completeRules = {
-  expressCompany: [{ required: true, message: '请输入快递公司', trigger: 'blur' }],
-  expressNo: [{ required: true, message: '请输入快递单号', trigger: 'blur' }],
+  expressCompany: [requiredIfExpress('请输入快递公司')],
+  expressNo: [requiredIfExpress('请输入快递单号')],
 }
 
 async function loadOutlets() {
@@ -353,7 +363,7 @@ function onPhotoExceed() {
 
 function onComplete(order: any) {
   currentOrder.value = order
-  Object.assign(completeForm, { expressCompany: '', expressNo: '', remark: '', photos: [] })
+  Object.assign(completeForm, { expressCompany: '', expressNo: '', remark: '', photos: [], noExpress: false })
   completeUploadRef.value?.clearFiles()
   completeDialogVisible.value = true
 }
@@ -394,9 +404,9 @@ async function onConfirmComplete() {
   actionLoading.value = true
   try {
     await v2DeliverFulfillment((currentOrder.value as any).id, {
-      expressCompany: completeForm.expressCompany,
-      trackingNo: completeForm.expressNo,
-      remark: completeForm.remark,
+      expressCompany: completeForm.noExpress ? undefined : completeForm.expressCompany,
+      trackingNo: completeForm.noExpress ? undefined : completeForm.expressNo,
+      remark: completeForm.noExpress && !completeForm.remark.trim() ? '自提/同城直送' : completeForm.remark,
       photos: completeForm.photos.length > 0 ? completeForm.photos : undefined,
     })
     ElMessage.success('交货成功')
