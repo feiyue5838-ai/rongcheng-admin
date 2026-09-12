@@ -73,6 +73,11 @@
             <el-tag size="small" :type="fulfillmentTag(row.fulfillmentStatus)">{{ fulfillmentStatusMap[row.fulfillmentStatus] || row.fulfillmentStatus }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="退款" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="refundTag(row.refundStatus)">{{ refundStatusMap[row.refundStatus] || row.refundStatus }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="totalAmount" label="金额" width="100" align="right">
           <template #default="{ row }">¥{{ Number(row.totalAmount || 0).toFixed(2) }}</template>
         </el-table-column>
@@ -134,6 +139,11 @@ const orderStatusMap: Record<string, string> = {
 const paymentStatusMap: Record<string, string> = {
   unpaid: '未支付', paid: '已支付', partial_refund: '部分退款', full_refund: '已退款',
 }
+const refundStatusMap: Record<string, string> = {
+  none: '无', applying: '退款中', partial_refund: '部分退款', full_refund: '已退款', rejected: '已驳回',
+}
+const refundTag = (s: string) =>
+  ({ applying: 'warning', partial_refund: 'warning', full_refund: 'info', rejected: 'danger' } as any)[s] || 'info'
 // 订单层履约状态字典（共享单一数据源，见 utils/fulfillment-status.ts）
 const fulfillmentStatusMap: Record<string, string> = FULFILLMENT_STATUS_TEXT
 
