@@ -1007,6 +1007,7 @@ onMounted(() => {
 
 /* Aux 网格 */
 .aux-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 16px; }
+.aux-grid .aux-card { min-height: 82px; box-sizing: border-box; }
 .aux-card { padding: 12px 10px; min-width: 0; }
 .aux-info { min-width: 0; }
 .aux-value { font-size: 18px; line-height: 1.1; }
