@@ -443,5 +443,15 @@ onMounted(loadData)
 .num-today { color: #13c2c2; font-weight: 600; }
 .num-muted { color: #bbb; }
 
+/* 排序箭头统一贴文字右边（居中表头下保持一致） */
+:deep(.el-table th .cell) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+:deep(.el-table th .caret-wrapper) {
+  margin-left: 4px;
+}
+
 .empty-state { padding: 80px 0; text-align: center; color: #999; }
 </style>
