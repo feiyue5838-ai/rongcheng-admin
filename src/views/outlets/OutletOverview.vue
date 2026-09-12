@@ -164,26 +164,36 @@
             </div>
           </template>
           <el-table :data="overview.outlets" size="small" stripe height="420">
-            <el-table-column prop="name" :label="L.name" min-width="110" />
-            <el-table-column prop="region" :label="L.region" width="60">
+            <el-table-column prop="name" :label="L.name" min-width="110" show-overflow-tooltip />
+            <el-table-column prop="region" :label="L.region" width="60" align="center">
               <template #default="{ row }">
                 <el-tag size="small" type="info">{{ row.region }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="province" :label="L.province" width="80" />
             <el-table-column prop="city" :label="L.city" width="80" />
-            <el-table-column :label="L.status" width="60">
+            <el-table-column :label="L.status" width="60" align="center">
               <template #default="{ row }">
                 <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
                   {{ row.status === 1 ? '营业' : '停用' }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="totalOrders" :label="L.cumulative" width="70" sortable />
-            <el-table-column prop="pending" :label="L.pending" width="60" sortable />
-            <el-table-column prop="processing" :label="L.making" width="60" sortable />
-            <el-table-column prop="completed" :label="L.done" width="60" sortable />
-            <el-table-column prop="today" :label="L.today" width="56" sortable />
+            <el-table-column prop="totalOrders" :label="L.cumulative" width="70" sortable align="center">
+              <template #default="{ row }"><span class="num-strong">{{ row.totalOrders }}</span></template>
+            </el-table-column>
+            <el-table-column prop="pending" :label="L.pending" width="60" sortable align="center">
+              <template #default="{ row }"><span :class="row.pending > 0 ? 'num-warn' : 'num-muted'">{{ row.pending }}</span></template>
+            </el-table-column>
+            <el-table-column prop="processing" :label="L.making" width="60" sortable align="center">
+              <template #default="{ row }"><span class="num-muted">{{ row.processing }}</span></template>
+            </el-table-column>
+            <el-table-column prop="completed" :label="L.done" width="60" sortable align="center">
+              <template #default="{ row }"><span class="num-success">{{ row.completed }}</span></template>
+            </el-table-column>
+            <el-table-column prop="today" :label="L.today" width="56" sortable align="center">
+              <template #default="{ row }"><span :class="row.today > 0 ? 'num-today' : 'num-muted'">{{ row.today }}</span></template>
+            </el-table-column>
           </el-table>
         </el-card>
       </div>
@@ -418,6 +428,9 @@ onMounted(loadData)
 .card-header { display: flex; justify-content: space-between; align-items: center; }
 .card-tip { font-size: 12px; color: #999; font-weight: normal; }
 .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 1100px) {
+  .content-grid { grid-template-columns: 1fr; }
+}
 
 .num-strong, .num-warn, .num-success, .num-today, .num-muted {
   font-size: 13px;
