@@ -43,6 +43,30 @@ export function getMenuConfigs(): MenuRoleItem[] | null {
 }
 
 /**
+ * 检查独立操作权限。
+ *
+ * 与页面路由权限不同，操作权限必须有同路径的 exact 配置，不能继承父级 prefix，
+ * 避免“能查看订单”被自动放大为“能批量导出订单”。
+ */
+export function hasActionAccess(role: string, path: string): boolean {
+  if (role === ADMIN_ROLES.superadmin) return true
+
+  if (cachedConfigs && cachedConfigs.length > 0) {
+    const exact = cachedConfigs.find(c => c.pathType === 'exact' && c.path === path)
+    if (!exact?.enabled) return false
+    return exact.roles.includes('*') || exact.roles.includes(role)
+  }
+
+  const ACTION_DEFAULTS: Record<string, string[]> = {
+    '/v2/orders/export': ['superadmin'],
+    '/finance/export': ['superadmin', 'finance'],
+    '/transaction/export': ['superadmin', 'finance'],
+  }
+  const allowed = ACTION_DEFAULTS[path]
+  return !!allowed && (allowed.includes('*') || allowed.includes(role))
+}
+
+/**
  * 检查角色是否有权访问路径
  * 优先级：数据库配置 > 硬编码默认值
  * superadmin 恒通
@@ -88,6 +112,7 @@ export function hasAccess(role: string, path: string): boolean {
     '/orders/bookkeeping': ['superadmin', 'order_admin', 'outlet_admin'],
     '/orders': ['superadmin', 'order_admin', 'outlet_admin'],
     '/v2/orders': ['superadmin', 'order_admin'],
+    '/v2/orders/export': ['superadmin'],
     '/v2/orders/unassigned': ['superadmin', 'order_admin'],
     '/v2/orders/detail': ['superadmin', 'order_admin'],
     '/v2/refunds': ['superadmin', 'order_admin'],
@@ -106,12 +131,14 @@ export function hasAccess(role: string, path: string): boolean {
     '/users': ['superadmin', 'content_admin'],
     '/reviews': ['superadmin', 'content_admin'],
     '/complaints': ['superadmin', 'content_admin'],
+    '/registration-requests': ['superadmin', 'order_admin'],
     '/points': ['superadmin', 'content_admin'],
     '/questions': ['superadmin', 'content_admin'],
     '/faq': ['superadmin', 'content_admin'],
     '/content': ['superadmin', 'content_admin'],
     '/finance': ['superadmin', 'finance'],
     '/v2/settlements': ['superadmin', 'finance'],
+    '/v2/settlement-rules': ['superadmin', 'finance'],
     '/system/admins': ['superadmin'],
     '/system/logs': ['superadmin'],
     '/system/configs': ['superadmin'],

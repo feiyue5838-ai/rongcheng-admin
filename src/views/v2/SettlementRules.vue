@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="page-header">
-      <h2>结算规则管理</h2>
+      <h2>结算规则</h2>
       <div>
         <el-button type="primary" @click="openCreate">新增规则</el-button>
         <el-button @click="load">刷新</el-button>
@@ -24,6 +24,12 @@
         <el-table-column label="模块" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="moduleTag(row.module)" size="small">{{ moduleText(row.module) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="适用网点" width="160" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-tag v-if="row.outletId" type="primary" size="small">{{ outletName(row.outletId) }}</el-tag>
+            <el-tag v-else type="info" size="small">全部(全局)</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="分成方式" width="120" align="center">
@@ -80,6 +86,12 @@
           </el-select>
           <div style="font-size:12px; color:#909399; line-height:1.5; margin-top:4px">不选表示对全部业务生效；如与业务专用规则同时存在，优先匹配业务专用</div>
         </el-form-item>
+        <el-form-item label="适用网点">
+          <el-select v-model="form.outletId" placeholder="全部网点（空=全局）" clearable filterable style="width: 100%">
+            <el-option v-for="o in outlets" :key="o.id" :label="o.name" :value="o.id" />
+          </el-select>
+          <div style="font-size:12px; color:#909399; line-height:1.5; margin-top:4px">不选表示全局默认；网点级规则优先于全局规则命中</div>
+        </el-form-item>
         <el-form-item label="分成类型" required>
           <el-radio-group v-model="form.type">
             <el-radio value="percent">按比例（%）</el-radio>
@@ -135,6 +147,7 @@ import {
   v2CreateSettlementRule,
   v2UpdateSettlementRule,
   v2DeleteSettlementRule,
+  getOutletsAPI,
 } from '@/api'
 
 const loading = ref(false)
@@ -146,11 +159,13 @@ const pageSize = ref(20)
 const query = reactive({ module: '', keyword: '' })
 const dialogVisible = ref(false)
 const form = reactive<any>({})
+const outlets = ref<any[]>([])
 
 const moduleText = (m?: string) =>
   m === 'seal' ? '刻章' : m === 'newspaper' ? '登报' : m === 'bookkeeping' ? '记账' : '全部'
 const moduleTag = (m?: string) =>
   m === 'seal' ? 'danger' : m === 'newspaper' ? 'primary' : m === 'bookkeeping' ? 'warning' : 'info'
+const outletName = (id?: string) => { const o = outlets.value.find((x: any) => x.id === id); return o ? o.name : id || '全局' }
 const fmtDate = (d?: string) => (d ? d.slice(0, 10) : '不限')
 // 后端时间为「本地时间 + Z 后缀」格式：去 Z 按本地解析/按本地回传，避免 new Date/toISOString 造成 ±8h 漂移
 const parseLocal = (s?: string) => {
@@ -167,6 +182,7 @@ function resetForm() {
   form.id = ''
   form.name = ''
   form.module = ''
+  form.outletId = ''
   form.type = 'percent'
   form.percent = 5
   form.fixedAmount = 0
@@ -208,6 +224,7 @@ function openEdit(row: any) {
     id: row.id,
     name: row.name,
     module: row.module || '',
+    outletId: row.outletId || '',
     type: row.type || 'percent',
     percent: Number(row.percent ?? 5),
     fixedAmount: Number(row.fixedAmount ?? 0),
@@ -229,6 +246,7 @@ function toPayload() {
     minOrderAmount: Number(form.minOrderAmount ?? 0),
     status: form.statusOn ? 1 : 0,
     isDefault: form.isDefault ? 1 : 0,
+    outletId: form.outletId || '',
     remark: form.remark?.trim() || '',
   }
   if (form.module) p.module = form.module
@@ -285,5 +303,13 @@ async function remove(row: any) {
   }
 }
 
-onMounted(load)
+async function loadOutlets() {
+  try {
+    const res: any = await getOutletsAPI({ page: 1, pageSize: 500 })
+    const rows = Array.isArray(res) ? res : ((res && (res.list || res.data?.list)) || [])
+    outlets.value = (rows || []).filter((o: any) => Number(o.status) === 1)
+  } catch { /* 忽略 */ }
+}
+
+onMounted(() => { load(); loadOutlets() })
 </script>

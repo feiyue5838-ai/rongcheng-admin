@@ -71,15 +71,16 @@ const router = createRouter({
         // 评价管理
         { path: 'reviews', name: 'Reviews', component: () => import('@/views/reviews/index.vue'), meta: { title: '评价管理' } },
         { path: 'complaints', name: 'Complaints', component: () => import('@/views/complaint/index.vue'), meta: { title: '投诉管理' } },
+        { path: 'registration-requests', name: 'RegistrationRequests', component: () => import('@/views/registration-requests/index.vue'), meta: { title: '工商注册' } },
         { path: 'points', name: 'PointsMall', component: () => import('@/views/points/index.vue'), meta: { title: '积分兑奖' } },
         // 问答管理
         { path: 'questions', name: 'Questions', component: () => import('@/views/questions/index.vue'), meta: { title: '问答管理' } },
         { path: 'faq', name: 'Faq', component: () => import('@/views/faq/index.vue'), meta: { title: '帮助中心' } },
         // 内容管理
-        // 内容管理（Banner/公告/业务介绍 合并）
+        // 内容管理（Banner/公告/详情介绍 合并）
         { path: 'content', name: 'ContentManage', component: () => import('@/views/content/index.vue'), meta: { title: '内容管理' } },
         // 网点管理
-        { path: 'outlets', name: 'Outlets', component: () => import('@/views/outlets/OutletList.vue'), meta: { title: '合作网点' } },
+        { path: 'outlets', name: 'Outlets', component: () => import('@/views/outlets/OutletList.vue'), meta: { title: '供应商列表' } },
         { path: 'outlets/dashboard', name: 'OutletDashboard', component: () => import('@/views/outlets/OutletDashboard.vue'), meta: { title: '网点控制台' } },
         { path: 'outlets/assign', redirect: '/v2/orders/unassigned' },
         // V1 交付回执页退役（2026-09-04）：V2 回执照片在网点看板「回执照片」列 + 供应链订单详情时间线可见

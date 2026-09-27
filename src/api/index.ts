@@ -152,6 +152,12 @@ export const updateComplaintStatus = (id: string, status: string, reply?: string
 export const batchComplaintStatus = (ids: string[], status: string, reply?: string) =>
   request.post('/complaints/admin/batch-status', { ids, status, reply })
 
+// ==================== 工商注册需求 ====================
+export const getRegistrationRequests = (params?: { page?: number; pageSize?: number; kind?: string; keyword?: string }) =>
+  request.get('/registration-requests/admin/list', { params })
+export const getRegistrationRequestDetail = (id: string) =>
+  request.get(`/registration-requests/admin/${encodeURIComponent(id)}`)
+
 // ==================== 问答接口 ====================
 export const getQuestions = (params?: any) => request.get('/questions/admin/list', { params })
 export const updateQuestionStatus = (id: string, status: 'pending' | 'approved' | 'rejected') =>
@@ -275,12 +281,52 @@ export const getTransactionFlows = async (params?: {
 }) => unwrapV2(await request.get('/transaction/flows', { params }))
 export const getTransactionFlowDetail = async (id: string) =>
   unwrapV2(await request.get(`/transaction/flows/${id}`))
-export const exportTransactionFlows = (params?: any) =>
-  request.get('/transaction/export', { params })
+// 按当前筛选导出全部匹配流水 Excel 二进制（独立操作权限：/transaction/export）
+export const exportTransactionFlows = async (params: any): Promise<Blob> => {
+  try {
+    return await v2Request.get('/transaction/export', {
+      params,
+      responseType: 'blob',
+      timeout: 60000,
+    }) as unknown as Blob
+  } catch (error: any) {
+    // responseType=blob 时，403/422 的 JSON 错误也会成为 Blob；还原后端消息给页面。
+    const body = error?.response?.data
+    if (body instanceof Blob && body.type.includes('json')) {
+      try {
+        const parsed = JSON.parse(await body.text())
+        if (parsed?.message) error.message = Array.isArray(parsed.message) ? parsed.message.join('；') : String(parsed.message)
+      } catch { /* 保留 Axios 原始错误 */ }
+    }
+    throw error
+  }
+}
 
 // ===== 财务总览 =====
 export const getFinanceOverview = (params?: any) =>
   request({ url: '/finance/overview', method: 'get', params });
+
+// 按财务总览当前统计周期导出 Excel（独立操作权限：/finance/export）
+export const exportFinanceOverview = async (params?: {
+  startDate?: string; endDate?: string; days?: number
+}): Promise<Blob> => {
+  try {
+    return await v2Request.get('/finance/overview/export', {
+      params,
+      responseType: 'blob',
+      timeout: 60000,
+    }) as unknown as Blob
+  } catch (error: any) {
+    const body = error?.response?.data
+    if (body instanceof Blob && body.type.includes('json')) {
+      try {
+        const parsed = JSON.parse(await body.text())
+        if (parsed?.message) error.message = Array.isArray(parsed.message) ? parsed.message.join('；') : String(parsed.message)
+      } catch { /* 保留 Axios 原始错误 */ }
+    }
+    throw error
+  }
+}
 
 
 
@@ -362,6 +408,27 @@ export const v2GetDashboard = () => v2Request.get('/v2/admin/dashboard')
 
 // 订单列表（统一五维状态）GET /api/v2/admin/orders?orderStatus=&module=&keyword=&page=&pageSize=
 export const v2GetOrders = (params: any) => v2Request.get('/v2/admin/orders', { params })
+
+// 按当前筛选导出全部匹配订单 Excel（独立操作权限：/v2/orders/export）
+export const v2ExportOrders = async (params: any): Promise<Blob> => {
+  try {
+    return await v2Request.get('/v2/admin/orders/export', {
+      params,
+      responseType: 'blob',
+      timeout: 60000,
+    }) as unknown as Blob
+  } catch (error: any) {
+    // responseType=blob 时，403/422 的 JSON 错误也会成为 Blob；还原后端消息给页面。
+    const body = error?.response?.data
+    if (body instanceof Blob && body.type.includes('json')) {
+      try {
+        const parsed = JSON.parse(await body.text())
+        if (parsed?.message) error.message = Array.isArray(parsed.message) ? parsed.message.join('；') : String(parsed.message)
+      } catch { /* 保留 Axios 原始错误 */ }
+    }
+    throw error
+  }
+}
 
 // 订单详情（供应链视图）GET /api/v2/admin/orders/:orderNo
 export const v2GetOrderDetail = (orderNo: string) => v2Request.get(`/v2/admin/orders/${encodeURIComponent(orderNo)}`)

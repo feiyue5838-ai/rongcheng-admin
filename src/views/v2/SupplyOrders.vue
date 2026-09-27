@@ -3,6 +3,15 @@
     <div class="page-header">
       <h2>供应链订单</h2>
       <div class="header-actions">
+        <el-button
+          v-if="canExport"
+          :loading="exporting"
+          :disabled="total === 0"
+          @click="exportCurrentFilters"
+        >
+          <el-icon><Download /></el-icon>
+          按当前筛选导出 Excel
+        </el-button>
         <el-button type="primary" @click="goUnassigned">待派单池 ({{ unassignedCount }})</el-button>
         <el-button @click="load">刷新</el-button>
       </div>
@@ -106,23 +115,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
-import { v2GetOrders, v2GetUnassigned } from '@/api'
+import { v2ExportOrders, v2GetOrders, v2GetUnassigned } from '@/api'
 import { toPaged } from '@/api/unwrap'
 import { useLatest } from '@/composables/useLatest'
+import { useAuthStore } from '@/stores/auth'
 import { FULFILLMENT_STATUS_TEXT, fulfillmentStatusTag } from '@/utils/fulfillment-status'
 
 const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
 
 const loading = ref(false)
+const exporting = ref(false)
 const list = ref<any[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
 const unassignedCount = ref(0)
+const canExport = computed(() => authStore.canPerform('/v2/orders/export'))
 
 const filters = reactive<any>({
   module: '',
@@ -167,16 +180,21 @@ function search() {
 
 const latest = useLatest()
 
+function currentFilterParams() {
+  const params: any = {}
+  if (filters.module) params.module = filters.module
+  if (filters.module === 'seal' && filters.routeType) params.routeType = filters.routeType
+  if (filters.orderStatus) params.orderStatus = filters.orderStatus
+  if (filters.fulfillmentStatus) params.fulfillmentStatus = filters.fulfillmentStatus
+  if (filters.keyword) params.keyword = filters.keyword.trim()
+  return params
+}
+
 async function load() {
   loading.value = true
   const my = latest.next()
   try {
-    const params: any = { page: page.value, pageSize: pageSize.value }
-    if (filters.module) params.module = filters.module
-    if (filters.module === 'seal' && filters.routeType) params.routeType = filters.routeType
-    if (filters.orderStatus) params.orderStatus = filters.orderStatus
-    if (filters.fulfillmentStatus) params.fulfillmentStatus = filters.fulfillmentStatus
-    if (filters.keyword) params.keyword = filters.keyword
+    const params: any = { ...currentFilterParams(), page: page.value, pageSize: pageSize.value }
     const res: any = await v2GetOrders(params)
     if (!latest.isCurrent(my)) return // 旧请求后到，直接丢弃
     const { list: rows, total: n } = toPaged(res)
@@ -186,6 +204,46 @@ async function load() {
     ElMessage.error(e?.message || '加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+async function exportCurrentFilters() {
+  if (!canExport.value) {
+    ElMessage.error('没有订单导出权限')
+    return
+  }
+  if (total.value === 0) {
+    ElMessage.info('当前筛选没有可导出的订单')
+    return
+  }
+
+  exporting.value = true
+  try {
+    const blob = await v2ExportOrders(currentFilterParams())
+    if (!(blob instanceof Blob) || blob.size === 0) throw new Error('导出文件为空')
+
+    const now = new Date()
+    const stamp = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+      String(now.getHours()).padStart(2, '0'),
+      String(now.getMinutes()).padStart(2, '0'),
+      String(now.getSeconds()).padStart(2, '0'),
+    ].join('')
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `订单报表_${stamp}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+    ElMessage.success('订单报表已导出')
+  } catch (e: any) {
+    ElMessage.error(e?.message || '导出失败')
+  } finally {
+    exporting.value = false
   }
 }
 

@@ -130,14 +130,14 @@
       </el-col>
     </el-row>
 
-    <!-- Row2: 履约供应商状态 + 履约供应商排行 -->
+    <!-- Row2: 供应商状态 + 供应商排行 -->
     <el-row :gutter="12" class="row2">
-      <!-- 履约供应商状态 -->
+      <!-- 供应商状态 -->
       <el-col :xs="24" :lg="12" style="display: flex; flex-direction: column;">
         <el-card shadow="hover" class="outlet-panel" style="flex: 1;">
           <template #header>
             <div class="panel-head">
-              <span>履约供应商状态</span>
+              <span>供应商状态</span>
               <span v-if="outletAlertCount" class="head-badge">{{ outletAlertCount }}</span>
               <span class="head-more" @click="$router.push('/outlets/list')">全部 ›</span>
             </div>
@@ -177,12 +177,12 @@
         </el-card>
       </el-col>
 
-      <!-- 履约供应商订单排行 -->
+      <!-- 供应商订单排行 -->
       <el-col :xs="24" :lg="12" style="display: flex; flex-direction: column;">
         <el-card shadow="hover" class="rank-panel" style="flex: 1;">
           <template #header>
             <div class="panel-head">
-              <span>履约供应商排行</span>
+              <span>供应商排行</span>
               <span class="head-more" @click="$router.push('/outlets/list')">本月 ›</span>
             </div>
           </template>
@@ -418,7 +418,7 @@ const trendData = reactive({
   bookkeeping: [] as number[],
 })
 
-// ── 履约供应商监控（网点 + 待结算） ──
+// ── 供应商监控（网点 + 待结算） ──
 const outletList = ref<any[]>([])
 const pendingSettlements = ref<any[]>([])
 
@@ -952,7 +952,7 @@ onMounted(() => {
 .head-more { margin-left: auto; font-size: 12px; color: #2563eb; cursor: pointer; }
 .head-more:hover { text-decoration: underline; }
 
-/* 履约供应商状态 */
+/* 供应商状态 */
 .outlet-panel, .rank-panel, .aux-panel { border-radius: 16px; }
 .outlet-list { display: flex; flex-direction: column; gap: 8px; padding: 12px 4px 4px; }
 .outlet-row {
@@ -985,7 +985,7 @@ onMounted(() => {
 }
 .outlet-empty { text-align: center; color: #9ca3af; font-size: 12px; padding: 24px 0; }
 
-/* 履约供应商排行 */
+/* 供应商排行 */
 .rank-list { display: flex; flex-direction: column; gap: 8px; padding: 12px 4px 4px; }
 .rank-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; }
 .rank-num { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; color: #fff; }

@@ -23,7 +23,7 @@
         <el-sub-menu v-if="showStoreMgmt" index="storeMgmt">
           <template #title><el-icon><Shop /></el-icon><span>网点管理</span></template>
           <el-menu-item v-if="canAccess('/outlets/overview')" index="/outlets/overview">全网点总览</el-menu-item>
-          <el-menu-item v-if="canAccess('/outlets')" index="/outlets">履约供应商列表</el-menu-item>
+          <el-menu-item v-if="canAccess('/outlets')" index="/outlets">供应商列表</el-menu-item>
           <el-menu-item v-if="canAccess('/outlets/dashboard')" index="/outlets/dashboard">网点看板</el-menu-item>
         </el-sub-menu>
 
@@ -32,8 +32,8 @@
           <template #title><el-icon><Money /></el-icon><span>财务中心</span></template>
           <el-menu-item v-if="canAccess('/finance')" index="/finance">财务总览</el-menu-item>
           <el-menu-item v-if="canAccess('/finance')" index="/finance?tab=transaction">交易流水</el-menu-item>
-          <el-menu-item v-if="canAccess('/v2/settlements')" index="/v2/settlements">结算管理(V2.0)</el-menu-item>
-          <el-menu-item v-if="canAccess('/v2/settlement-rules')" index="/v2/settlement-rules">结算规则(差价)</el-menu-item>
+          <el-menu-item v-if="canAccess('/v2/settlements')" index="/v2/settlements">结算管理</el-menu-item>
+          <el-menu-item v-if="canAccess('/v2/settlement-rules')" index="/v2/settlement-rules">结算规则</el-menu-item>
         </el-sub-menu>
 
         <!-- 订单管理 sub-menu -->
@@ -65,6 +65,7 @@
             <template #title><span>代理记账管理</span></template>
             <el-menu-item v-if="canAccess('/products/bookkeeping-packages')" index="/products/bookkeeping-packages">套餐配置</el-menu-item>
           </el-sub-menu>
+          <el-menu-item v-if="canAccess('/registration-requests')" index="/registration-requests">工商注册</el-menu-item>
         </el-sub-menu>
 
         <!-- 用户管理 sub-menu -->
@@ -169,7 +170,8 @@ const showOrders = computed(() =>
 const showProducts = computed(() =>
   canAccess('/products/seals/enterprise') || canAccess('/products/scenes') ||
   canAccess('/products/packages') ||
-  canAccess('/products/newspapers') || canAccess('/products/bookkeeping-packages'),
+  canAccess('/products/newspapers') || canAccess('/products/bookkeeping-packages') ||
+  canAccess('/registration-requests'),
 )
 const showSealMgmt = computed(() =>
   canAccess('/products/seals/enterprise') || canAccess('/products/seals/personal') ||

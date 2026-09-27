@@ -512,7 +512,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { provinceToCities, cityToDistricts, regionCodeByPath, regionPathByCode, regionPathByLegacyName } from '@/data/region-data'
+import { provinceToCities, cityToDistricts, regionCodeByPath, regionPathByCode, regionPathByLegacyName } from '@/utils/regions'
 import { Box, Postcard } from '@element-plus/icons-vue'
 import { getSealCategories, getSealSceneProducts, createSeal, updateSeal, deleteSeal, uploadImage, updatePackage, deletePackage, batchSetRegionPrice, getAdminScenes, getSeals, getSealPackages, createPackage, createScene, updateScene, deleteScene } from '@/api'
 const route = useRoute()
@@ -636,7 +636,7 @@ const saving = ref(false)
 const isEdit = ref(false)
 const form = reactive<any>({ name: '', electronicType: '', sceneId: '', sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
 // 全国地级以上城市级联数据（用于城市差异化定价选择器）
-// 全国三级行政区划（省 → 市 → 区），数据来自 @/data/region-data（2024 最新）
+// 全国三级行政区划（省 → 市 → 区），由新高德区划生成，并与小程序共用同一口径。
 const PROVINCE_CITY_OPTIONS = Object.keys(provinceToCities).map((prov) => ({
   value: prov,
   label: prov,
@@ -959,10 +959,6 @@ const filteredPackages = computed(() => {
   return [...list].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
 })
 
-// 兼容旧逻辑（已废弃，由 filteredSeals + filteredPackages 替代）
-const mergedItems = computed(() => [...filteredSeals.value, ...filteredPackages.value])
-
-
 function sceneItemCount(sceneId: string): number {
   const sceneName = businessCategories.value.find((c) => c.id === sceneId)?.name
   if (!sceneName) return 0
@@ -978,16 +974,6 @@ function personalSceneItemCount(sceneId: string): number {
 function electronicSceneItemCount(sceneId: string): number {
   return seals.value.filter((s) => s._sceneId === sceneId).length
     + packages.value.filter((p) => p._sceneId === sceneId).length
-}
-
-// 单路由（个人 + 电子）子 Tab 计数
-// 电子印章 Tab 数量（基于动态 electronicSubTypesMap）
-function singleSubCount(label: string): number {
-  const categoryName = getElectronicCategory(label)?.name
-  return seals.value.filter((s) =>
-    (categoryName && s.sealCategories?.name === categoryName) ||
-    (!s.sealCategories?.id && getSealSubType(s.name) === label)
-  ).length
 }
 
 // seal_categories 中 name='个人印章'/'电子印章' 的项 → 补充 personalScene/electronicScene
@@ -1054,10 +1040,6 @@ async function fetchSealsByCategory(catId: string) {
   } finally {
     loading.value = false
   }
-}
-
-function dedupeById(items: any[]) {
-  return [...new Map(items.map((item) => [item.id, item])).values()]
 }
 
 async function fetchSceneProducts(scene: any) {
@@ -1377,11 +1359,6 @@ async function handlePkgDelete(row: any) {
   } else {
     await fetchSealsByCategory(defaultCategory.value)
   }
-}
-
-async function toggleStatus(row: any) {
-  await updateSeal(row.id, { status: row.status })
-  ElMessage.success('状态已更新')
 }
 
 async function beforeUpload(file: File) {

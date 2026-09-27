@@ -26,6 +26,9 @@ SysFix/
 .tmp-*
 .tools/
 .workbuddy/
+.codex-tmp/
+.db-backup/
+vite-start.cmd
 
 # 一次性诊断/预览产物（已删源文件，防再生）
 _envinfo.txt

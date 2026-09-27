@@ -1,7 +1,7 @@
 <template>
   <div class="page-card">
     <div class="page-header">
-      <h3>菜单权限配置</h3>
+      <h3>菜单/操作权限配置</h3>
       <div class="header-actions">
         <el-button @click="handleAdd">新增配置</el-button>
         <el-button type="danger" @click="handleReset">重置为默认</el-button>
@@ -50,8 +50,9 @@
         <el-form-item label="匹配方式">
           <el-radio-group v-model="form.pathType">
             <el-radio value="exact">精确匹配</el-radio>
-            <el-radio value="prefix">前缀匹配</el-radio>
+            <el-radio value="prefix" :disabled="isExportActionPath(form.path)">前缀匹配</el-radio>
           </el-radio-group>
+          <div v-if="isExportActionPath(form.path)" class="form-tip">导出属于独立操作权限，必须使用精确匹配。</div>
         </el-form-item>
         <el-form-item label="允许角色">
           <el-checkbox-group v-model="form.roles">
@@ -84,6 +85,12 @@ import { useAuthStore } from '@/stores/auth'
 const roleLabels = ROLE_LABELS
 const authStore = useAuthStore()
 
+// 导出类独立操作权限路径：必须使用精确匹配，不继承页面前缀权限
+const EXPORT_ACTION_PATHS = ['/v2/orders/export', '/finance/export', '/transaction/export']
+function isExportActionPath(path: string) {
+  return EXPORT_ACTION_PATHS.includes(path)
+}
+
 const pathLabels: Record<string, string> = {
   '/dashboard': '工作台',
   '/outlets': '网点管理',
@@ -112,10 +119,11 @@ const pathLabels: Record<string, string> = {
   '/users': '用户管理',
   '/reviews': '评价管理',
   '/questions': '问答管理',
+  '/registration-requests': '工商注册',
   '/content': '内容管理',
   '/content/banners': 'Banner管理',
   '/content/announcements': '公告管理',
-  '/content/intros': '业务介绍',
+  '/content/intros': '详情介绍',
   '/system': '系统管理',
   '/system/admins': '管理员账号',
   '/system/logs': '操作日志',
@@ -124,10 +132,13 @@ const pathLabels: Record<string, string> = {
   '/system/menu-roles': '菜单权限',
   '/faq': '常见问题',
   '/finance': '财务中心',
+  '/finance/export': '财务总览导出（操作权限）',
   '/v2/orders': '供应链订单(V2)',
+  '/v2/orders/export': '订单数据导出（操作权限）',
+  '/transaction/export': '交易流水导出（操作权限）',
   '/v2/orders/unassigned': '待派单池(V2)',
-  '/v2/settlements': '结算管理(V2.0)',
-  '/v2/settlement-rules': '结算规则(V2)',
+  '/v2/settlements': '结算管理',
+  '/v2/settlement-rules': '结算规则',
   '/v2/refunds': '退款管理(V2)',
   '/v2/invoices': '开票管理(V2)',
   '/v2/suppliers': '供应商(V2)',
@@ -175,6 +186,10 @@ async function handleSubmit() {
     ElMessage.warning('路径须以 / 开头')
     return
   }
+  if (isExportActionPath(form.value.path) && form.value.pathType !== 'exact') {
+    ElMessage.warning('导出权限必须使用精确匹配')
+    return
+  }
   if (editId.value) {
     await updateMenuRoleConfig(editId.value, form.value)
   } else {
@@ -217,5 +232,10 @@ onMounted(loadData)
 .header-actions {
   display: flex;
   gap: 10px;
+}
+.form-tip {
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

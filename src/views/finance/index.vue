@@ -2,6 +2,16 @@
   <div class="finance-page">
     <div class="page-header">
       <h2>{{ mainTab === 'transaction' ? '交易流水' : '财务总览' }}</h2>
+      <el-button
+        v-if="mainTab === 'overview' && canExportOverview"
+        type="success"
+        :loading="overviewExporting"
+        :disabled="overviewExporting"
+        @click="onOverviewExport"
+      >
+        <el-icon><Download /></el-icon>
+        导出财务总览
+      </el-button>
     </div>
 
     <!-- 财务总览统计卡 -->
@@ -133,7 +143,7 @@
             <el-date-picker v-model="dateRange2" type="daterange" range-separator="至" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:240px" @change="onDateRangeChange" />
             <el-button type="primary" @click="loadData">查询</el-button>
             <el-button @click="onReset">重置</el-button>
-            <el-button @click="onExport"><el-icon><Download /></el-icon> 导出</el-button>
+            <el-button v-if="canExport" :loading="transactionExporting" :disabled="transactionExporting" @click="onExport"><el-icon><Download /></el-icon> 导出</el-button>
           </div>
         </div>
       </el-card>
@@ -147,7 +157,7 @@
           <el-table-column prop="transactionNo" label="交易单号" width="190" />
           <el-table-column prop="orderNo" label="关联订单" width="190" />
           <el-table-column prop="userName" label="用户" width="120" />
-          <el-table-column prop="outletName" label="履约供应商" width="160" show-overflow-tooltip />
+          <el-table-column prop="outletName" label="供应商" width="160" show-overflow-tooltip />
           <el-table-column prop="businessType" label="业务" width="100" />
           <el-table-column label="类型" width="100">
             <template #default="{ row }"><el-tag :type="tradeTypeTagType(row.tradeType)" size="small">{{ tradeTypeText(row.tradeType) }}</el-tag></template>
@@ -181,7 +191,7 @@
         <el-descriptions-item label="交易单号">{{ transDetailRow.transactionNo }}</el-descriptions-item>
         <el-descriptions-item label="关联订单">{{ transDetailRow.orderNo }}</el-descriptions-item>
         <el-descriptions-item label="用户">{{ transDetailRow.userName }} {{ transDetailRow.userPhone }}</el-descriptions-item>
-        <el-descriptions-item label="履约供应商">{{ transDetailRow.outletName || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="供应商">{{ transDetailRow.outletName || '—' }}</el-descriptions-item>
         <el-descriptions-item label="业务">{{ transDetailRow.businessType }}</el-descriptions-item>
         <el-descriptions-item label="交易类型">{{ tradeTypeText(transDetailRow.tradeType) }}</el-descriptions-item>
         <el-descriptions-item label="支付方式">{{ transDetailRow.payMethod }}</el-descriptions-item>
@@ -205,11 +215,20 @@ import { ElMessage } from 'element-plus'
 import { Coin, Setting, CloseBold, Shop, TrendCharts } from '@element-plus/icons-vue'
 import {
   getFinanceOverview,
+  exportFinanceOverview,
   getTransactionStats, getTransactionFlows,
   exportTransactionFlows,
   getOutletsWithFlows,
   v2GetSettlements,
 } from '@/api'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+const canExportOverview = computed(() => authStore.canPerform('/finance/export'))
+// 交易流水导出是独立操作权限，不继承财务页面的查看权限
+const canExport = computed(() => authStore.canPerform('/transaction/export'))
+const overviewExporting = ref(false)
+const transactionExporting = ref(false)
 
 // ==================== 主 Tab 控制 ====================
 const mainTab = ref('overview')
@@ -251,6 +270,46 @@ async function loadOverview() {
   } catch (e) { console.error(e) }
 }
 
+function downloadXlsx(blob, filenamePrefix) {
+  if (!(blob instanceof Blob) || blob.size === 0) throw new Error('导出文件为空')
+  const now = new Date()
+  const stamp = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+    String(now.getHours()).padStart(2, '0'),
+    String(now.getMinutes()).padStart(2, '0'),
+    String(now.getSeconds()).padStart(2, '0'),
+  ].join('')
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${filenamePrefix}_${stamp}.xlsx`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+async function onOverviewExport() {
+  if (!canExportOverview.value) {
+    ElMessage.error('没有财务总览导出权限')
+    return
+  }
+  if (overviewExporting.value) return
+  overviewExporting.value = true
+  try {
+    const blob = await exportFinanceOverview({ days: parseInt(trendRange.value) })
+    downloadXlsx(blob, '财务总览')
+    ElMessage.success('财务总览已导出')
+  } catch (e) {
+    console.error(e)
+    ElMessage.error(e?.message || '导出失败')
+  } finally {
+    overviewExporting.value = false
+  }
+}
+
 // 本月口径（自然月至今），用于营收分布环形图
 async function loadModuleMonth() {
   try {
@@ -290,22 +349,6 @@ function fmt(v) { return Number(v || 0).toFixed(2) }
 function fmtLocalDate(d) {
   const pad = (n) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
-// CSV 下载（带 BOM，Excel 可直接打开中文）
-function downloadCSV(filename, headers, rows) {
-  const esc = (v) => {
-    const s = v === null || v === undefined ? '' : String(v)
-    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
-  }
-  const csv = '\uFEFF' + [headers, ...rows].map(row => row.map(esc).join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 const transStats = ref({})
@@ -402,9 +445,15 @@ function onReset() {
 }
 
 async function onExport() {
+  if (!canExport.value) {
+    ElMessage.error('没有交易流水导出权限')
+    return
+  }
+  if (!transTotal.value) { ElMessage.info('当前筛选没有可导出的流水'); return }
+  if (transactionExporting.value) return
+  transactionExporting.value = true
   try {
     const params = {
-      page: 1, pageSize: 10000,
       ...(filterParams.outletId && { outletId: filterParams.outletId }),
       ...(filterParams.module && { module: filterParams.module }),
       ...(filterParams.tradeType && { tradeType: filterParams.tradeType }),
@@ -413,19 +462,15 @@ async function onExport() {
       ...(dateRange2.value && dateRange2.value[0] && { startDate: dateRange2.value[0] }),
       ...(dateRange2.value && dateRange2.value[1] && { endDate: dateRange2.value[1] }),
     }
-    const res = await exportTransactionFlows(params)
-    const data = res?.data ?? res ?? []
-    const list = Array.isArray(data) ? data : (data?.items || [])
-    if (!list.length) { ElMessage.info('暂无数据可导出'); return }
-    const headers = ['交易时间', '交易单号', '关联订单', '用户', '履约供应商', '业务', '类型', '支付方式', '交易金额', '手续费', '实收', '状态']
-    const rows = list.map(r => [
-      r.createdAt || '', r.transactionNo || '', r.orderNo || '', r.userName || '', r.outletName || '',
-      r.businessType || '', tradeTypeText(r.tradeType), r.payMethod || '',
-      r.amount, r.fee, r.netAmount, r.statusText || r.status || '',
-    ])
-    downloadCSV('交易流水_' + fmtLocalDate(new Date()) + '.csv', headers, rows)
-    ElMessage.success('导出成功')
-  } catch (e) { console.error(e); ElMessage.error('导出失败') }
+    const blob = await exportTransactionFlows(params)
+    downloadXlsx(blob, '交易流水')
+    ElMessage.success('交易流水已导出')
+  } catch (e) {
+    console.error(e)
+    ElMessage.error(e?.message || '导出失败')
+  } finally {
+    transactionExporting.value = false
+  }
 }
 
 function viewTransDetail(row) { transDetailRow.value = row; transDetailVisible.value = true }

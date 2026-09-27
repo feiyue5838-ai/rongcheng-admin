@@ -208,11 +208,6 @@
         <el-form-item label="报纸名称" required>
           <el-input v-model="form.name" placeholder="如：人民日报" />
         </el-form-item>
-        <el-form-item label="公告类型" required>
-          <el-select v-model="form.categoryId" placeholder="选择公告类型" style="width: 100%">
-            <el-option v-for="cat in categories" :key="cat.id" :label="cat.name" :value="cat.id" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="所属大区" required>
           <el-select v-model="form.region" placeholder="选择大区" style="width: 100%">
             <el-option label="全国（国家级）" value="全国" />
@@ -243,7 +238,7 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="单价(元/字)" required>
-          <el-input-number v-model="form.pricePerWord" :min="0" :precision="3" style="width: 100%" />
+          <el-input-number v-model="form.pricePerWord" :min="0.001" :precision="3" style="width: 100%" />
         </el-form-item>
         <el-form-item label="最少字数" required>
           <el-input-number v-model="form.minWords" :min="1" style="width: 100%" />
@@ -325,7 +320,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from 'vue'
-import { getAllNewspapers, getNewspaperCategories, createNewspaper, updateNewspaper, deleteNewspaper, getNewspaperSections, createNewspaperSection, updateNewspaperSection, deleteNewspaperSection } from '@/api'
+import { getAllNewspapers, createNewspaper, updateNewspaper, deleteNewspaper, getNewspaperSections, createNewspaperSection, updateNewspaperSection, deleteNewspaperSection } from '@/api'
+import { provinces as sharedProvinceNames, provinceToCities, getProvinceCode, getCityCode } from '@/utils/regions'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Refresh, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 
@@ -541,6 +537,22 @@ const CITY_CODES: Record<string, { name: string; code: string }[]> = {
   '82': [{ name: '澳门', code: '820100' }],
 };
 
+// 报纸仓库只使用 scripts/sync-regions.cjs 生成的共享高德数据。
+// 上面的历史常量暂留给旧数据阅读；所有选择、保存和筛选均以此处共享数据为准。
+const ALIGNED_PROVINCES = sharedProvinceNames.map(name => ({
+  name,
+  code: getProvinceCode(name),
+}))
+const ALIGNED_CITY_CODES: Record<string, { name: string; code: string }[]> = Object.fromEntries(
+  sharedProvinceNames.map(province => [
+    getProvinceCode(province),
+    (provinceToCities[province] || []).map(city => ({
+      name: city,
+      code: getCityCode(city, province),
+    })),
+  ]),
+)
+
 // 省份代码 → 大区映射
 const PROVINCE_TO_REGION: Record<string, string> = {
   '11': '华北', '12': '华北', '13': '华北', '14': '华北', '15': '华北',
@@ -553,11 +565,11 @@ const PROVINCE_TO_REGION: Record<string, string> = {
 };
 
 // 省份代码反向查名称
-const PROVINCE_BY_CODE = Object.fromEntries(PROVINCES.map(p => [p.code, p.name]));
+const PROVINCE_BY_CODE = Object.fromEntries(ALIGNED_PROVINCES.map(p => [p.code, p.name]));
 
 // 根据城市代码查名称
 function getCityName(code: string): string {
-  for (const cities of Object.values(CITY_CODES)) {
+  for (const cities of Object.values(ALIGNED_CITY_CODES)) {
     const c = cities.find(c => c.code === code);
     if (c) return c.name;
   }
@@ -586,7 +598,6 @@ const sectionForm = reactive<any>({
   remark: '',
 })
 const sectionFormRef = ref()
-const categories = ref<any[]>([])
 const allNewspapers = ref<any[]>([])
 const searchKey = ref('')
 const filterRegion = ref('')
@@ -598,11 +609,10 @@ const pageNum = ref(1)
 const pageSize = ref(10)
 const dialogVisible = ref(false)
 const isEdit = ref(false)
-const provinces = PROVINCES
+const provinces = ALIGNED_PROVINCES
 
 const form = reactive<any>({
   name: '',
-  categoryId: '',
   region: '',
   provinceCode: '',
   cityCode: '',
@@ -622,7 +632,7 @@ const form = reactive<any>({
 // 当前省份下的城市列表
 const currentCities = computed(() => {
   if (!form.provinceCode) return [];
-  return CITY_CODES[form.provinceCode] || [];
+  return ALIGNED_CITY_CODES[form.provinceCode] || [];
 })
 
 // 三级联动：大区 -> 省份列表
@@ -640,17 +650,17 @@ const REGION_PROVINCES: Record<string, string[]> = {
 
 // 筛选后的省份列表
 const filteredProvinces = computed(() => {
-  if (!filterRegion.value) return PROVINCES
+  if (!filterRegion.value) return ALIGNED_PROVINCES
   const provinceNames = REGION_PROVINCES[filterRegion.value] || []
-  return PROVINCES.filter(p => provinceNames.includes(p.name))
+  return ALIGNED_PROVINCES.filter(p => provinceNames.includes(p.name))
 })
 
 // 筛选后的城市列表
 const filteredCities = computed(() => {
   if (!filterProvince.value) return []
-  const provinceCode = PROVINCES.find(p => p.name === filterProvince.value)?.code
+  const provinceCode = ALIGNED_PROVINCES.find(p => p.name === filterProvince.value)?.code
   if (!provinceCode) return []
-  return CITY_CODES[provinceCode] || []
+  return ALIGNED_CITY_CODES[provinceCode] || []
 })
 
 // 大区切换 -> 清空省份和城市
@@ -678,7 +688,18 @@ async function fetchNewspapers() {
     // 一次性拉全量，前端过滤 + 统计
     // getAllNewspapers() 返回 newspapers[] 数组（无包装）
     const res: any = await getAllNewspapers()
-    allNewspapers.value = Array.isArray(res) ? res : (res?.list || [])
+    const list = Array.isArray(res) ? res : (res?.list || [])
+    allNewspapers.value = list.map((newspaper: any) => {
+      const provinceCode = newspaper.provinceCode || getProvinceCode(newspaper.province || '')
+      const cityCode = newspaper.cityCode || getCityCode(newspaper.city || '', newspaper.province || '')
+      const inferredRegion = PROVINCE_TO_REGION[provinceCode] || newspaper.region || ''
+      return {
+        ...newspaper,
+        provinceCode,
+        cityCode,
+        region: newspaper.region && newspaper.region !== '未知' ? newspaper.region : inferredRegion,
+      }
+    })
   } finally {
     loading.value = false
   }
@@ -814,7 +835,6 @@ function showDialog(type: string, row?: any) {
     Object.assign(form, {
       id: row.id,
       name: row.name || '',
-      categoryId: row.categoryId || '',
       region: row.region || '',
       provinceCode: row.provinceCode || '',
       cityCode: row.cityCode || '',
@@ -833,8 +853,7 @@ function showDialog(type: string, row?: any) {
   } else {
     Object.assign(form, {
       name: '',
-      categoryId: '',
-      region: '',
+          region: '',
       provinceCode: '',
       cityCode: '',
       level: 1,
@@ -855,14 +874,16 @@ function showDialog(type: string, row?: any) {
 
 async function saveNewspaper() {
   if (!form.name) { ElMessage.warning('请填写报纸名称'); return }
-  if (!form.categoryId) { ElMessage.warning('请选择公告类型'); return }
+  if (!form.region) { ElMessage.warning('请选择所属大区'); return }
+  if (form.region !== '全国' && !form.provinceCode) { ElMessage.warning('请选择覆盖省份'); return }
+  if (!(Number(form.pricePerWord) > 0)) { ElMessage.warning('单价必须大于 0'); return }
+  if (!(Number(form.minWords) >= 1)) { ElMessage.warning('最少字数必须大于 0'); return }
   saving.value = true
   try {
     const province = form.provinceCode ? PROVINCE_BY_CODE[form.provinceCode] || '' : '全国';
     const city = form.cityCode ? getCityName(form.cityCode) : '';
     const data = {
       name: form.name,
-      categoryId: form.categoryId,
       region: form.region || null,
       province,
       city,
@@ -1003,16 +1024,10 @@ async function deleteSection(row: any, section: any) {
   }
 }
 
-onMounted(async () => {
-  // 分类接口失败不阻塞报纸列表加载
-  try {
-    const res: any = await getNewspaperCategories()
-    categories.value = Array.isArray(res) ? res : ((res as any).list || (res as any).data?.list || [])
-  } catch {
-    categories.value = []
-  }
+onMounted(() => {
   fetchNewspapers()
 })
+
 </script>
 
 <style scoped>

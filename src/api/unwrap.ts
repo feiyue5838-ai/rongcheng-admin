@@ -22,13 +22,15 @@ import type { PagedItems, PagedList, PagedRows } from './types'
 
 /** V1 单层包装解包（防御式；拦截器已解 {code:0,data} 后此函数为幂等兜底） */
 export function unwrapV1<T = any>(res: any): T {
-  return res && typeof res === 'object' && 'data' in res ? (res.data as T) : (res as T)
+  return res && typeof res === 'object' && res.code === 0 && 'data' in res
+    ? (res.data as T)
+    : (res as T)
 }
 
 /** V2 双层包装解包（controller 层 + 全局拦截器各一层） */
 export function unwrapV2<T = any>(res: any): T {
   const outer = unwrapV1(res)
-  return outer && typeof outer === 'object' && 'data' in outer ? (outer.data as T) : (outer as T)
+  return unwrapV1<T>(outer)
 }
 
 /** 数组归一化：兼容裸数组 / {list} / {items} / {rows} / {data:[...]} */

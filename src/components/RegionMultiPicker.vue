@@ -1,96 +1,134 @@
 <template>
-  <div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <el-select
-        v-model="selProvinces"
-        multiple
+  <div class="region-multi-picker">
+    <div class="region-multi-picker__controls">
+      <el-cascader
+        v-model="selectedPaths"
+        :options="regionOptions"
+        :props="cascaderProps"
         collapse-tags
         collapse-tags-tooltip
         filterable
         clearable
-        placeholder="选省/直辖市/自治区"
-        style="width:220px"
-      >
-        <el-option v-for="p in provinces" :key="p" :label="p" :value="p" />
-      </el-select>
-      <el-select
-        v-model="selCities"
-        multiple
-        collapse-tags
-        collapse-tags-tooltip
-        filterable
-        clearable
-        placeholder="选市（先选省可过滤）"
-        style="width:220px"
-      >
-        <el-option v-for="c in cityOptions" :key="c" :label="c" :value="c" />
-      </el-select>
-      <el-select
-        v-model="selDistricts"
-        multiple
-        collapse-tags
-        collapse-tags-tooltip
-        filterable
-        clearable
-        placeholder="选区/县（先选市）"
-        style="width:220px"
-      >
-        <el-option v-for="d in districtOptions" :key="d" :label="d" :value="d" />
-      </el-select>
+        placeholder="选择省 / 市 / 区县（可停在任意一级）"
+        style="width: 100%"
+      />
       <el-button type="primary" plain @click="addSelected">加入</el-button>
     </div>
-    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+    <div class="region-multi-picker__tags">
       <el-tag
-        v-for="name in modelValue"
-        :key="name"
+        v-for="path in modelValue"
+        :key="path"
         closable
-        @close="removeOne(name)"
+        @close="removeOne(path)"
       >
-        {{ name }}
+        {{ displayPath(path) }}
       </el-tag>
-      <span v-if="!modelValue.length" style="color:#909399;font-size:12px">未配置 = 该材料不按地区要求（空数组）</span>
+      <span v-if="!modelValue.length" class="region-multi-picker__empty">
+        未配置 = 该材料不按地区要求（空数组）
+      </span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { provinces, provinceToCities, cityToDistricts } from '@/utils/regions'
+
+type RegionOption = {
+  value: string
+  label: string
+  children?: RegionOption[]
+}
 
 const props = defineProps<{ modelValue: string[] }>()
 const emit = defineEmits<{ (e: 'update:modelValue', v: string[]): void }>()
 
-const selProvinces = ref<string[]>([])
-const selCities = ref<string[]>([])
-const selDistricts = ref<string[]>([])
+const selectedPaths = ref<string[][]>([])
+const cascaderProps = {
+  multiple: true,
+  checkStrictly: true,
+  emitPath: true,
+}
 
-// 选了省则市下拉只显示这些省的市；没选省显示全部市（可搜索）
-const cityOptions = computed(() => {
-  const ps = selProvinces.value.length ? selProvinces.value : provinces
-  const set = new Set<string>()
-  ps.forEach(p => (provinceToCities[p] || []).forEach(c => set.add(c)))
-  return [...set]
-})
+const regionOptions = computed<RegionOption[]>(() => provinces.map(province => ({
+  value: province,
+  label: province,
+  children: (provinceToCities[province] || []).map(city => {
+    const districts = cityToDistricts[city] || []
+    return {
+      value: city,
+      label: city,
+      ...(districts.length
+        ? {
+            children: districts.map(district => ({
+              value: district,
+              label: district,
+            })),
+          }
+        : {}),
+    }
+  }),
+})))
 
-// 选了市则区县下拉只显示这些市的区县；没选市为空（区县上千，不全量展示）
-const districtOptions = computed(() => {
-  const set = new Set<string>()
-  selCities.value.forEach(c => (cityToDistricts[c] || []).forEach(d => set.add(d)))
-  return [...set]
-})
+function normalizeRegionPart(value: string): string {
+  return String(value || '')
+    .trim()
+    .replace(/(特别行政区|自治区|自治州|省|市|区|县)$/g, '')
+}
+
+function semanticKey(value: string): string {
+  return String(value || '')
+    .split('/')
+    .map(normalizeRegionPart)
+    .filter(Boolean)
+    .join('/')
+}
 
 function addSelected() {
   const merged = [...props.modelValue]
-  for (const n of [...selProvinces.value, ...selCities.value, ...selDistricts.value]) {
-    if (!merged.includes(n)) merged.push(n)
+  const existingKeys = new Set(merged.map(semanticKey))
+  for (const path of selectedPaths.value) {
+    const value = path.map(part => String(part).trim()).filter(Boolean).join('/')
+    const key = semanticKey(value)
+    if (value && key && !existingKeys.has(key)) {
+      merged.push(value)
+      existingKeys.add(key)
+    }
   }
   emit('update:modelValue', merged)
-  selProvinces.value = []
-  selCities.value = []
-  selDistricts.value = []
+  selectedPaths.value = []
 }
 
-function removeOne(name: string) {
-  emit('update:modelValue', props.modelValue.filter(x => x !== name))
+function removeOne(path: string) {
+  emit('update:modelValue', props.modelValue.filter(value => value !== path))
+}
+
+function displayPath(path: string): string {
+  return path.split('/').join(' / ')
 }
 </script>
+
+<style scoped>
+.region-multi-picker {
+  width: 100%;
+}
+
+.region-multi-picker__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  width: 100%;
+}
+
+.region-multi-picker__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.region-multi-picker__empty {
+  color: #909399;
+  font-size: 12px;
+}
+</style>

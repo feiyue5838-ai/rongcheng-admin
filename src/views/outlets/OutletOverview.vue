@@ -4,7 +4,7 @@
       <div>
         <h2>全网点总览</h2>
         <div class="update-time" v-if="overview">
-          数据更新于 {{ updateTime }} · 自动刷新
+          数据更新于 {{ updateTime }} · 每 30 秒自动刷新
         </div>
       </div>
       <el-button :loading="loading" @click="loadData">
@@ -204,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import * as echarts from 'echarts'
 import { Refresh, OfficeBuilding, CircleCheck, Document, Bell, TrendCharts, DataAnalysis, Warning, CircleCheckFilled, Histogram } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -230,6 +230,10 @@ const overview = ref<any>(null)
 const updateTime = ref('')
 const chartRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
+
+// 自动刷新：页头标注“自动刷新”，这里补上真正的定时刷新逻辑
+const AUTO_REFRESH_INTERVAL = 30000
+let refreshTimer: number | undefined
 
 // 派生指标
 const acceptRatio = computed(() => {
@@ -284,7 +288,7 @@ function normalizeOverview(raw: any): any {
   }
 }
 
-async function loadData() {
+async function loadData(silent = false) {
   loading.value = true
   try {
     const res: any = await getOutletOverviewAPI()
@@ -293,7 +297,7 @@ async function loadData() {
     await nextTick()
     initChart()
   } catch {
-    ElMessage.error('加载失败')
+    if (!silent) ElMessage.error('加载失败')
   } finally {
     loading.value = false
   }
@@ -352,7 +356,26 @@ function initChart() {
   chart.setOption(option)
 }
 
-onMounted(loadData)
+function startAutoRefresh() {
+  stopAutoRefresh()
+  refreshTimer = window.setInterval(() => {
+    if (!loading.value) loadData(true)
+  }, AUTO_REFRESH_INTERVAL)
+}
+
+function stopAutoRefresh() {
+  if (refreshTimer) {
+    window.clearInterval(refreshTimer)
+    refreshTimer = undefined
+  }
+}
+
+onMounted(() => {
+  loadData()
+  startAutoRefresh()
+})
+
+onBeforeUnmount(stopAutoRefresh)
 </script>
 
 <style lang="scss" scoped>

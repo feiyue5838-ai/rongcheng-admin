@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="page-header">
-      <h2>V2.0 结算管理</h2>
+      <h2>结算管理</h2>
       <div>
         <el-button type="primary" @click="openGenerate">生成结算单</el-button>
         <el-button @click="load">刷新</el-button>

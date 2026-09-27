@@ -26,9 +26,27 @@ const provinces = [];
 const provinceToCities = {};
 const cityToDistricts = {};
 
-// 行政区划代码：省 2 位、市 6 位（与旧版 2024 数据格式对齐，直辖市不设市码）
+// 行政区划代码：省 2 位、市/区县 6 位；旧数据回填的镇街没有高德代码时使用稳定 path: 键。
 const provinceCodes = {};
 const cityCodes = {};
+const regionCodeByPath = {};
+const regionPathByCode = {};
+const regionPathByLegacyName = {};
+
+const pathKey = pathParts => pathParts.join('\u0000');
+
+function fallbackPathCode(pathParts) {
+  return `path:${pathParts.join('/')}`;
+}
+
+function registerRegion(pathParts, code) {
+  const stableCode = String(code || fallbackPathCode(pathParts));
+  regionCodeByPath[pathKey(pathParts)] = stableCode;
+  regionPathByCode[stableCode] = pathParts;
+  const name = pathParts[pathParts.length - 1];
+  // 旧数据只有名称，重名时无法无损还原；只用于旧记录展示，保存后会迁移到稳定代码。
+  if (!regionPathByLegacyName[name]) regionPathByLegacyName[name] = pathParts;
+}
 
 for (const prov of TREE) {
   provinces.push(prov.name);
@@ -37,7 +55,12 @@ for (const prov of TREE) {
 
   if (MUNICIPALITIES.has(prov.name)) {
     provinceToCities[prov.name] = [prov.name];
-    cityToDistricts[prov.name] = groups.flatMap(g => (g.children || []).map(c => c.name));
+    cityCodes[prov.name] = prov.code.padEnd(6, '0');
+    registerRegion([prov.name, prov.name], cityCodes[prov.name]);
+    cityToDistricts[prov.name] = groups.flatMap(g => (g.children || []).map(c => {
+      registerRegion([prov.name, prov.name, c.name], c.code);
+      return c.name;
+    }));
     continue;
   }
 
@@ -46,20 +69,33 @@ for (const prov of TREE) {
     if (DIRECT_GROUP.test(g.name)) {
       for (const c of g.children || []) {
         cities.push(c.name);
-        cityToDistricts[c.name] = (LEGACY.cityToDistricts[c.name] || []).length
+        cityCodes[c.name] = c.code.padEnd(6, '0');
+        registerRegion([prov.name, c.name], cityCodes[c.name]);
+        const treeChildren = c.children || [];
+        const districts = (LEGACY.cityToDistricts[c.name] || []).length
           ? LEGACY.cityToDistricts[c.name]
-          : (c.children || []).map(x => x.name);
+          : treeChildren.map(x => x.name);
+        cityToDistricts[c.name] = districts;
+        const codeByName = Object.fromEntries(treeChildren.map(x => [x.name, x.code]));
+        for (const district of districts) {
+          registerRegion([prov.name, c.name, district], codeByName[district]);
+        }
       }
     } else {
       cities.push(g.name);
-      const list = (g.children || []).map(c => c.name);
-      cityToDistricts[g.name] = list.length ? list : (LEGACY.cityToDistricts[g.name] || []);
+      cityCodes[g.name] = g.code.padEnd(6, '0');
+      registerRegion([prov.name, g.name], cityCodes[g.name]);
+      const treeChildren = g.children || [];
+      const list = treeChildren.map(c => c.name);
+      const districts = list.length ? list : (LEGACY.cityToDistricts[g.name] || []);
+      cityToDistricts[g.name] = districts;
+      const codeByName = Object.fromEntries(treeChildren.map(x => [x.name, x.code]));
+      for (const district of districts) {
+        registerRegion([prov.name, g.name, district], codeByName[district]);
+      }
     }
   }
   provinceToCities[prov.name] = cities;
-  if (!MUNICIPALITIES.has(prov.name)) {
-    for (const g of groups) cityCodes[g.name] = g.code.padEnd(6, '0');
-  }
 }
 
 // 旧表兜底：直辖县级市（五指山市/济源市等）旧表有码而新数据不设市码的，沿用旧码
@@ -74,11 +110,16 @@ function getProvinceCode(province) {
   return provinceCodes[province] || '';
 }
 
-function getCityCode(city, _province) {
+function getCityCode(city, province) {
   if (!city) return '';
-  if (cityCodes[city]) return cityCodes[city];
   // 兼容无"市"后缀的城市名
   const name = city.endsWith('市') ? city : city + '市';
+  if (province) {
+    const exact = regionCodeByPath[pathKey([province, city])]
+      || regionCodeByPath[pathKey([province, name])];
+    if (exact) return exact;
+  }
+  if (cityCodes[city]) return cityCodes[city];
   return cityCodes[name] || '';
 }
 
@@ -139,20 +180,31 @@ const provinceToCities = ${JSON.stringify(provinceToCities)};
 
 const cityToDistricts = ${JSON.stringify(cityToDistricts)};
 
-// 行政区划代码（省 2 位 / 市 6 位，直辖市无市码——与旧版行为一致）
+// 行政区划代码（省 2 位 / 市和区县 6 位；无高德代码的回填镇街使用 path: 键）
 const provinceCodes = ${JSON.stringify(provinceCodes)};
 
 const cityCodes = ${JSON.stringify(cityCodes)};
+
+const regionCodeByPath = ${JSON.stringify(regionCodeByPath)};
+
+const regionPathByCode = ${JSON.stringify(regionPathByCode)};
+
+const regionPathByLegacyName = ${JSON.stringify(regionPathByLegacyName)};
 
 function getProvinceCode(province) {
   return provinceCodes[province] || '';
 }
 
-function getCityCode(city, _province) {
+function getCityCode(city, province) {
   if (!city) return '';
-  if (cityCodes[city]) return cityCodes[city];
   // 兼容无"市"后缀的城市名
   const name = city.endsWith('市') ? city : city + '市';
+  if (province) {
+    const exact = regionCodeByPath[[province, city].join('\\u0000')]
+      || regionCodeByPath[[province, name].join('\\u0000')];
+    if (exact) return exact;
+  }
+  if (cityCodes[city]) return cityCodes[city];
   return cityCodes[name] || '';
 }
 
@@ -170,7 +222,7 @@ function getDistrictsByCity(cityFull, provinceFull) {
   return cityToDistricts[cityFull] || [];
 }
 
-module.exports = { provinces, provinceToCities, cityToDistricts, provinceCodes, cityCodes, getProvinceCode, getCityCode, provincesShort, districtsShort, getCitiesByProvince, getDistrictsByCity };
+module.exports = { provinces, provinceToCities, cityToDistricts, provinceCodes, cityCodes, regionCodeByPath, regionPathByCode, regionPathByLegacyName, getProvinceCode, getCityCode, provincesShort, districtsShort, getCitiesByProvince, getDistrictsByCity };
 `;
 fs.writeFileSync(taroDest, taroOut);
 
@@ -182,16 +234,24 @@ export const provinces: string[] = ${JSON.stringify(provinces)};
 export const provinceToCities: Record<string, string[]> = ${JSON.stringify(provinceToCities)};
 export const cityToDistricts: Record<string, string[]> = ${JSON.stringify(cityToDistricts)};
 
-// 行政区划代码（省 2 位 / 市 6 位，直辖市无市码——与旧版行为一致）
+// 行政区划代码（省 2 位 / 市和区县 6 位；无高德代码的回填镇街使用 path: 键）
 export const provinceCodes: Record<string, string> = ${JSON.stringify(provinceCodes)};
 export const cityCodes: Record<string, string> = ${JSON.stringify(cityCodes)};
+export const regionCodeByPath: Record<string, string> = ${JSON.stringify(regionCodeByPath)};
+export const regionPathByCode: Record<string, string[]> = ${JSON.stringify(regionPathByCode)};
+export const regionPathByLegacyName: Record<string, string[]> = ${JSON.stringify(regionPathByLegacyName)};
 export function getProvinceCode(province: string): string {
   return provinceCodes[province] || '';
 }
-export function getCityCode(city: string, _province?: string): string {
+export function getCityCode(city: string, province?: string): string {
   if (!city) return '';
-  if (cityCodes[city]) return cityCodes[city];
   const name = city.endsWith('市') ? city : city + '市';
+  if (province) {
+    const exact = regionCodeByPath[[province, city].join('\\u0000')]
+      || regionCodeByPath[[province, name].join('\\u0000')];
+    if (exact) return exact;
+  }
+  if (cityCodes[city]) return cityCodes[city];
   return cityCodes[name] || '';
 }
 

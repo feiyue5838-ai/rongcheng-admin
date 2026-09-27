@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login, getMenuRoleConfigs } from '@/api'
 import router from '@/router'
-import { ADMIN_ROLES, ROLE_LABELS, hasAccess, setMenuConfigs, type MenuRoleItem } from '@/constants/roles'
+import { ROLE_LABELS, hasAccess, hasActionAccess, setMenuConfigs, type MenuRoleItem } from '@/constants/roles'
 
 /** 安全解析 localStorage 中的 admin_info，损坏/被篡改时回退 null，避免整站白屏 */
 function safeParseAdminInfo(): any {
@@ -32,6 +32,12 @@ export const useAuthStore = defineStore('auth', () => {
     // 建立 Vue 响应式依赖；实际匹配仍统一由 hasAccess 处理。
     void menuConfigs.value
     return hasAccess(role.value, path)
+  }
+
+  /** 检查导出等独立操作权限；操作权限不继承页面前缀权限。 */
+  function canPerform(path: string): boolean {
+    void menuConfigs.value
+    return hasActionAccess(role.value, path)
   }
 
   async function loginAction(username: string, password: string) {
@@ -74,5 +80,5 @@ export const useAuthStore = defineStore('auth', () => {
     router.push('/login')
   }
 
-  return { token, adminInfo, isLoggedIn, role, roleLabel, menuConfigs, loginAction, logoutAction, canAccess, loadMenuConfigs }
+  return { token, adminInfo, isLoggedIn, role, roleLabel, menuConfigs, loginAction, logoutAction, canAccess, canPerform, loadMenuConfigs }
 })

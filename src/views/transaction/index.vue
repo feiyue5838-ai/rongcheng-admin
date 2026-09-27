@@ -73,7 +73,7 @@
             @change="onDateRangeChange"
           />
         </el-form-item>
-        <el-form-item label="履约供应商">
+        <el-form-item label="供应商">
           <el-select v-model="filterParams.outletId" placeholder="全部合作方" clearable filterable style="width: 180px;" @change="onFilterChange">
             <el-option label="全部合作方" value="" />
             <el-option v-for="o in outletOptions" :key="o.value" :label="o.label" :value="o.value" />
@@ -115,7 +115,7 @@
         <el-form-item>
           <el-button type="primary" @click="onFilterChange">查询</el-button>
           <el-button @click="onReset">重置</el-button>
-          <el-button type="success" :loading="exporting" @click="onExport"><el-icon><Download /></el-icon> 导出</el-button>
+          <el-button v-if="canExport" type="success" :loading="exporting" @click="onExport"><el-icon><Download /></el-icon> 导出</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -157,7 +157,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="履约供应商" prop="outletName" min-width="140">
+        <el-table-column label="供应商" prop="outletName" min-width="140">
           <template #default="{ row }">
             <span>{{ row.outletName || '—' }}</span>
           </template>
@@ -247,8 +247,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useAuthStore } from '@/stores/auth'
 import {
   ElCheckTag,
   ElPagination,
@@ -276,6 +277,9 @@ import {
 
 // 统计数据
 const stats = ref<any>({})
+const authStore = useAuthStore()
+// 交易流水导出是独立操作权限，不继承页面查看权限
+const canExport = computed(() => authStore.canPerform('/transaction/export'))
 const tableData = ref<any[]>([])
 const total = ref(0)
 const loading = ref(false)
@@ -311,7 +315,7 @@ async function loadOutlets() {
     }))
 
   } catch (e) {
-    console.error('加载履约供应商列表失败', e)
+    console.error('加载供应商列表失败', e)
   }
 }
 
@@ -430,44 +434,16 @@ function onReset() {
   loadData()
 }
 
-// ============ 导出（后端 /transaction/export 当前返回 {data:[...], filename} JSON，客户端转 CSV 下载；待后端改二进制后切回 blob） ============
-const EXPORT_CSV_HEADERS = ['交易时间', '交易单号', '关联订单', '用户', '手机号', '履约供应商', '业务', '交易类型', '支付方式', '交易金额', '手续费', '实收金额', '状态']
-const EXPORT_CSV_FIELDS: Array<[keyof any, (v: any) => any]> = [
-  ['createdAt', v => formatDateTime(v)],
-  ['transactionNo', v => v ?? ''],
-  ['orderNo', v => v ?? ''],
-  ['userName', v => v ?? '匿名用户'],
-  ['userPhone', v => v ?? ''],
-  ['outletName', v => v ?? ''],
-  ['businessType', v => v ?? ''],
-  ['tradeType', v => getTradeTypeText(v)],
-  ['payMethod', v => getPayMethodText(v)],
-  ['amount', v => v ?? 0],
-  ['fee', v => v ?? 0],
-  ['netAmount', v => v ?? 0],
-  ['statusText', v => v ?? ''],
-]
-
-function downloadCSV(filename: string, rows: any[]) {
-  const esc = (v: any) => {
-    const s = v === null || v === undefined ? '' : String(v)
-    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
-  }
-  const csv = '\uFEFF' + [EXPORT_CSV_HEADERS, ...rows.map(r => EXPORT_CSV_FIELDS.map(([k, fmt]) => esc(fmt(r[k]))))]
-    .map(row => row.join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
+// ============ 导出（后端 /transaction/export 直吐 xlsx 二进制，与订单导出一致） ============
 async function onExport() {
+  if (!canExport.value) {
+    ElMessage.error('没有交易流水导出权限')
+    return
+  }
+  if (total.value === 0) { ElMessage.warning('没有可导出的数据'); return }
   exporting.value = true
   try {
-    const resp: any = await exportTransactionFlows({
+    const blob = await exportTransactionFlows({
       startDate: filterParams.startDate || undefined,
       endDate: filterParams.endDate || undefined,
       module: filterParams.module || undefined,
@@ -476,13 +452,27 @@ async function onExport() {
       keyword: filterParams.keyword || undefined,
       outletId: filterParams.outletId || undefined,
     })
-    const items = Array.isArray(resp) ? resp : (Array.isArray(resp?.data) ? resp.data : [])
-    if (!items.length) { ElMessage.warning('没有可导出的数据'); return }
-    const filename = resp?.filename || `交易流水_${new Date().toISOString().slice(0, 10)}.csv`
-    downloadCSV(filename, items)
-    ElMessage.success(`已导出 ${items.length} 条记录`)
-  } catch (e) {
-    ElMessage.error('导出失败')
+    if (!(blob instanceof Blob) || blob.size === 0) throw new Error('导出文件为空')
+    const now = new Date()
+    const stamp = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+      String(now.getHours()).padStart(2, '0'),
+      String(now.getMinutes()).padStart(2, '0'),
+      String(now.getSeconds()).padStart(2, '0'),
+    ].join('')
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `交易流水_${stamp}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    ElMessage.success('交易流水已导出')
+  } catch (e: any) {
+    ElMessage.error(e?.message || '导出失败')
   } finally {
     exporting.value = false
   }

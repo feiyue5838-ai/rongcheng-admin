@@ -12,6 +12,8 @@ export default [
       'dist/**',
       'dist-old-*/**',
       '.tools/**',
+      '.codex-tmp/**',
+      '.db-backup/**',
       'scripts/**',
       'uploads/**',
       'auto-imports.d.ts',

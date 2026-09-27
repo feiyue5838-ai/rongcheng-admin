@@ -261,14 +261,14 @@
         </div>
       </el-tab-pane>
 
-      <!-- ============ 业务介绍 ============ -->
-      <el-tab-pane label="业务介绍" name="intros" lazy>
+      <!-- ============ 详情介绍 ============ -->
+      <el-tab-pane label="详情介绍" name="intros" lazy>
         <div class="page-header">
-          <h2>业务介绍管理</h2>
+          <h2>详情介绍管理</h2>
           <el-button type="primary" @click="openIntroDialog()">新增介绍</el-button>
         </div>
         <div class="page-card">
-          <el-table :data="intros" v-loading="introLoading" stripe empty-text="暂无业务介绍">
+          <el-table :data="intros" v-loading="introLoading" stripe empty-text="暂无详情介绍">
             <el-table-column prop="sort" label="排序" width="80" />
             <el-table-column label="图片" width="180">
               <template #default="{ row }">
@@ -296,7 +296,7 @@
             </el-table-column>
           </el-table>
         </div>
-        <el-dialog v-model="introVisible" :title="introForm.id ? '编辑业务介绍' : '新增业务介绍'" width="560px">
+        <el-dialog v-model="introVisible" :title="introForm.id ? '编辑详情介绍' : '新增详情介绍'" width="560px">
           <el-form :model="introForm" label-width="100px">
             <el-form-item label="标题">
               <el-input v-model="introForm.title" maxlength="100" show-word-limit placeholder="如：官方备案" />
@@ -310,13 +310,25 @@
                 <el-option label="企业刻章" value="company" />
                 <el-option label="个人印章" value="personal" />
                 <el-option label="电子印章" value="electronic" />
+                <el-option label="代理记账" value="bookkeeping" />
               </el-select>
             </el-form-item>
             <el-form-item label="宣传图片">
-              <el-upload :action="'/api/upload/image'" :headers="uploadHeaders()" :show-file-list="false" :on-success="introUploadSuccess" :on-error="uploadError" :before-upload="beforeUpload" accept=".jpg,.jpeg,.png,.gif,.webp">
-                <el-button>选择图片</el-button>
+              <el-upload
+                ref="introUploadRef"
+                v-model:file-list="introFileList"
+                list-type="picture-card"
+                :auto-upload="true"
+                :before-upload="beforeUpload"
+                :http-request="introHttpUpload"
+                :on-remove="introUploadRemove"
+                :limit="9"
+                :on-exceed="introUploadExceed"
+                multiple
+              >
+                <el-icon><Plus /></el-icon>
               </el-upload>
-              <el-image v-if="introForm.image" :src="introForm.image" :preview-src-list="[introForm.image]" style="width: 200px; margin-top: 8px; border-radius: 4px" />
+              <div class="form-tip">支持 JPG/PNG/GIF/WebP，单张 ≤ 2MB，最多 9 张；第一张作为列表主图</div>
             </el-form-item>
             <el-form-item label="排序">
               <el-input-number v-model="introForm.sort" :min="0" :max="9999" :step="1" step-strictly />
@@ -378,6 +390,7 @@
                 <el-option label="刻章备案查询页" value="seal_record_query" />
                 <el-option label="登报页" value="newspaper" />
                 <el-option label="代理记账页" value="bookkeeping" />
+                <el-option label="公司注册页" value="company_registration" />
               </el-select>
               <div class="form-tip">刻章首页及企业、个人、电子、备案查询页面的 Hero 配置相互独立</div>
             </el-form-item>
@@ -415,6 +428,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, shallowRef, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import request from '@/api'
 import { formatDate } from '@/utils/format'
@@ -426,6 +440,7 @@ type ContentRow = {
   id: string | number | null
   title: string
   image?: string
+  images?: string[]
   link?: string
   subtitle?: string
   content?: string
@@ -700,29 +715,33 @@ async function deleteAnnouncement(row: ContentRow) {
   } catch (e) { ElMessage.error(errorMessage(e, '删除失败')) } finally { annActionKey.value = '' }
 }
 
-// ==================== 业务介绍 ====================
+// ==================== 详情介绍 ====================
 const intros = ref<ContentRow[]>([])
 const introLoading = ref(false)
 const introSaving = ref(false)
 const introActionKey = ref('')
 const introVisible = ref(false)
-type IntroType = 'all' | 'company' | 'personal' | 'electronic'
+type IntroType = 'all' | 'company' | 'personal' | 'electronic' | 'bookkeeping'
 const introForm = reactive<{
   id: string | number | null
   title: string
   subtitle: string
   image: string
+  images: string[]
   type: IntroType
   sort: number
   status: number
-}>({ id: null, title: '', subtitle: '', image: '', type: 'all', sort: 0, status: 1 })
+}>({ id: null, title: '', subtitle: '', image: '', images: [], type: 'all', sort: 0, status: 1 })
+
+const introUploadRef = ref<any>(null)
+const introFileList = ref<any[]>([])
 
 function normalizeIntroType(value: unknown): IntroType {
-  return value === 'company' || value === 'personal' || value === 'electronic' ? value : 'all'
+  return value === 'company' || value === 'personal' || value === 'electronic' || value === 'bookkeeping' ? value : 'all'
 }
 function introTypeLabel(value: unknown) {
   const labels: Record<IntroType, string> = {
-    all: '全部业务', company: '企业刻章', personal: '个人印章', electronic: '电子印章'
+    all: '全部业务', company: '企业刻章', personal: '个人印章', electronic: '电子印章', bookkeeping: '代理记账'
   }
   return labels[normalizeIntroType(value)]
 }
@@ -736,27 +755,64 @@ async function loadIntros() {
   } catch { /* ignore */ } finally { introLoading.value = false }
 }
 function openIntroDialog(row?: ContentRow) {
-  if (row) Object.assign(introForm, {
-    id: row.id, title: row.title || '', subtitle: row.subtitle || '', image: row.image || '',
-    type: normalizeIntroType(row.type), sort: row.sort ?? 0, status: row.status ?? 1
-  })
-  else Object.assign(introForm, { id: null, title: '', subtitle: '', image: '', type: 'all', sort: 0, status: 1 })
+  if (row) {
+    const images = introImagesFromRow(row)
+    Object.assign(introForm, {
+      id: row.id, title: row.title || '', subtitle: row.subtitle || '', image: images[0] || '', images,
+      type: normalizeIntroType(row.type), sort: row.sort ?? 0, status: row.status ?? 1
+    })
+    introFileList.value = introFileListFromImages(images)
+  } else {
+    Object.assign(introForm, { id: null, title: '', subtitle: '', image: '', images: [], type: 'all', sort: 0, status: 1 })
+    introFileList.value = []
+  }
   introVisible.value = true
 }
-function introUploadSuccess(res: UploadResponse) {
-  const imageUrl = uploadUrlFromResponse(res)
-  if (imageUrl) introForm.image = imageUrl
-  else ElMessage.error('上传失败')
+function introImagesFromRow(row?: ContentRow): string[] {
+  if (Array.isArray(row?.images) && row.images.length) return row.images.filter((u) => !!u)
+  if (row?.image) return [row.image]
+  return []
+}
+function introFileListFromImages(images: string[]): any[] {
+  return images.map((url, i) => ({ uid: 'pre-' + i, name: '图片' + (i + 1), url, status: 'success' }))
+}
+async function introHttpUpload(option: any) {
+  const file = option.file as File
+  const token = localStorage.getItem('admin_token')
+  const form = new FormData()
+  form.append('file', file)
+  try {
+    const response = await fetch('/api/upload/image', {
+      method: 'POST', headers: token ? { Authorization: 'Bearer ' + token } : {}, body: form
+    })
+    const result = await response.json().catch(() => null) as UploadResponse | null
+    const url = result ? uploadUrlFromResponse(result) : ''
+    if (!response.ok || !url) throw new Error('upload failed')
+    introForm.images.push(url)
+    option.file.url = url
+    option.onSuccess(result, option.file)
+  } catch {
+    ElMessage.error('图片上传失败，请重试')
+    option.onError(new Error('upload failed'))
+  }
+}
+function introUploadRemove(file: any) {
+  const url = file?.url || ''
+  introForm.images = introForm.images.filter((u) => u !== url)
+}
+function introUploadExceed() {
+  ElMessage.warning('最多上传 9 张宣传图片')
 }
 async function saveIntro() {
   const title = introForm.title.trim()
   const subtitle = introForm.subtitle.trim()
-  const image = introForm.image.trim()
-  if (!title) { ElMessage.warning('请输入业务介绍标题'); return }
-  if (!image) { ElMessage.warning('请上传宣传图片'); return }
+  const images = introForm.images.filter((u) => !!u)
+  const image = images[0] || ''
+  if (!title) { ElMessage.warning('请输入详情介绍标题'); return }
+  if (!images.length) { ElMessage.warning('请上传宣传图片'); return }
   introSaving.value = true
   try {
-    const payload = { title, subtitle, image, type: introForm.type, sort: introForm.sort, status: introForm.status }
+    const payload = { title, subtitle, image, images, type: introForm.type, sort: introForm.sort, status: introForm.status }
     if (introForm.id) await request.put(`/content/intros/${introForm.id}`, payload)
     else await request.post('/content/intros', payload)
     ElMessage.success('保存成功')
@@ -767,7 +823,7 @@ async function saveIntro() {
 async function toggleIntroStatus(row: ContentRow) {
   const nextStatus = row.status === 1 ? 0 : 1
   const action = nextStatus === 1 ? '启用' : '禁用'
-  const confirmed = await ElMessageBox.confirm(`确定${action}业务介绍「${row.title}」吗？`, `${action}业务介绍`, { type: 'warning' }).then(() => true).catch(() => false)
+  const confirmed = await ElMessageBox.confirm(`确定${action}详情介绍「${row.title}」吗？`, `${action}详情介绍`, { type: 'warning' }).then(() => true).catch(() => false)
   if (!confirmed) return
   introActionKey.value = `status-${row.id}`
   try {
@@ -793,7 +849,7 @@ const decoLoading = ref(false)
 const decoSaving = ref(false)
 const decoActionKey = ref('')
 const decoVisible = ref(false)
-type DecoType = 'seal' | 'seal_application' | 'seal_personal_application' | 'seal_electronic_application' | 'seal_record_query' | 'newspaper' | 'bookkeeping'
+type DecoType = 'seal' | 'seal_application' | 'seal_personal_application' | 'seal_electronic_application' | 'seal_record_query' | 'newspaper' | 'bookkeeping' | 'company_registration'
 const decoForm = reactive<{
   id: string | number | null
   type: DecoType
@@ -805,7 +861,7 @@ const decoForm = reactive<{
 }>({ id: null, type: 'seal', title: '', subtitle: '', image: '', sort: 0, status: 1 })
 
 function normalizeDecoType(value: unknown): DecoType {
-  const types: DecoType[] = ['seal', 'seal_application', 'seal_personal_application', 'seal_electronic_application', 'seal_record_query', 'newspaper', 'bookkeeping']
+  const types: DecoType[] = ['seal', 'seal_application', 'seal_personal_application', 'seal_electronic_application', 'seal_record_query', 'newspaper', 'bookkeeping', 'company_registration']
   return types.includes(value as DecoType) ? value as DecoType : 'seal'
 }
 function decoTypeLabel(value: unknown) {
@@ -816,7 +872,8 @@ function decoTypeLabel(value: unknown) {
     seal_electronic_application: '电子印章申请页',
     seal_record_query: '刻章备案查询页',
     newspaper: '登报页',
-    bookkeeping: '代理记账页'
+    bookkeeping: '代理记账页',
+    company_registration: '公司注册页'
   }
   return labels[normalizeDecoType(value)]
 }

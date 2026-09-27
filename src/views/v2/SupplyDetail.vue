@@ -60,7 +60,9 @@
             v-for="row in subjectCard.rows"
             :key="row.label"
             :label="row.label"
-          >{{ row.value }}</el-descriptions-item>
+          >
+            {{ row.value }}
+          </el-descriptions-item>
         </el-descriptions>
       </el-card>
 
@@ -110,27 +112,22 @@
       <!-- 客户上传资质证件（materials，2026-09-06：V2 详情补回，对齐 V1 管理端可见性） -->
       <el-card v-if="detail.materials && detail.materials.length > 0" shadow="hover" style="margin-bottom: 16px">
         <template #header><span>⑤ 上传资质证件（{{ detail.materials.length }}）</span></template>
-        <div class="material-grid">
-          <div v-for="mt in sortedMaterials" :key="mt.id" class="material-item">
-            <el-image
-              :src="mt.url"
-              :preview-src-list="[mt.url]"
-              preview-teleported
-              fit="cover"
-              class="material-img"
-            />
-            <div class="material-meta">
-              <el-tag size="small" type="info">{{ mt.typeLabel }}</el-tag>
-              <el-tag v-if="mt.status === 1" size="small" type="success">已通过</el-tag>
-              <el-tag v-else-if="mt.status === 2" size="small" type="danger">已驳回</el-tag>
-              <el-tag v-else size="small" type="warning">待审核</el-tag>
-              <a :href="mt.url" :download="materialFileName(mt)" class="material-download">下载</a>
+        <div v-for="g in materialGroups" :key="g.key" class="material-group">
+          <div class="material-group-title">{{ g.label }}（{{ g.items.length }}）</div>
+          <div class="material-grid">
+            <div v-for="mt in g.items" :key="mt.id" class="material-item">
+              <el-image
+                :src="mt.url"
+                :preview-src-list="[mt.url]"
+                preview-teleported
+                fit="cover"
+                class="material-img"
+              />
+              <div class="material-meta">
+                <el-tag size="small" type="info">{{ mt.typeLabel }}</el-tag>
+                <a :href="mt.url" :download="materialFileName(mt)" class="material-download">下载</a>
+              </div>
             </div>
-            <div v-if="mt.status !== 1 && mt.status !== 2" class="material-audit">
-              <el-button type="success" link size="small" :loading="auditing" @click="doAuditMaterial(mt, 1)">通过</el-button>
-              <el-button type="danger" link size="small" :loading="auditing" @click="doAuditMaterial(mt, 2)">驳回</el-button>
-            </div>
-            <div v-else-if="mt.remark" class="material-remark" :title="mt.remark">驳回原因：{{ mt.remark }}</div>
           </div>
         </div>
       </el-card>
@@ -274,7 +271,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRoute } from 'vue-router'
-import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers, v2ConfirmReceipt, v2AuditMaterial } from '@/api'
+import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers, v2ConfirmReceipt } from '@/api'
 import { toArray } from '@/api/unwrap'
 import { FULFILLMENT_STATUS_TEXT, fulfillmentStatusTag } from '@/utils/fulfillment-status'
 
@@ -282,31 +279,7 @@ const route = useRoute()
 const orderNo = ref('')
 const loading = ref(false)
 const submitting = ref(false)
-const auditing = ref(false)
 
-/** 材料审核：通过直接过，驳回必须填原因（后端强制） */
-async function doAuditMaterial(mt: any, status: 1 | 2) {
-  try {
-    let remark: string | undefined
-    if (status === 2) {
-      const { value } = await ElMessageBox.prompt('请填写驳回原因（必填，将同步给用户）', '驳回材料', {
-        inputPlaceholder: '如：营业执照模糊，请重新上传',
-      })
-      remark = String(value || '').trim()
-      if (!remark) { ElMessage.warning('驳回必须填写原因'); return }
-    } else {
-      await ElMessageBox.confirm(`确认通过该材料（${mt.typeLabel || ''}）？`, '提示', { type: 'success' })
-    }
-    auditing.value = true
-    await v2AuditMaterial(mt.id, remark ? { status, remark } : { status })
-    ElMessage.success(status === 1 ? '已通过' : '已驳回')
-    await load()
-  } catch (e: any) {
-    if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.message || '操作失败')
-  } finally {
-    auditing.value = false
-  }
-}
 const detail = ref<any>(null)
 const suppliers = ref<any[]>([])
 const assignDialogVisible = ref(false)
@@ -415,6 +388,34 @@ const sortedMaterials = computed(() => {
     if (oa !== ob) return oa - ob
     return String(a?.createdAt || '').localeCompare(String(b?.createdAt || ''))
   })
+})
+
+// ⑤ 资质证件按类别分区展示（身份证 / 营业执照 / 法人照片 / 手持证件照 / 职业资格 / 签名 / 登报证明 / 其他）
+const MATERIAL_GROUPS: { key: string; label: string; types: string[] }[] = [
+  { key: 'idcard', label: '身份证', types: ['id_card_front', 'id_card_back', 'id_card', 'legal_person_id', 'proxy_id'] },
+  { key: 'license', label: '营业执照', types: ['license', 'license_original', 'license_copy'] },
+  { key: 'photo', label: '法人照片', types: ['photo', 'legal_photo'] },
+  { key: 'handheld', label: '手持证件照', types: ['handheld_id_photo', 'handheld_id'] },
+  { key: 'cert', label: '职业资格证书', types: ['professional_cert'] },
+  { key: 'signature', label: '个人签名', types: ['signature'] },
+  { key: 'newspaper', label: '登报证明', types: ['newspaper_proof'] },
+  { key: 'other', label: '其他材料', types: ['additional', 'other'] },
+]
+const materialGroups = computed(() => {
+  const list = sortedMaterials.value
+  const groups = MATERIAL_GROUPS.map(g => ({
+    key: g.key,
+    label: g.label,
+    items: list.filter((m: any) => g.types.includes(m.type)),
+  }))
+  const assigned = new Set(groups.flatMap(g => g.items.map((m: any) => m.id)))
+  const others = list.filter((m: any) => !assigned.has(m.id))
+  if (others.length > 0) {
+    const og = groups.find(g => g.key === 'other')
+    if (og) og.items.push(...others)
+    else groups.push({ key: 'other', label: '其他材料', items: others })
+  }
+  return groups.filter(g => g.items.length > 0)
 })
 /** 履约回执照片分组（仅返回非空组） */
 function receiptPhotoGroups(f: any) {
@@ -555,6 +556,7 @@ watch(
 }
 .material-meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   align-items: center;
   margin-top: 4px;
@@ -563,6 +565,15 @@ watch(
   margin-left: auto;
   font-size: 12px;
   color: var(--el-color-primary);
-  margin-top: 6px;
+  line-height: 1;
+}
+.material-group {
+  margin-bottom: 16px;
+}
+.material-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 8px;
 }
 </style>

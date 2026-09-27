@@ -2,9 +2,9 @@
   <div class="Outlet-list">
     <!-- 页面标题 -->
     <div class="page-header">
-      <h2>履约供应商管理</h2>
+      <h2>供应商管理</h2>
       <el-button type="primary" @click="openCreateDialog">
-        <el-icon><Plus /></el-icon> 新增履约供应商
+        <el-icon><Plus /></el-icon> 新增供应商
       </el-button>
     </div>
 
@@ -14,7 +14,7 @@
         <div class="stat-icon"><el-icon><LocationFilled /></el-icon></div>
         <div class="stat-info">
           <div class="stat-value">{{ summary.totalOutlets ?? total }}</div>
-          <div class="stat-label">履约供应商总数</div>
+          <div class="stat-label">供应商总数</div>
         </div>
       </div>
       <div class="stat-card stat-active">
@@ -47,7 +47,7 @@
     <div class="filter-row" style="background: #fff; padding: 14px 16px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 12px;">
       <el-input
         v-model="keyword"
-        placeholder="搜索履约供应商名称/联系人/电话"
+        placeholder="搜索供应商名称/联系人/电话"
         clearable
         prefix-icon="Search"
         style="width: 220px; margin-right: 12px"
@@ -93,7 +93,7 @@
 
     <!-- 表格 -->
     <el-table :data="tableData" stripe v-loading="loading">
-      <el-table-column prop="name" label="履约供应商名称" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="name" label="供应商名称" min-width="160" show-overflow-tooltip />
       <el-table-column prop="contact" label="联系人" width="100" />
       <el-table-column prop="phone" label="联系电话" width="130" />
       <el-table-column label="所在地区" width="180" show-overflow-tooltip>
@@ -150,7 +150,7 @@
 
     <!-- 汇总 -->
     <div class="list-summary" v-if="!loading">
-      共 {{ total }} 个履约供应商
+      共 {{ total }} 个供应商
     </div>
 
     <!-- 分页 -->
@@ -170,13 +170,13 @@
     <!-- 新增/编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="isEdit ? '编辑履约供应商' : '新增履约供应商'"
+      :title="isEdit ? '编辑供应商' : '新增供应商'"
       width="520px"
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
-        <el-form-item label="履约供应商名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入履约供应商名称" maxlength="50" />
+        <el-form-item label="供应商名称" prop="name">
+          <el-input v-model="form.name" placeholder="请输入供应商名称" maxlength="50" />
         </el-form-item>
         <el-form-item label="联系人" prop="contact">
           <el-input v-model="form.contact" placeholder="请输入联系人姓名" maxlength="20" />
@@ -205,6 +205,19 @@
         </el-form-item>
         <el-form-item label="详细地址" prop="address">
           <el-input v-model="form.address" placeholder="请输入详细地址" maxlength="200" />
+        </el-form-item>
+        <el-form-item label="服务区域">
+          <div style="width:100%">
+            <div style="font-size:12px;color:#999;margin-bottom:8px">
+              留空则按注册地（省份/城市）服务；可添加多个省/市，用于派单地域匹配
+            </div>
+            <div v-for="(area, idx) in form.serviceArea" :key="idx" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+              <el-input v-model="area.province" placeholder="省份（必填）" style="flex:1" maxlength="20" />
+              <el-input v-model="area.city" placeholder="城市（可选）" style="flex:1" maxlength="20" />
+              <el-button size="small" type="danger" text @click="form.serviceArea.splice(idx, 1)">移除</el-button>
+            </div>
+            <el-button size="small" @click="form.serviceArea.push({ province: '', city: '' })">+ 添加服务区域</el-button>
+          </div>
         </el-form-item>
         <el-form-item label="营业执照">
           <el-upload v-if="!form.businessLicense" :show-file-list="false" :before-upload="beforeUpload" :http-request="uploadBiz">
@@ -321,13 +334,13 @@
     >
       <!-- 确认阶段 -->
       <div v-if="!passwordResult">
-        <p>确定要重置履约供应商「<strong>{{ currentOutlet?.name }}</strong>」的登录密码吗？</p>
-        <p style="color:#666;margin-top:8px">重置后请将新密码告知履约供应商管理人员。</p>
+        <p>确定要重置供应商「<strong>{{ currentOutlet?.name }}</strong>」的登录密码吗？</p>
+        <p style="color:#666;margin-top:8px">重置后请将新密码告知供应商管理人员。</p>
       </div>
       <!-- 结果阶段 -->
       <div v-else style="text-align:center;padding:16px 0">
         <p style="margin-bottom:12px;color:#666">
-          {{ passwordDialogMode === 'create' ? '履约供应商初始登录密码为：' : '新密码为：' }}
+          {{ passwordDialogMode === 'create' ? '供应商初始登录密码为：' : '新密码为：' }}
         </p>
         <div
           style="
@@ -850,6 +863,8 @@ const form = reactive({
   city: '',
   district: '',
   address: '',
+  // 服务区域：派单地域匹配用，[{province, city?}]；留空按注册地服务
+  serviceArea: [] as { province: string; city: string }[],
   businessLicense: '',
   status: 1,
   // 承接业务：提交 code 列表（后端 create/update 按 code 关联；授权弹窗用的是 id 列表）
@@ -864,6 +879,14 @@ const form = reactive({
 const permitFiles = ref<any[]>([])
 function parsePermits(str: any) {
   try { const a = JSON.parse(str); return Array.isArray(a) ? a : [] } catch { return [] }
+}
+function parseServiceArea(str: any) {
+  if (!str) return []
+  try {
+    const a = JSON.parse(str)
+    if (Array.isArray(a)) return a.map((s: any) => ({ province: (s.province || '').toString(), city: (s.city || '').toString() }))
+  } catch { return [] }
+  return []
 }
 function taxpayerTypeText(t: any) {
   return ({ individual: '个体工商户', small: '小规模', general: '一般纳税人' } as any)[t] || ''
@@ -890,7 +913,7 @@ async function uploadPermit(option: any) {
 }
 
 const rules = {
-  name: [{ required: true, message: '请输入履约供应商名称', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入供应商名称', trigger: 'blur' }],
   contact: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
   phone: [
     { required: true, message: '请输入联系电话', trigger: 'blur' },
@@ -900,7 +923,7 @@ const rules = {
 
 function openCreateDialog() {
   isEdit.value = false
-  Object.assign(form, { name: '', contact: '', phone: '', province: '', city: '', district: '', address: '', businessLicense: '', status: 1, settlementCycle: null, settlementWeeklyStartDay: 1, invoiceQualified: 0, invoiceTaxpayerType: '', idCardFront: '', idCardBack: '' })
+  Object.assign(form, { name: '', contact: '', phone: '', province: '', city: '', district: '', address: '', serviceArea: [], businessLicense: '', status: 1, settlementCycle: null, settlementWeeklyStartDay: 1, invoiceQualified: 0, invoiceTaxpayerType: '', idCardFront: '', idCardBack: '' })
   permitFiles.value = []
   form.businessTypeCodes = []
   currentOutlet.value = null
@@ -921,6 +944,7 @@ function openEditDialog(row: any) {
     city: row.city || '',
     district: row.district || '',
     address: row.address || '',
+    serviceArea: parseServiceArea(row.serviceArea),
     businessLicense: row.businessLicense || '',
     idCardFront: row.idCardFront || '',
     idCardBack: row.idCardBack || '',
@@ -961,6 +985,7 @@ async function onSubmit() {
         .filter(u => !!u),
       idCardFront: form.idCardFront || null,
       idCardBack: form.idCardBack || null,
+      serviceArea: form.serviceArea.filter(s => (s.province || '').trim()).map(s => ({ province: s.province.trim(), city: (s.city || '').trim() })),
     }
     // 后端 OutletService 只读 camelCase 字段（settlementCycle / settlementWeeklyStartDay），
     // 此前提交 snake_case 会被静默丢弃，结算周期设置永不生效。
@@ -1028,7 +1053,7 @@ async function onConfirmReset() {
 
 async function onDelete(row: any) {
   try {
-    await ElMessageBox.confirm(`确定要删除履约供应商「${row.name}」吗？`, '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm(`确定要删除供应商「${row.name}」吗？`, '删除确认', { type: 'warning' })
     await deleteOutletAPI(row.id)
     ElMessage.success('删除成功')
     // 删除后停留在当前页（不再强制跳回第 1 页）
@@ -1200,7 +1225,7 @@ onMounted(() => {
   margin-top: 4px;
 }
 
-// 履约供应商总数 — 紫蓝
+// 供应商总数 — 紫蓝
 .stat-total { background: linear-gradient(135deg, #eef2ff 0%, #dde4ff 100%); border: 1px solid rgba(91, 111, 232, 0.15); .stat-icon { background: rgba(91, 111, 232, 0.12); } .stat-value { color: #3d4fc4; } }
 // 营业中 — 清新绿
 .stat-active { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); border: 1px solid rgba(82, 196, 26, 0.15); .stat-icon { background: rgba(82, 196, 26, 0.12); } .stat-value { color: #389e0d; } }

@@ -5,7 +5,7 @@
       <el-form inline :model="query" class="search-form">
         <el-form-item label="操作模块">
           <el-select v-model="query.module" clearable placeholder="全部" style="width: 140px" :loading="modulesLoading" @visible-change="loadModules">
-            <el-option v-for="m in moduleOptions" :key="m" :label="m" :value="m" />
+            <el-option v-for="m in moduleOptions" :key="m" :label="operationLogModuleText(m)" :value="m" />
           </el-select>
         </el-form-item>
         <el-form-item label="日期">
@@ -18,17 +18,23 @@
       </el-form>
 
       <el-table :data="logs" v-loading="loading" stripe>
-        <el-table-column prop="id" label="ID" width="220" show-overflow-tooltip />
+        <el-table-column prop="id" label="日志编号" width="220" show-overflow-tooltip />
         <el-table-column label="操作人" width="110">
-          <template #default="{ row }">{{ row.admin?.nickname || '系统' }}</template>
+          <template #default="{ row }">{{ operationLogOperatorText(row) }}</template>
         </el-table-column>
-        <el-table-column prop="module" label="模块" width="100" />
-        <el-table-column prop="action" label="操作" width="110" />
-        <el-table-column prop="target" label="操作对象" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="ip" label="IP" width="120" show-overflow-tooltip />
+        <el-table-column label="模块" width="100">
+          <template #default="{ row }">{{ operationLogModuleText(row.module) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="120">
+          <template #default="{ row }">{{ operationLogActionText(row.action) }}</template>
+        </el-table-column>
+        <el-table-column label="操作对象" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">{{ operationLogTargetText(row.target) }}</template>
+        </el-table-column>
+        <el-table-column prop="ip" label="来源地址" width="140" show-overflow-tooltip />
         <el-table-column label="详情" min-width="180">
           <template #default="{ row }">
-            <span class="detail-summary" :title="row.detail" @click="openDetail(row)">{{ parseDetailSummary(row.detail, row.action) }}</span>
+            <span class="detail-summary" title="点击查看详情" @click="openDetail(row)">{{ operationLogSummary(row.detail, row.action) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="时间" width="160">
@@ -52,24 +58,27 @@
     <el-dialog v-model="detailVisible" title="日志详情" width="680px">
       <div v-if="currentLog" class="log-detail">
         <el-descriptions :column="2" border size="small">
-          <el-descriptions-item label="操作人">{{ currentLog.admin?.nickname || '系统' }}</el-descriptions-item>
+          <el-descriptions-item label="操作人">{{ operationLogOperatorText(currentLog) }}</el-descriptions-item>
           <el-descriptions-item label="时间">{{ formatDate(currentLog.createdAt) }}</el-descriptions-item>
-          <el-descriptions-item label="模块">{{ currentLog.module }}</el-descriptions-item>
-          <el-descriptions-item label="操作">{{ currentLog.action }}</el-descriptions-item>
-          <el-descriptions-item label="IP" :span="2">{{ currentLog.ip || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="操作对象" :span="2">{{ currentLog.target }}</el-descriptions-item>
+          <el-descriptions-item label="模块">{{ operationLogModuleText(currentLog.module) }}</el-descriptions-item>
+          <el-descriptions-item label="操作">{{ operationLogActionText(currentLog.action) }}</el-descriptions-item>
+          <el-descriptions-item label="来源地址" :span="2">{{ currentLog.ip || '未记录' }}</el-descriptions-item>
+          <el-descriptions-item label="操作对象" :span="2">{{ operationLogTargetText(currentLog.target) }}</el-descriptions-item>
         </el-descriptions>
         <div style="margin-top: 16px">
-          <div style="font-weight: 600; margin-bottom: 8px">请求 / 响应</div>
+          <div style="font-weight: 600; margin-bottom: 8px">操作明细</div>
           <el-tabs>
             <el-tab-pane label="请求体">
-              <pre class="json-pre">{{ formatJson(currentLog._parsedDetail?.body) }}</pre>
+              <pre class="json-pre">{{ formatOperationLogDetail(currentLog._parsedDetail?.body) }}</pre>
             </el-tab-pane>
             <el-tab-pane label="路由参数">
-              <pre class="json-pre">{{ formatJson(currentLog._parsedDetail?.params) }}</pre>
+              <pre class="json-pre">{{ formatOperationLogDetail(currentLog._parsedDetail?.params) }}</pre>
             </el-tab-pane>
             <el-tab-pane label="响应结果">
-              <pre class="json-pre">{{ formatJson(currentLog._parsedDetail?.result) }}</pre>
+              <pre class="json-pre">{{ formatOperationLogDetail(currentLog._parsedDetail?.result) }}</pre>
+            </el-tab-pane>
+            <el-tab-pane v-if="currentLog._parsedDetail?.error" label="失败原因">
+              <pre class="json-pre">{{ formatOperationLogDetail(currentLog._parsedDetail.error) }}</pre>
             </el-tab-pane>
           </el-tabs>
         </div>
@@ -83,6 +92,15 @@ import { ref, reactive, onMounted } from 'vue'
 import { getLogs, getLogModules } from '@/api'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
+import {
+  formatOperationLogDetail,
+  operationLogActionText,
+  operationLogModuleText,
+  operationLogOperatorText,
+  operationLogSummary,
+  operationLogTargetText,
+  parseOperationLogDetail,
+} from '@/utils/operation-log'
 
 const loading = ref(false)
 const logs = ref<any[]>([])
@@ -101,42 +119,7 @@ const currentLog = ref<any>(null)
 function formatDate(d: string) {
   if (!d) return '-'
   const v = dayjs(d)
-  return v.isValid() ? v.format('YYYY-MM-DD HH:mm') : String(d)
-}
-// 解析 detail JSON，缓存到 _parsedDetail 避免重复解析
-function parseDetail(detail: string): any {
-  if (!detail) return null
-  try { return JSON.parse(detail) } catch { return null }
-}
-
-// 从 result 对象提取显示摘要
-function extractSummary(result: any, action: string): string {
-  if (!result) return '-'
-  // 新增类
-  if (action?.includes('创建') || action?.includes('新增') || action?.includes('添加')) {
-    return result.name || result.username || result.nickname || result.title || result.id?.substring(0, 8) || '新增成功'
-  }
-  // 删除类
-  if (action?.includes('删除')) return '已删除'
-  // 登录类
-  if (action?.includes('登录')) return result.username || '-'
-  // 更新/状态类：显示关键字段变化
-  const fields = ['status', 'role', 'nickname', 'name', 'phone', 'contact']
-  const changed = fields
-    .filter(f => result[f] !== undefined)
-    .map(f => {
-      const val = result[f]
-      if (f === 'status') return '状态:' + (val === 1 ? '正常' : '禁用')
-      return f + ':' + String(val)
-    })
-  if (changed.length) return changed.join(' | ')
-  // fallback: 取 id / name
-  return result.name || result.username || result.nickname || result.id?.substring(0, 12) || '-'
-}
-
-function parseDetailSummary(detail: string, action: string): string {
-  const parsed = parseDetail(detail)
-  return extractSummary(parsed?.result, action)
+  return v.isValid() ? v.format('YYYY-MM-DD HH:mm:ss') : String(d)
 }
 
 async function loadModules(visible?: boolean) {
@@ -155,17 +138,10 @@ async function loadModules(visible?: boolean) {
 }
 
 function openDetail(row: any) {
-  const parsed = parseDetail(row.detail)
+  const parsed = parseOperationLogDetail(row.detail)
   // 不直接变异表格行，避免污染列表响应式
   currentLog.value = { ...row, _parsedDetail: parsed }
   detailVisible.value = true
-}
-
-function formatJson(obj: any): string {
-  if (obj == null) return '(空)'
-  if (typeof obj === 'string') return obj
-  if (typeof obj === 'object' && Object.keys(obj).length === 0) return '(空)'
-  return JSON.stringify(obj, null, 2)
 }
 
 async function fetchLogs() {

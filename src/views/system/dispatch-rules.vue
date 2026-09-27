@@ -53,16 +53,23 @@
         <div class="page-card">
           <div class="section-title">
             网点优先级设置
-            <span class="tip">优先级数值越高，被优先分配的概率越大（相同区域时）</span>
+            <span class="tip">排序：地域档（同市&gt;同省&gt;无匹配）→ 优先级 → 在手单量；未设置默认 0</span>
           </div>
-          <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center">
+          <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+            <el-input
+              v-model="priorityKeyword"
+              placeholder="搜索网点名称/省份/城市/服务区域"
+              clearable
+              size="small"
+              style="width: 260px"
+            />
             <span style="font-size: 13px; color: #666">批量设置：</span>
             <el-input-number v-model="batchPriority" :min="0" :max="100" size="small" style="width: 120px" />
             <el-button size="small" @click="batchSetPriority">应用选中网点</el-button>
-            <span style="font-size: 12px; color: #999; margin-left: 8px">勾选要修改的网点，再点"应用"</span>
+            <span style="font-size: 12px; color: #999">勾选要修改的网点，再点“应用”；未设置优先级的网点默认 0</span>
           </div>
           <el-table
-            :data="priorities"
+            :data="filteredPriorities"
             row-key="outlet_id"
             border
             style="width: 100%"
@@ -73,6 +80,11 @@
             <el-table-column prop="outlet.name" label="网点名称" min-width="160" />
             <el-table-column prop="outlet.province" label="省份" width="120" />
             <el-table-column prop="outlet.city" label="城市" width="100" />
+            <el-table-column label="服务区域" min-width="200">
+              <template #default="{ row }">
+                <span :title="serviceAreaText(row)">{{ serviceAreaText(row) }}</span>
+              </template>
+            </el-table-column>
             <el-table-column label="优先级" width="200">
               <template #default="{ row }">
                 <el-input-number
@@ -183,7 +195,7 @@
                 @change="handleDrDateChange"
               />
             </el-form-item>
-            <el-form-item label="履约供应商">
+            <el-form-item label="供应商">
               <el-select v-model="drFilters.supplierId" placeholder="全部供应商" clearable filterable style="width: 200px">
                 <el-option v-for="o in drSupplierList" :key="o.id" :label="o.name" :value="o.id" />
               </el-select>
@@ -217,7 +229,7 @@
               </template>
             </el-table-column>
             <el-table-column prop="fulfillmentNo" label="履约单号" min-width="170" show-overflow-tooltip />
-            <el-table-column prop="supplierName" label="履约供应商" width="150">
+            <el-table-column prop="supplierName" label="供应商" width="150">
               <template #default="{ row }">
                 <el-tag>{{ row.supplierName }}</el-tag>
               </template>
@@ -306,7 +318,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search as SearchIcon, Refresh as RefreshIcon } from '@element-plus/icons-vue'
 import {
@@ -338,6 +350,36 @@ const showAddForced = ref(false)
 const config = reactive({ mode: 'hybrid', auto_assign: true, business_type_filter: true })
 const priorities = ref<any[]>([])
 const forcedRegions = ref<any[]>([])
+
+const priorityKeyword = ref('')
+
+function serviceAreaText(row: any): string {
+  const raw = row?.outlet?.service_area
+  if (raw) {
+    try {
+      const arr = JSON.parse(raw)
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr.map((s: any) => [s.province, s.city].filter(Boolean).join(' ')).join('；')
+      }
+    } catch { /* fallthrough */ }
+  }
+  const p = row?.outlet?.province || ''
+  const c = row?.outlet?.city || ''
+  const home = [p, c].filter(Boolean).join(' ')
+  return home ? `${home}（注册地）` : '-'
+}
+
+const filteredPriorities = computed(() => {
+  const kw = priorityKeyword.value.trim().toLowerCase()
+  if (!kw) return priorities.value
+  return priorities.value.filter((r: any) => {
+    const name = r?.outlet?.name || ''
+    const province = r?.outlet?.province || ''
+    const city = r?.outlet?.city || ''
+    const area = serviceAreaText(r)
+    return `${name} ${province} ${city} ${area}`.toLowerCase().includes(kw)
+  })
+})
 
 const forcedForm = reactive({ province: '', city: '', remark: '' })
 
