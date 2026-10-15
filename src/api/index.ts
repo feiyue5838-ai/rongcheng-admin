@@ -1,6 +1,54 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { unwrapV2 } from './unwrap'
+import { toArray, unwrapV2 } from './unwrap'
+import type {
+  ConfigRuntimeStatus,
+  ContentAbout,
+  FulfillmentDeliveryPayload,
+  InvoiceApplicationPage,
+  InvoiceApplicationQuery,
+  OperationLogPage,
+  OperationLogQuery,
+  RefundPageV2,
+  RefundQueryV2,
+  SystemConfigItem,
+  TransactionFlow,
+  UserDetail,
+  UserListQuery,
+  UserPage,
+  UserUpdatePayload,
+} from './types'
+
+type QueryParams = object
+type RequestBody = object
+
+interface TransactionFlowQuery {
+  page?: number
+  pageSize?: number
+  module?: string
+  tradeType?: string
+  outletId?: string
+  status?: string
+  startDate?: string
+  endDate?: string
+  keyword?: string
+}
+
+async function rethrowBlobApiError(error: unknown): Promise<never> {
+  if (axios.isAxiosError<Blob>(error)) {
+    const body = error.response?.data
+    if (body instanceof Blob && body.type.includes('json')) {
+      try {
+        const parsed: unknown = JSON.parse(await body.text())
+        if (parsed && typeof parsed === 'object' && 'message' in parsed) {
+          const message = parsed.message
+          if (message) error.message = Array.isArray(message) ? message.join('；') : String(message)
+        }
+      } catch { /* 保留 Axios 原始错误 */ }
+    }
+  }
+  throw error
+}
 
 const request = axios.create({
   baseURL: '/api',
@@ -67,13 +115,26 @@ request.interceptors.response.use(
 
 export default request
 
+// ==================== 系统配置 ====================
+export const getSystemConfigs = async (group?: string): Promise<SystemConfigItem[]> =>
+  await request.get('/config/all', { params: { group } }) as unknown as SystemConfigItem[]
+
+export const getSystemConfig = async (key: string): Promise<SystemConfigItem | null> =>
+  await request.get('/config', { params: { key } }) as unknown as SystemConfigItem | null
+
+export const getConfigRuntimeStatus = async (): Promise<ConfigRuntimeStatus> =>
+  await request.get('/config/runtime-status') as unknown as ConfigRuntimeStatus
+
+export const getContentAbout = async (): Promise<ContentAbout> =>
+  await request.get('/content/about') as unknown as ContentAbout
+
 // ==================== 积分兑奖 ====================
 export const getPointsRewards = () => request.get('/points/admin/rewards')
-export const createPointsReward = (data: any) => request.post('/points/admin/rewards', data)
-export const updatePointsReward = (id: string, data: any) => request.put(`/points/admin/rewards/${id}`, data)
+export const createPointsReward = (data: RequestBody) => request.post('/points/admin/rewards', data)
+export const updatePointsReward = (id: string, data: RequestBody) => request.put(`/points/admin/rewards/${id}`, data)
 export const disablePointsReward = (id: string) => request.delete(`/points/admin/rewards/${id}`)
-export const getPointsRedemptions = (params: any) => request.get('/points/admin/redemptions', { params })
-export const shipPointsRedemption = (id: string, data: any) => request.put(`/points/admin/redemptions/${id}/ship`, data)
+export const getPointsRedemptions = (params: QueryParams) => request.get('/points/admin/redemptions', { params })
+export const shipPointsRedemption = (id: string, data: RequestBody) => request.put(`/points/admin/redemptions/${id}/ship`, data)
 export const completePointsRedemption = (id: string) => request.put(`/points/admin/redemptions/${id}/complete`)
 
 // ==================== 认证接口 ====================
@@ -90,63 +151,63 @@ export const getAdminInfo = () => request.get('/admin/profile')
 export const getSealCategories = (id?: string) => id ? request.get(`/seals/categories/${id}`) : request.get('/seals/categories')
 // 用户端：获取场景下的印章和套餐
 export const getSealSceneProducts = (sceneId: string) => request.get(`/seals/scenes/${sceneId}`)
-export const getSeals = (params?: any) => request.get('/seals', { params })
+export const getSeals = (params?: QueryParams) => request.get('/seals', { params })
 export const getSealPackages = () => request.get('/seals/packages')
-export const createSeal = (data: any) => request.post('/seals', data)
-export const updateSeal = (id: string, data: any) => request.put(`/seals/${id}`, data)
+export const createSeal = (data: RequestBody) => request.post('/seals', data)
+export const updateSeal = (id: string, data: RequestBody) => request.put(`/seals/${id}`, data)
 export const deleteSeal = (id: string) => request.delete(`/seals/${id}`)
 
 // ==================== 场景管理（管理端） ====================
 export const getAdminScenes = () => request.get('/seals/admin/scenes')
-export const getAdminScene = (id: string) => request.get(`/seals/admin/scenes/${id}`)
-export const createScene = (data: any) => request.post('/seals/admin/scenes', data)
-export const updateScene = (id: string, data: any) => request.put(`/seals/admin/scenes/${id}`, data)
+export const createScene = (data: RequestBody) => request.post('/seals/admin/scenes', data)
+export const updateScene = (id: string, data: RequestBody) => request.put(`/seals/admin/scenes/${id}`, data)
 export const deleteScene = (id: string) => request.delete(`/seals/admin/scenes/${id}`)
-export const setSceneSeals = (id: string, sealIds: string[]) => request.put(`/seals/admin/scenes/${id}/seals`, { seal_ids: sealIds })
-export const setScenePackages = (id: string, packages: any[]) => request.put(`/seals/admin/scenes/${id}/packages`, { packages })
 
 // ==================== 刻章备案查询 ====================
 export const getRecordQueries = () => request.get('/seals/admin/record-queries')
-export const createRecordQuery = (data: any) => request.post('/seals/admin/record-queries', data)
-export const updateRecordQuery = (id: string, data: any) => request.put(`/seals/admin/record-queries/${id}`, data)
+export const createRecordQuery = (data: RequestBody) => request.post('/seals/admin/record-queries', data)
+export const updateRecordQuery = (id: string, data: RequestBody) => request.put(`/seals/admin/record-queries/${id}`, data)
 export const deleteRecordQuery = (id: string) => request.delete(`/seals/admin/record-queries/${id}`)
 
-export const createPackage = (data: any) => request.post('/seals/packages', data)
-export const updatePackage = (id: string, data: any) => request.put(`/seals/packages/${id}`, data)
+export const createPackage = (data: RequestBody) => request.post('/seals/packages', data)
+export const updatePackage = (id: string, data: RequestBody) => request.put(`/seals/packages/${id}`, data)
 export const deletePackage = (id: string) => request.delete(`/seals/packages/${id}`)
 // 批量设置城市价（一次请求一个事务）：{ sealIds, packageIds, regionCode, province, city, district, price }
-export const batchSetRegionPrice = (data: any) => request.post('/seals/batch-region-prices', data)
+export const batchSetRegionPrice = (data: RequestBody) => request.post('/seals/batch-region-prices', data)
 
-export const getNewspapers = (params?: any) => request.get('/newspapers', { params })
+export const getNewspapers = (params?: QueryParams) => request.get('/newspapers', { params })
 export const getAllNewspapers = () => request.get('/newspapers/all')
 export const getNewspaperCategories = () => request.get('/newspapers/categories')
-export const createNewspaper = (data: any) => request.post('/newspapers', data)
-export const updateNewspaper = (id: string, data: any) => request.put(`/newspapers/${id}`, data)
+export const createNewspaper = (data: RequestBody) => request.post('/newspapers', data)
+export const updateNewspaper = (id: string, data: RequestBody) => request.put(`/newspapers/${id}`, data)
 export const deleteNewspaper = (id: string) => request.delete(`/newspapers/${id}`)
-export const createNewspaperCategory = (data: any) => request.post('/newspapers/categories', data)
-export const updateNewspaperCategory = (id: string, data: any) => request.put(`/newspapers/categories/${id}`, data)
+export const createNewspaperCategory = (data: RequestBody) => request.post('/newspapers/categories', data)
+export const updateNewspaperCategory = (id: string, data: RequestBody) => request.put(`/newspapers/categories/${id}`, data)
 export const deleteNewspaperCategory = (id: string) => request.delete(`/newspapers/categories/${id}`)
-export const getTemplates = (params?: any) => request.get('/newspapers/templates', { params })
-export const getAdminTemplates = (params?: any) => request.get('/newspapers/admin/templates', { params })
+export const getTemplates = (params?: QueryParams) => request.get('/newspapers/templates', { params })
+export const getAdminTemplates = (params?: QueryParams) => request.get('/newspapers/admin/templates', { params })
 export const getTemplateMeta = () => request.get('/newspapers/template-meta')
-export const createTemplate = (data: any) => request.post('/newspapers/templates', data)
-export const updateTemplate = (id: string, data: any) => request.put(`/newspapers/templates/${id}`, data)
+export const createTemplate = (data: RequestBody) => request.post('/newspapers/templates', data)
+export const updateTemplate = (id: string, data: RequestBody) => request.put(`/newspapers/templates/${id}`, data)
 export const deleteTemplate = (id: string) => request.delete(`/newspapers/templates/${id}`)
 
 // ==================== 用户接口 ====================
-export const getUsers = (params?: any) => request.get('/users/admin/list', { params })
-export const updateUser = (id: string, data: object) => request.put(`/users/admin/${id}`, data)
-export const deleteUser = (id: string) => request.delete(`/users/admin/${id}`)
+export const getUsers = async (params?: UserListQuery): Promise<UserPage> =>
+  await request.get('/users/admin/list', { params }) as unknown as UserPage
+export const updateUser = async (id: string, data: UserUpdatePayload): Promise<UserDetail> =>
+  await request.put(`/users/admin/${id}`, data) as unknown as UserDetail
+export const deleteUser = async (id: string): Promise<{ success: boolean }> =>
+  await request.delete(`/users/admin/${id}`) as unknown as { success: boolean }
 
 // ==================== 评价接口 ====================
-export const getReviews = (params?: any) => request.get('/reviews/admin/list', { params })
+export const getReviews = (params?: QueryParams) => request.get('/reviews/admin/list', { params })
 export const replyReview = (id: string, reply: string) => request.put(`/reviews/${id}/reply`, { reply })
 export const deleteReview = (id: string) => request.delete(`/reviews/${id}`)
 export const updateReviewStatus = (id: string, status: 'pending' | 'approved' | 'rejected') =>
   request.put(`/reviews/${id}/status`, { status })
 
 // ==================== 投诉接口 ====================
-export const getComplaints = (params?: any) => request.get('/complaints/admin/list', { params })
+export const getComplaints = (params?: QueryParams) => request.get('/complaints/admin/list', { params })
 export const updateComplaintStatus = (id: string, status: string, reply?: string) =>
   request.put(`/complaints/${id}/status`, reply ? { status, reply } : { status })
 export const batchComplaintStatus = (ids: string[], status: string, reply?: string) =>
@@ -158,8 +219,22 @@ export const getRegistrationRequests = (params?: { page?: number; pageSize?: num
 export const getRegistrationRequestDetail = (id: string) =>
   request.get(`/registration-requests/admin/${encodeURIComponent(id)}`)
 
+// ==================== 登记需求跟进（线索跟进闭环） ====================
+export const getRegistrationRequestFollowUps = (id: string) =>
+  request.get(`/registration-requests/admin/${encodeURIComponent(id)}/follow-ups`)
+export const followUpRegistrationRequest = (
+  id: string,
+  data: { fromStatus?: string; status: string; owner?: string; remark?: string }
+) => request.post(`/registration-requests/admin/${encodeURIComponent(id)}/follow-up`, data)
+export const batchFollowUpRegistrationRequests = (data: {
+  ids: string[]
+  status: string
+  owner?: string
+  remark?: string
+}) => request.post('/registration-requests/admin/batch-follow-up', data)
+
 // ==================== 问答接口 ====================
-export const getQuestions = (params?: any) => request.get('/questions/admin/list', { params })
+export const getQuestions = (params?: QueryParams) => request.get('/questions/admin/list', { params })
 export const updateQuestionStatus = (id: string, status: 'pending' | 'approved' | 'rejected') =>
   request.put(`/questions/${id}/status`, { status })
 export const replyQuestion = (id: string, content: string) =>
@@ -172,12 +247,14 @@ export const getDashboard = () => request.get('/dashboard')
 export const customerActionAPI = (dto: { action: string; segment: string }) => request.post('/dashboard/customer-action', dto)
 export const getDashboardTrend = (type: 'order' | 'amount' = 'order', days: number = 7) =>
   request.get('/dashboard/trend', { params: { type, days } })
-export const getAdmins = (params?: any) => request.get('/admin/admins', { params })
-export const createAdmin = (data: any) => request.post('/admin/admins', data)
-export const updateAdmin = (id: string, data: any) => request.put(`/admin/admins/${id}`, data)
+export const getAdmins = (params?: QueryParams) => request.get('/admin/admins', { params })
+export const createAdmin = (data: RequestBody) => request.post('/admin/admins', data)
+export const updateAdmin = (id: string, data: RequestBody) => request.put(`/admin/admins/${id}`, data)
 export const deleteAdmin = (id: string) => request.delete(`/admin/admins/${id}`)
-export const getLogs = (params?: any) => request.get('/admin/logs', { params })
-export const getLogModules = () => request.get('/admin/logs/modules')
+export const getLogs = async (params?: OperationLogQuery): Promise<OperationLogPage> =>
+  await request.get('/admin/logs', { params }) as unknown as OperationLogPage
+export const getLogModules = async (): Promise<string[]> =>
+  await request.get('/admin/logs/modules') as unknown as string[]
 
 // ==================== 上传接口 ====================
 export const uploadImage = (file: File) => {
@@ -254,14 +331,13 @@ export const removeForcedRegion = (id: string) => request.delete(`/dispatch/forc
 // 后端 /dispatch/outlets/available 返回裸数组（List），拦截器解包后 res 即数组；
 // 此处统一归一化，避免调用方二次解包 (res as any).data 取到空数组。
 export const getAvailableOutlets = async (params?: { addressJson?: string; businessType?: string }) => {
-  const res: any = await request.get('/dispatch/outlets/available', { params })
-  return Array.isArray(res) ? res : ((res as any)?.list ?? [])
+  return toArray(await request.get('/dispatch/outlets/available', { params }))
 }
 
 // 菜单权限配置
 export const getMenuRoleConfigs = () => request.get('/menu-roles')
-export const createMenuRoleConfig = (data: any) => request.post('/menu-roles', data)
-export const updateMenuRoleConfig = (id: string, data: any) => request.put(`/menu-roles/${id}`, data)
+export const createMenuRoleConfig = (data: RequestBody) => request.post('/menu-roles', data)
+export const updateMenuRoleConfig = (id: string, data: RequestBody) => request.put(`/menu-roles/${id}`, data)
 export const deleteMenuRoleConfig = (id: string) => request.delete(`/menu-roles/${id}`)
 export const resetMenuRoleConfigs = () => request.post('/menu-roles/reset')
 
@@ -275,35 +351,30 @@ export const getTransactionStats = async (params?: { startDate?: string; endDate
   unwrapV2(await request.get('/transaction/stats', { params }))
 export const getTransactionStatsByModule = async (params?: { startDate?: string; endDate?: string }) =>
   unwrapV2(await request.get('/transaction/stats/by-module', { params }))
-export const getTransactionFlows = async (params?: {
-  page?: number; pageSize?: number; module?: string; tradeType?: string; outletId?: string
-  status?: string; startDate?: string; endDate?: string; keyword?: string
-}) => unwrapV2(await request.get('/transaction/flows', { params }))
+export const getTransactionFlows = async (params?: TransactionFlowQuery) => unwrapV2<{
+  items?: TransactionFlow[]
+  list?: TransactionFlow[]
+  total?: number
+}>(
+  await request.get('/transaction/flows', { params }),
+)
 export const getTransactionFlowDetail = async (id: string) =>
   unwrapV2(await request.get(`/transaction/flows/${id}`))
 // 按当前筛选导出全部匹配流水 Excel 二进制（独立操作权限：/transaction/export）
-export const exportTransactionFlows = async (params: any): Promise<Blob> => {
+export const exportTransactionFlows = async (params: TransactionFlowQuery): Promise<Blob> => {
   try {
     return await v2Request.get('/transaction/export', {
       params,
       responseType: 'blob',
       timeout: 60000,
     }) as unknown as Blob
-  } catch (error: any) {
-    // responseType=blob 时，403/422 的 JSON 错误也会成为 Blob；还原后端消息给页面。
-    const body = error?.response?.data
-    if (body instanceof Blob && body.type.includes('json')) {
-      try {
-        const parsed = JSON.parse(await body.text())
-        if (parsed?.message) error.message = Array.isArray(parsed.message) ? parsed.message.join('；') : String(parsed.message)
-      } catch { /* 保留 Axios 原始错误 */ }
-    }
-    throw error
+  } catch (error: unknown) {
+    return rethrowBlobApiError(error)
   }
 }
 
 // ===== 财务总览 =====
-export const getFinanceOverview = (params?: any) =>
+export const getFinanceOverview = (params?: { startDate?: string; endDate?: string; days?: number }) =>
   request({ url: '/finance/overview', method: 'get', params });
 
 // 按财务总览当前统计周期导出 Excel（独立操作权限：/finance/export）
@@ -316,15 +387,8 @@ export const exportFinanceOverview = async (params?: {
       responseType: 'blob',
       timeout: 60000,
     }) as unknown as Blob
-  } catch (error: any) {
-    const body = error?.response?.data
-    if (body instanceof Blob && body.type.includes('json')) {
-      try {
-        const parsed = JSON.parse(await body.text())
-        if (parsed?.message) error.message = Array.isArray(parsed.message) ? parsed.message.join('；') : String(parsed.message)
-      } catch { /* 保留 Axios 原始错误 */ }
-    }
-    throw error
+  } catch (error: unknown) {
+    return rethrowBlobApiError(error)
   }
 }
 
@@ -351,11 +415,11 @@ export const deleteOutletPricing = (id: string) =>
 
 // ==================== 帮助中心（FAQ） ====================
 export const getFaqAdminList = () => request.get('/faqs/admin/list')
-export const addFaqCategory = (data: any) => request.post('/faqs/admin/category', data)
-export const updateFaqCategory = (id: string, data: any) => request.put(`/faqs/admin/category/${id}`, data)
+export const addFaqCategory = (data: RequestBody) => request.post('/faqs/admin/category', data)
+export const updateFaqCategory = (id: string, data: RequestBody) => request.put(`/faqs/admin/category/${id}`, data)
 export const deleteFaqCategory = (id: string) => request.delete(`/faqs/admin/category/${id}`)
-export const addFaq = (data: any) => request.post('/faqs/admin', data)
-export const updateFaq = (id: string, data: any) => request.put(`/faqs/admin/${id}`, data)
+export const addFaq = (data: RequestBody) => request.post('/faqs/admin', data)
+export const updateFaq = (id: string, data: RequestBody) => request.put(`/faqs/admin/${id}`, data)
 export const deleteFaq = (id: string) => request.delete(`/faqs/admin/${id}`)
 export const updateFaqStatus = (id: string, status: number) => request.put(`/faqs/admin/${id}/status`, { status })
 export const updateFaqCategoryStatus = (id: string, status: number) => request.put(`/faqs/admin/category/${id}/status`, { status })
@@ -407,26 +471,18 @@ v2Request.interceptors.response.use(
 export const v2GetDashboard = () => v2Request.get('/v2/admin/dashboard')
 
 // 订单列表（统一五维状态）GET /api/v2/admin/orders?orderStatus=&module=&keyword=&page=&pageSize=
-export const v2GetOrders = (params: any) => v2Request.get('/v2/admin/orders', { params })
+export const v2GetOrders = (params: QueryParams) => v2Request.get('/v2/admin/orders', { params })
 
 // 按当前筛选导出全部匹配订单 Excel（独立操作权限：/v2/orders/export）
-export const v2ExportOrders = async (params: any): Promise<Blob> => {
+export const v2ExportOrders = async (params: QueryParams): Promise<Blob> => {
   try {
     return await v2Request.get('/v2/admin/orders/export', {
       params,
       responseType: 'blob',
       timeout: 60000,
     }) as unknown as Blob
-  } catch (error: any) {
-    // responseType=blob 时，403/422 的 JSON 错误也会成为 Blob；还原后端消息给页面。
-    const body = error?.response?.data
-    if (body instanceof Blob && body.type.includes('json')) {
-      try {
-        const parsed = JSON.parse(await body.text())
-        if (parsed?.message) error.message = Array.isArray(parsed.message) ? parsed.message.join('；') : String(parsed.message)
-      } catch { /* 保留 Axios 原始错误 */ }
-    }
-    throw error
+  } catch (error: unknown) {
+    return rethrowBlobApiError(error)
   }
 }
 
@@ -434,7 +490,7 @@ export const v2ExportOrders = async (params: any): Promise<Blob> => {
 export const v2GetOrderDetail = (orderNo: string) => v2Request.get(`/v2/admin/orders/${encodeURIComponent(orderNo)}`)
 
 // 待派单池 GET /api/v2/admin/orders/unassigned
-export const v2GetUnassigned = (params: any) => v2Request.get('/v2/admin/orders/unassigned', { params })
+export const v2GetUnassigned = (params: QueryParams) => v2Request.get('/v2/admin/orders/unassigned', { params })
 
 // 派单 POST /api/v2/admin/orders/:orderNo/assign
 export const v2AssignOrder = (orderNo: string, data: { supplierId: string; remark?: string }) =>
@@ -462,7 +518,7 @@ export const v2ConfirmReceipt = (orderNo: string) =>
 
 // ---------- 管理端 V2.0 结算 ----------
 // 结算单列表 GET /api/v2/admin/settlements
-export const v2GetSettlements = (params: any) => v2Request.get('/v2/admin/settlements', { params })
+export const v2GetSettlements = (params: QueryParams) => v2Request.get('/v2/admin/settlements', { params })
 
 // 生成结算单 POST /api/v2/admin/settlements/generate
 export const v2GenerateSettlement = (data: { supplierId: string; periodStart: string; periodEnd: string }) =>
@@ -475,7 +531,7 @@ export const v2GetSettlementDetail = (id: string) => v2Request.get(`/v2/admin/se
 export const v2ConfirmSettlement = (id: string) => v2Request.put(`/v2/admin/settlements/${id}/confirm`)
 
 // 结算付款 POST /api/v2/admin/settlements/:id/pay
-export const v2PaySettlement = (id: string, data?: any) => v2Request.post(`/v2/admin/settlements/${id}/pay`, data || {})
+export const v2PaySettlement = (id: string, data?: RequestBody) => v2Request.post(`/v2/admin/settlements/${id}/pay`, data || {})
 
 // 登记/核销进项票 PUT /api/v2/admin/settlements/payouts/:payoutNo/invoice（P1 真总包进项侧闭环）
 export const v2RegisterPayoutInvoice = (payoutNo: string, data: { invoiceNo: string; invoiceAmount?: number; invoiceTaxRate?: number; invoiceFileUrl?: string }) =>
@@ -486,47 +542,51 @@ export const v2ClearPayoutInvoice = (payoutNo: string) => v2Request.delete(`/v2/
 
 // ---------- 管理端 V2.0 结算规则（2026-09-05 真·总包差价机制） ----------
 // 结算规则列表 GET /api/v2/admin/settlement-rules
-export const v2GetSettlementRules = (params: any) => v2Request.get('/v2/admin/settlement-rules', { params })
+export const v2GetSettlementRules = (params: QueryParams) => v2Request.get('/v2/admin/settlement-rules', { params })
 
 // 新增结算规则 POST /api/v2/admin/settlement-rules
-export const v2CreateSettlementRule = (data: any) => v2Request.post('/v2/admin/settlement-rules', data)
+export const v2CreateSettlementRule = (data: RequestBody) => v2Request.post('/v2/admin/settlement-rules', data)
 
 // 编辑结算规则 PUT /api/v2/admin/settlement-rules/:id
-export const v2UpdateSettlementRule = (id: string, data: any) => v2Request.put(`/v2/admin/settlement-rules/${id}`, data)
+export const v2UpdateSettlementRule = (id: string, data: RequestBody) => v2Request.put(`/v2/admin/settlement-rules/${id}`, data)
 
 // 删除结算规则 DELETE /api/v2/admin/settlement-rules/:id
 export const v2DeleteSettlementRule = (id: string) => v2Request.delete(`/v2/admin/settlement-rules/${id}`)
 
 // ---------- 管理端 V2.0 退款 ----------
 // 退款列表 GET /api/v2/admin/refunds
-export const v2GetRefunds = (params: any) => v2Request.get('/v2/admin/refunds', { params })
+export const v2GetRefunds = async (params: RefundQueryV2): Promise<RefundPageV2> =>
+  await v2Request.get('/v2/admin/refunds', { params }) as unknown as RefundPageV2
 
 // 退款审核通过 POST /api/v2/admin/refunds/:id/approve
-export const v2ApproveRefund = (id: string, data?: any) => v2Request.post(`/v2/admin/refunds/${id}/approve`, data || {})
+export const v2ApproveRefund = (id: string, data?: RequestBody) => v2Request.post(`/v2/admin/refunds/${id}/approve`, data || {})
 
 // 退款驳回 POST /api/v2/admin/refunds/:id/reject
 export const v2RejectRefund = (id: string, data: { remark?: string }) => v2Request.post(`/v2/admin/refunds/${id}/reject`, data || {})
 
 // ---------- 管理端 V2.0 供应商 ----------
 // 供应商列表 GET /api/v2/admin/suppliers
-export const v2GetSuppliers = (params: any) => v2Request.get('/v2/admin/suppliers', { params })
+export const v2GetSuppliers = (params: QueryParams) => v2Request.get('/v2/admin/suppliers', { params })
 
 // V2 派单记录/统计（履约维度，替代 V1 dashboard/dispatch-*，2026-08-29）
-export const v2GetDispatchRecords = (params: any) => v2Request.get('/v2/admin/dispatch-records', { params })
-export const v2GetDispatchStats = (params: any) => v2Request.get('/v2/admin/dispatch-stats', { params })
+export const v2GetDispatchRecords = (params: QueryParams) => v2Request.get('/v2/admin/dispatch-records', { params })
+export const v2GetDispatchStats = (params: QueryParams) => v2Request.get('/v2/admin/dispatch-stats', { params })
 
 // V2 履约管理（网点看板用，替代 V1 /api/outlets/{id}/orders，2026-08-29）
-export const v2GetFulfillments = (params: any) => v2Request.get('/v2/admin/fulfillments', { params })
+export const v2GetFulfillments = (params: QueryParams) => v2Request.get('/v2/admin/fulfillments', { params })
 export const v2AcceptFulfillment = (id: string) => v2Request.post(`/v2/admin/fulfillments/${id}/accept`)
 export const v2StartFulfillment = (id: string) => v2Request.post(`/v2/admin/fulfillments/${id}/start`)
-export const v2DeliverFulfillment = (id: string, data: any) => v2Request.post(`/v2/admin/fulfillments/${id}/deliver`, data || {})
+export const v2DeliverFulfillment = (id: string, data: FulfillmentDeliveryPayload) => v2Request.post(`/v2/admin/fulfillments/${id}/deliver`, data)
 
 // ---------- 管理端 V2.0 开票管理 ----------
 // 开票申请列表 GET /api/v2/admin/invoice-applications?status=&keyword=&page=&pageSize=
-export const v2GetInvoiceApplications = (params: any) => v2Request.get('/v2/admin/invoice-applications', { params })
+export const v2GetInvoiceApplications = async (
+  params: InvoiceApplicationQuery,
+): Promise<InvoiceApplicationPage> =>
+  await v2Request.get('/v2/admin/invoice-applications', { params }) as unknown as InvoiceApplicationPage
 
 // 开票通过 POST /api/v2/admin/invoice-applications/:id/issue
-export const v2IssueInvoice = (id: string, data?: any) => v2Request.post(`/v2/admin/invoice-applications/${id}/issue`, data || {})
+export const v2IssueInvoice = (id: string, data?: RequestBody) => v2Request.post(`/v2/admin/invoice-applications/${id}/issue`, data || {})
 
 // 开票驳回 POST /api/v2/admin/invoice-applications/:id/reject
 export const v2RejectInvoice = (id: string, data: { remark?: string }) => v2Request.post(`/v2/admin/invoice-applications/${id}/reject`, data || {})

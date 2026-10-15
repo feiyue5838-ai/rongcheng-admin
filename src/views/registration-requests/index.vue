@@ -4,12 +4,32 @@
     <div class="page-card">
       <el-form inline :model="query" class="search-form">
         <el-form-item label="关键词">
-          <el-input v-model="query.keyword" placeholder="手机号 / 注册地区" clearable style="width: 240px" @keyup.enter="search" />
+          <el-input v-model="query.keyword" placeholder="手机号 / 注册地区" clearable style="width: 200px" @keyup.enter="search" />
         </el-form-item>
         <el-form-item label="办理类型">
-          <el-select v-model="query.kind" clearable placeholder="全部" style="width: 150px" @change="search">
+          <el-select v-model="query.kind" clearable placeholder="全部" style="width: 130px" @change="search">
             <el-option label="企业注册" value="enterprise" />
             <el-option label="个体户" value="individual" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="跟进状态">
+          <el-select v-model="query.status" clearable placeholder="全部" style="width: 130px" @change="search">
+            <el-option v-for="(text, value) in STATUS_TEXT" :key="value" :label="text" :value="value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="跟进人">
+          <el-select
+            v-model="query.owner"
+            clearable
+            filterable
+            allow-create
+            default-first-option
+            placeholder="全部（可输入姓名）"
+            style="width: 150px"
+            @change="search"
+          >
+            <el-option label="未分配" value="unassigned" />
+            <el-option v-if="myName" :label="`我（${myName}）`" :value="myName" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -18,25 +38,44 @@
         </el-form-item>
       </el-form>
 
-      <el-table v-loading="loading" :data="list" stripe>
-        <el-table-column prop="createdAt" label="提交时间" width="175">
+      <div v-if="canFollowUp" class="batch-bar">
+        <el-button type="primary" plain :disabled="selected.length === 0" @click="openBatchFollowUp">
+          批量跟进{{ selected.length ? `（已选 ${selected.length} 条）` : '' }}
+        </el-button>
+        <span class="batch-tip">勾选左侧多行后可批量改状态 / 分配跟进人</span>
+      </div>
+
+      <el-table v-loading="loading" :data="list" stripe @selection-change="handleSelectionChange">
+        <el-table-column v-if="canFollowUp" type="selection" width="44" />
+        <el-table-column prop="createdAt" label="提交时间" width="160">
           <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column prop="kind" label="办理类型" width="110">
+        <el-table-column label="办理类型" width="100">
           <template #default="{ row }">{{ kindLabel(row.kind) }}</template>
         </el-table-column>
-        <el-table-column prop="enterpriseType" label="企业类型" min-width="130">
+        <el-table-column label="企业类型" min-width="120">
           <template #default="{ row }">{{ row.enterpriseType || '-' }}</template>
         </el-table-column>
-        <el-table-column label="注册地区" min-width="200" show-overflow-tooltip>
+        <el-table-column label="注册地区" min-width="170" show-overflow-tooltip>
           <template #default="{ row }">{{ [row.province, row.city, row.district].filter(Boolean).join(' ') }}</template>
         </el-table-column>
-        <el-table-column prop="phone" label="联系电话" width="140" />
-        <el-table-column label="已有地址" width="105">
-          <template #default="{ row }">{{ row.hasAddress ? '有' : '无' }}</template>
+        <el-table-column prop="phone" label="联系电话" width="125" />
+        <el-table-column label="跟进状态" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag :type="statusTag(row.status)" size="small">{{ statusText(row.status) }}</el-tag>
+          </template>
         </el-table-column>
-        <el-table-column label="操作" width="95" fixed="right">
-          <template #default="{ row }"><el-button type="primary" link @click="showDetail(row.id)">查看</el-button></template>
+        <el-table-column label="跟进人" width="110" align="center">
+          <template #default="{ row }">{{ row.owner || '未分配' }}</template>
+        </el-table-column>
+        <el-table-column label="最近跟进" width="150">
+          <template #default="{ row }">{{ row.followedAt ? formatDate(row.followedAt) : '-' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="130" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" link @click="showDetail(row.id)">查看</el-button>
+            <el-button v-if="canFollowUp" type="primary" link @click="openFollowUp(row)">跟进</el-button>
+          </template>
         </el-table-column>
       </el-table>
 
@@ -52,7 +91,45 @@
       />
     </div>
 
-    <el-dialog v-model="detailVisible" title="工商注册详情" width="680px">
+    <!-- 跟进弹窗：单条 / 批量共用 -->
+    <el-dialog
+      v-model="followUpVisible"
+      :title="followUpMode === 'batch' ? `批量跟进（${selected.length} 条）` : '跟进这条需求'"
+      width="520px"
+    >
+      <el-form :model="followUpForm" label-width="86px">
+        <el-form-item v-if="followUpMode === 'single' && followUpRow" label="需求编号">
+          <span class="mono">{{ followUpRow.id }}</span>
+        </el-form-item>
+        <el-form-item v-if="followUpMode === 'single' && followUpRow" label="当前状态">
+          <el-tag :type="statusTag(followUpRow.status)" size="small">{{ statusText(followUpRow.status) }}</el-tag>
+        </el-form-item>
+        <el-form-item label="跟进状态" required>
+          <el-select v-model="followUpForm.status" placeholder="请选择" style="width: 100%">
+            <el-option v-for="(text, value) in STATUS_TEXT" :key="value" :label="text" :value="value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="跟进人">
+          <el-input v-model="followUpForm.owner" :placeholder="`留空则记到我自己（${myName || '当前账号'}）`" clearable />
+        </el-form-item>
+        <el-form-item label="跟进备注">
+          <el-input
+            v-model="followUpForm.remark"
+            type="textarea"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+            placeholder="例如：已电话联系，客户想按小规模办，明天上午回电"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="followUpVisible = false">取消</el-button>
+        <el-button type="primary" :loading="followUpSubmitting" @click="submitFollowUp">提交跟进</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="detailVisible" title="工商注册详情" width="720px">
       <div v-loading="detailLoading">
         <el-descriptions v-if="detail" :column="2" border>
           <el-descriptions-item label="需求编号" :span="2">{{ detail.id }}</el-descriptions-item>
@@ -65,18 +142,56 @@
           <el-descriptions-item label="纳税类型意向">{{ taxLabel(detail.taxType) }}</el-descriptions-item>
           <el-descriptions-item label="联系电话">{{ detail.phone }}</el-descriptions-item>
           <el-descriptions-item label="用户ID">{{ detail.userId || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="备注信息" :span="2"><span class="remark">{{ detail.remark || '无' }}</span></el-descriptions-item>
+          <el-descriptions-item label="跟进状态">
+            <el-tag :type="statusTag(detail.status)" size="small">{{ statusText(detail.status) }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="跟进人">{{ detail.owner || '未分配' }}</el-descriptions-item>
+          <el-descriptions-item label="最近跟进">{{ detail.followedAt ? formatDate(detail.followedAt) : '-' }}</el-descriptions-item>
+          <el-descriptions-item label="最近跟进备注" :span="2">
+            <span class="remark">{{ detail.followUpRemark || '无' }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="客户留言" :span="2"><span class="remark">{{ detail.remark || '无' }}</span></el-descriptions-item>
         </el-descriptions>
+
+        <div class="timeline-block">
+          <div class="timeline-title">跟进记录</div>
+          <el-empty v-if="!followUps.length" description="还没有跟进记录" :image-size="60" />
+          <el-timeline v-else>
+            <el-timeline-item
+              v-for="item in followUps"
+              :key="item.id"
+              :timestamp="formatDate(item.createdAt)"
+              placement="top"
+            >
+              <div class="timeline-line">
+                <span class="timeline-operator">{{ item.operator || '未知操作人' }}</span>
+                <span class="timeline-arrow">
+                  {{ item.fromStatus ? statusText(item.fromStatus) : '—' }} → {{ statusText(item.toStatus) }}
+                </span>
+                <span v-if="item.owner" class="timeline-owner">跟进人：{{ item.owner }}</span>
+              </div>
+              <div v-if="item.remark" class="timeline-remark">{{ item.remark }}</div>
+            </el-timeline-item>
+          </el-timeline>
+        </div>
       </div>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
-import { getRegistrationRequestDetail, getRegistrationRequests } from '@/api'
+import {
+  batchFollowUpRegistrationRequests,
+  followUpRegistrationRequest,
+  getRegistrationRequestDetail,
+  getRegistrationRequestFollowUps,
+  getRegistrationRequests,
+} from '@/api'
+import { unwrapV1 } from '@/api/unwrap'
+import { useAuthStore } from '@/stores/auth'
 
 type RegistrationRequest = {
   id: string
@@ -91,20 +206,71 @@ type RegistrationRequest = {
   taxType: 'small' | 'general'
   phone: string
   remark: string | null
+  status: string
+  owner: string | null
+  followUpRemark: string | null
+  followedAt: string | null
   createdAt: string
 }
 
+type FollowUpRecord = {
+  id: string
+  operator: string | null
+  fromStatus: string | null
+  toStatus: string
+  owner: string | null
+  remark: string | null
+  createdAt: string
+}
+
+type BatchFollowUpResult = {
+  successCount?: number
+  failedCount?: number
+  failed?: { id: string; reason: string }[]
+}
+
+// 与后端 Dicts.FOLLOW_UP_STATUS_TEXT 同一口径（状态闭集见 common/Dicts.java）
+const STATUS_TEXT: Record<string, string> = {
+  pending: '待跟进',
+  contacted: '已联系',
+  quoted: '已报价',
+  converted: '已成交',
+  invalid: '无效线索',
+}
+const STATUS_TAG: Record<string, 'success' | 'info' | 'warning' | 'danger' | 'primary'> = {
+  pending: 'info',
+  contacted: 'warning',
+  quoted: 'primary',
+  converted: 'success',
+  invalid: 'danger',
+}
+
+const authStore = useAuthStore()
+const canFollowUp = computed(() => authStore.canPerform('/registration-requests/follow-up'))
+const myName = computed(() => authStore.adminInfo?.username || '')
+
 const loading = ref(false)
 const list = ref<RegistrationRequest[]>([])
-const query = reactive({ keyword: '', kind: '', page: 1, pageSize: 20 })
+const query = reactive({ keyword: '', kind: '', status: '', owner: '', page: 1, pageSize: 20 })
 const pagination = ref({ total: 0 })
+const selected = ref<RegistrationRequest[]>([])
+
 const detailVisible = ref(false)
 const detailLoading = ref(false)
 const detail = ref<RegistrationRequest | null>(null)
+const followUps = ref<FollowUpRecord[]>([])
 
-const formatDate = (date?: string) => date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'
-const kindLabel = (kind: string) => kind === 'enterprise' ? '企业注册' : '个体户'
-const taxLabel = (tax: string) => tax === 'general' ? '一般纳税人' : '小规模纳税人'
+const followUpVisible = ref(false)
+const followUpMode = ref<'single' | 'batch'>('single')
+const followUpRow = ref<RegistrationRequest | null>(null)
+const followUpSubmitting = ref(false)
+const followUpForm = reactive({ status: '', owner: '', remark: '' })
+
+const formatDate = (date?: string | null) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-')
+const kindLabel = (kind: string) => (kind === 'enterprise' ? '企业注册' : '个体户')
+const taxLabel = (tax: string) => (tax === 'general' ? '一般纳税人' : '小规模纳税人')
+const statusText = (status?: string | null) => (status ? STATUS_TEXT[status] || status : '-')
+const statusTag = (status?: string | null) => (status ? STATUS_TAG[status] || 'info' : 'info')
 
 async function fetchData() {
   loading.value = true
@@ -120,16 +286,34 @@ async function fetchData() {
   }
 }
 
-function search() { query.page = 1; fetchData() }
-function reset() { query.keyword = ''; query.kind = ''; search() }
-function onSizeChange() { query.page = 1; fetchData() }
+function search() {
+  query.page = 1
+  fetchData()
+}
+function reset() {
+  query.keyword = ''
+  query.kind = ''
+  query.status = ''
+  query.owner = ''
+  search()
+}
+function onSizeChange() {
+  query.page = 1
+  fetchData()
+}
+function handleSelectionChange(rows: RegistrationRequest[]) {
+  selected.value = rows
+}
 
 async function showDetail(id: string) {
   detail.value = null
+  followUps.value = []
   detailVisible.value = true
   detailLoading.value = true
   try {
-    detail.value = await getRegistrationRequestDetail(id) as unknown as RegistrationRequest
+    detail.value = (await getRegistrationRequestDetail(id)) as unknown as RegistrationRequest
+    const records: any = await getRegistrationRequestFollowUps(id)
+    followUps.value = Array.isArray(records) ? records : []
   } catch (error: any) {
     detailVisible.value = false
     ElMessage.error(error?.message || '加载需求详情失败')
@@ -138,9 +322,125 @@ async function showDetail(id: string) {
   }
 }
 
+function openFollowUp(row: RegistrationRequest) {
+  followUpMode.value = 'single'
+  followUpRow.value = row
+  followUpForm.status = row.status || 'pending'
+  followUpForm.owner = row.owner || ''
+  followUpForm.remark = ''
+  followUpVisible.value = true
+}
+
+function openBatchFollowUp() {
+  if (selected.value.length === 0) return
+  followUpMode.value = 'batch'
+  followUpRow.value = null
+  followUpForm.status = ''
+  followUpForm.owner = ''
+  followUpForm.remark = ''
+  followUpVisible.value = true
+}
+
+async function submitFollowUp() {
+  if (!followUpForm.status) {
+    ElMessage.warning('请选择跟进状态')
+    return
+  }
+  followUpSubmitting.value = true
+  try {
+    if (followUpMode.value === 'single') {
+      const row = followUpRow.value
+      if (!row) return
+      await followUpRegistrationRequest(row.id, {
+        fromStatus: row.status,
+        status: followUpForm.status,
+        owner: followUpForm.owner,
+        remark: followUpForm.remark,
+      })
+      ElMessage.success('已记录跟进')
+    } else {
+      const ids = selected.value.map((r) => r.id).filter(Boolean)
+      await ElMessageBox.confirm(`确认对这 ${ids.length} 条需求执行跟进？`, '提示', { type: 'warning' })
+      const response: unknown = await batchFollowUpRegistrationRequests({
+        ids,
+        status: followUpForm.status,
+        owner: followUpForm.owner,
+        remark: followUpForm.remark,
+      })
+      const result = unwrapV1<BatchFollowUpResult>(response)
+      const ok = result?.successCount ?? 0
+      const fail = result?.failedCount ?? 0
+      const firstReason = result?.failed?.[0]?.reason
+      if (fail > 0) {
+        ElMessage.warning(`成功 ${ok} 条，失败 ${fail} 条${firstReason ? `（${firstReason}）` : ''}`)
+      } else {
+        ElMessage.success(`批量跟进成功 ${ok} 条`)
+      }
+      selected.value = []
+    }
+    followUpVisible.value = false
+    fetchData()
+  } catch (error: any) {
+    if (error === 'cancel' || error === 'close') return
+    // 409 = 期间被别人改过：提示后刷新，不静默覆盖别人的跟进结果
+    const message = error?.response?.data?.message || error?.message || '跟进失败'
+    ElMessage.error(message)
+    fetchData()
+  } finally {
+    followUpSubmitting.value = false
+  }
+}
+
 onMounted(fetchData)
 </script>
 
 <style scoped>
-.remark { white-space: pre-wrap; word-break: break-word; }
+.remark {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+.batch-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.batch-tip {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+.timeline-block {
+  margin-top: 18px;
+}
+.timeline-title {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.timeline-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.timeline-operator {
+  font-weight: 500;
+}
+.timeline-arrow {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+.timeline-owner {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+.timeline-remark {
+  margin-top: 4px;
+  color: var(--el-text-color-regular);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 </style>

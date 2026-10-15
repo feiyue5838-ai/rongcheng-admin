@@ -61,6 +61,7 @@ export function hasActionAccess(role: string, path: string): boolean {
     '/v2/orders/export': ['superadmin'],
     '/finance/export': ['superadmin', 'finance'],
     '/transaction/export': ['superadmin', 'finance'],
+    '/registration-requests/follow-up': ['superadmin', 'order_admin'],
   }
   const allowed = ACTION_DEFAULTS[path]
   return !!allowed && (allowed.includes('*') || allowed.includes(role))
@@ -123,8 +124,6 @@ export function hasAccess(role: string, path: string): boolean {
     '/products/seals/personal': ['superadmin', 'product_admin'],
     '/products/seals/electronic': ['superadmin', 'product_admin'],
     '/products/record-queries': ['superadmin', 'product_admin'],
-    '/products/scenes': ['superadmin', 'product_admin'],
-    '/products/packages': ['superadmin', 'product_admin'],
     '/products/newspapers': ['superadmin', 'product_admin'],
     '/products/newspaper-templates': ['superadmin', 'product_admin'],
     '/products/bookkeeping-packages': ['superadmin', 'product_admin'],
