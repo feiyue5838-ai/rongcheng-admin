@@ -57,13 +57,15 @@ const router = createRouter({
         { path: 'products/seals/personal', name: 'SealProductsPersonal', component: () => import('@/views/products/seals.vue'), meta: { title: '个人印章' } },
         { path: 'products/seals/electronic', name: 'SealProductsElectronic', component: () => import('@/views/products/seals.vue'), meta: { title: '电子印章' } },
         { path: 'products/record-queries', name: 'RecordQueries', component: () => import('@/views/products/record-queries.vue'), meta: { title: '刻章备案查询' } },
-        { path: 'products/scenes', name: 'Scenes', component: () => import('@/views/products/scenes.vue'), meta: { title: '场景管理' } },
-        { path: 'products/packages', name: 'SealPackages', component: () => import('@/views/products/packages.vue'), meta: { title: '套餐管理' } },
+        // 场景和套餐已整合到印章管理页；旧链接统一进入企业刻章页。
+        { path: 'products/scenes', redirect: '/products/seals/enterprise' },
+        { path: 'products/packages', redirect: '/products/seals/enterprise' },
         // 报纸管理 - 统一入口
         { path: 'products/newspapers', name: 'Newspapers', component: () => import('@/views/products/newspapers.vue'), meta: { title: '报纸仓库' } },
         { path: 'products/newspaper-templates', name: 'NewspaperTemplates', component: () => import('@/views/products/newspaper-templates.vue'), meta: { title: '公告模板管理' } },
-        // 代理记账管理
-        { path: 'products/bookkeeping-packages', name: 'BookkeepingPackages', component: () => import('@/views/products/bookkeeping-packages.vue'), meta: { title: '代理记账套餐配置' } },
+        // 代账套餐配置退役（2026-10）：代账改为留资型后客户侧不再展示套餐与价格，左侧菜单入口一并移除。
+        // 后端套餐接口与数据保留（线上老版本小程序可能仍在调 GET /api/bookkeeping/packages），旧链接重定向到代账线索所在的工商注册页。
+        { path: 'products/bookkeeping-packages', redirect: '/registration-requests' },
         // 兼容旧分类路由，重定向到统一入口
         { path: 'products/newspapers/:categoryKey', redirect: '/products/newspapers' },
         // 用户管理
@@ -90,12 +92,12 @@ const router = createRouter({
         // 结算规则已废弃（V2.0 使用固定结算比例），旧页面 redirect 到财务总览
         { path: 'finance/rules', redirect: () => ({ path: '/finance' }) },
         { path: 'finance/settlement', redirect: () => ({ path: '/v2/settlements' }) },
-        { path: 'finance/transaction', redirect: to => ({ path: '/finance', query: { tab: 'transaction' } }) },
+        { path: 'finance/transaction', redirect: () => ({ path: '/finance', query: { tab: 'transaction' } }) },
         { path: 'finance/refund', redirect: () => ({ path: '/v2/refunds' }) },
         { path: 'settlement', redirect: () => ({ path: '/v2/settlements' }) },
         { path: 'rules', redirect: () => ({ path: '/finance' }) },
         { path: 'pricing', redirect: () => ({ path: '/finance' }) },
-        { path: 'transaction', redirect: to => ({ path: '/finance', query: { tab: 'transaction' } }) },
+        { path: 'transaction', redirect: () => ({ path: '/finance', query: { tab: 'transaction' } }) },
         { path: 'refund', redirect: () => ({ path: '/v2/refunds' }) },
         // legacy /stores aliases kept for old bookmarks (store->outlet rename)
         { path: 'stores', redirect: '/outlets' },

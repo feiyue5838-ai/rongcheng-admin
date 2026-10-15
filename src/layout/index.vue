@@ -53,17 +53,12 @@
             <el-menu-item v-if="canAccess('/products/seals/enterprise')" index="/products/seals/enterprise">企业刻章</el-menu-item>
             <el-menu-item v-if="canAccess('/products/seals/personal')" index="/products/seals/personal">个人印章</el-menu-item>
             <el-menu-item v-if="canAccess('/products/seals/electronic')" index="/products/seals/electronic">电子印章</el-menu-item>
-
             <el-menu-item v-if="canAccess('/products/record-queries')" index="/products/record-queries">刻章备案查询</el-menu-item>
           </el-sub-menu>
           <el-sub-menu v-if="showNewspaperMgmt" index="newspaperMgmt">
             <template #title><span>登报管理</span></template>
             <el-menu-item v-if="canAccess('/products/newspapers')" index="/products/newspapers">报纸仓库</el-menu-item>
             <el-menu-item v-if="canAccess('/products/newspaper-templates')" index="/products/newspaper-templates">公告模板</el-menu-item>
-          </el-sub-menu>
-          <el-sub-menu v-if="showBookkeepingMgmt" index="bookkeepingMgmt">
-            <template #title><span>代理记账管理</span></template>
-            <el-menu-item v-if="canAccess('/products/bookkeeping-packages')" index="/products/bookkeeping-packages">套餐配置</el-menu-item>
           </el-sub-menu>
           <el-menu-item v-if="canAccess('/registration-requests')" index="/registration-requests">工商注册</el-menu-item>
         </el-sub-menu>
@@ -137,7 +132,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { Money, Wallet } from '@element-plus/icons-vue'
+import { Money } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -167,22 +162,27 @@ const showFinance = computed(() =>
 const showOrders = computed(() =>
   canAccess('/v2/orders') || canAccess('/v2/orders/unassigned') || canAccess('/v2/refunds') || canAccess('/v2/invoices'),
 )
-const showProducts = computed(() =>
-  canAccess('/products/seals/enterprise') || canAccess('/products/scenes') ||
-  canAccess('/products/packages') ||
-  canAccess('/products/newspapers') || canAccess('/products/bookkeeping-packages') ||
-  canAccess('/registration-requests'),
-)
+const sealProductPaths = [
+  '/products/seals/enterprise',
+  '/products/seals/personal',
+  '/products/seals/electronic',
+  '/products/record-queries',
+] as const
+const newspaperProductPaths = [
+  '/products/newspapers',
+  '/products/newspaper-templates',
+] as const
+const hasAnyAccess = (paths: readonly string[]) => paths.some(canAccess)
+
 const showSealMgmt = computed(() =>
-  canAccess('/products/seals/enterprise') || canAccess('/products/seals/personal') ||
-  canAccess('/products/seals/electronic') || canAccess('/products/packages') ||
-  canAccess('/products/scenes') || canAccess('/products/record-queries'),
+  hasAnyAccess(sealProductPaths),
 )
 const showNewspaperMgmt = computed(() =>
-  canAccess('/products/newspapers') || canAccess('/products/newspaper-templates'),
+  hasAnyAccess(newspaperProductPaths),
 )
-const showBookkeepingMgmt = computed(() =>
-  canAccess('/products/bookkeeping-packages'),
+const showProducts = computed(() =>
+  showSealMgmt.value || showNewspaperMgmt.value ||
+  canAccess('/registration-requests'),
 )
 const showUserMgmt = computed(() =>
   canAccess('/users') || canAccess('/reviews') || canAccess('/complaints') || canAccess('/questions') || canAccess('/points'),

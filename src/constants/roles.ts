@@ -126,7 +126,6 @@ export function hasAccess(role: string, path: string): boolean {
     '/products/record-queries': ['superadmin', 'product_admin'],
     '/products/newspapers': ['superadmin', 'product_admin'],
     '/products/newspaper-templates': ['superadmin', 'product_admin'],
-    '/products/bookkeeping-packages': ['superadmin', 'product_admin'],
     '/users': ['superadmin', 'content_admin'],
     '/reviews': ['superadmin', 'content_admin'],
     '/complaints': ['superadmin', 'content_admin'],
