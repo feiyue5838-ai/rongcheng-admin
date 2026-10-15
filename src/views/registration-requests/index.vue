@@ -10,6 +10,7 @@
           <el-select v-model="query.kind" clearable placeholder="全部" style="width: 130px" @change="search">
             <el-option label="企业注册" value="enterprise" />
             <el-option label="个体户" value="individual" />
+            <el-option label="代理记账" value="bookkeeping" />
           </el-select>
         </el-form-item>
         <el-form-item label="跟进状态">
@@ -53,8 +54,10 @@
         <el-table-column label="办理类型" width="100">
           <template #default="{ row }">{{ kindLabel(row.kind) }}</template>
         </el-table-column>
-        <el-table-column label="企业类型" min-width="120">
-          <template #default="{ row }">{{ row.enterpriseType || '-' }}</template>
+        <el-table-column label="企业类型 / 公司名称" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.kind === 'bookkeeping' ? row.companyName || '-' : row.enterpriseType || '-' }}
+          </template>
         </el-table-column>
         <el-table-column label="注册地区" min-width="170" show-overflow-tooltip>
           <template #default="{ row }">{{ [row.province, row.city, row.district].filter(Boolean).join(' ') }}</template>
@@ -136,10 +139,15 @@
           <el-descriptions-item label="办理类型">{{ kindLabel(detail.kind) }}</el-descriptions-item>
           <el-descriptions-item label="提交时间">{{ formatDate(detail.createdAt) }}</el-descriptions-item>
           <el-descriptions-item label="注册地区" :span="2">{{ [detail.province, detail.city, detail.district].filter(Boolean).join(' ') }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.kind === 'bookkeeping'" label="公司名称">{{ detail.companyName || '-' }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.kind === 'enterprise'" label="企业类型">{{ detail.enterpriseType || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="组织 / 组成形式">{{ detail.organizationForm || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="已有地址">{{ detail.hasAddress ? '有地址' : '无地址' }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.kind !== 'bookkeeping'" label="组织 / 组成形式">{{ detail.organizationForm || '-' }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.kind !== 'bookkeeping'" label="已有地址">{{ detail.hasAddress ? '有地址' : '无地址' }}</el-descriptions-item>
           <el-descriptions-item label="纳税类型意向">{{ taxLabel(detail.taxType) }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.kind === 'bookkeeping'" label="服务周期意向">{{ extraLabel('cycle', detail) }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.kind === 'bookkeeping'" label="开票需求">{{ extraLabel('invoice', detail) }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.kind === 'bookkeeping'" label="社保 / 公积金">{{ extraLabel('socialFund', detail) }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.kind === 'bookkeeping'" label="账务情况">{{ extraLabel('accountHistory', detail) }}</el-descriptions-item>
           <el-descriptions-item label="联系电话">{{ detail.phone }}</el-descriptions-item>
           <el-descriptions-item label="用户ID">{{ detail.userId || '-' }}</el-descriptions-item>
           <el-descriptions-item label="跟进状态">
@@ -196,7 +204,7 @@ import { useAuthStore } from '@/stores/auth'
 type RegistrationRequest = {
   id: string
   userId: string
-  kind: 'enterprise' | 'individual'
+  kind: 'enterprise' | 'individual' | 'bookkeeping'
   enterpriseType: string | null
   organizationForm: string | null
   province: string
@@ -210,6 +218,8 @@ type RegistrationRequest = {
   owner: string | null
   followUpRemark: string | null
   followedAt: string | null
+  companyName?: string | null
+  extra?: Record<string, string> | null
   createdAt: string
 }
 
@@ -267,7 +277,29 @@ const followUpSubmitting = ref(false)
 const followUpForm = reactive({ status: '', owner: '', remark: '' })
 
 const formatDate = (date?: string | null) => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-')
-const kindLabel = (kind: string) => (kind === 'enterprise' ? '企业注册' : '个体户')
+const KIND_TEXT: Record<string, string> = {
+  enterprise: '企业注册',
+  individual: '个体户',
+  bookkeeping: '代理记账',
+}
+const kindLabel = (kind: string) => KIND_TEXT[kind] || kind
+// 代账需求字段文案：取值与后端 common/Dicts.java 的 BOOKKEEPING_EXTRA_VALUES 一一对应
+const EXTRA_TEXT: Record<string, Record<string, string>> = {
+  cycle: { half: '半年', year: '全年', unsure: '暂不确定' },
+  invoice: { none: '不开票', within5: '5 张内', normal: '正常开票', unsure: '暂不确定' },
+  socialFund: {
+    none: '都不缴',
+    social: '只缴社保',
+    fund: '只缴公积金',
+    social_fund: '社保 + 公积金',
+    unsure: '暂不确定',
+  },
+  accountHistory: { new: '新办公司，还没开始记账', handover: '有历史账，需要交接', unsure: '暂不确定' },
+}
+const extraLabel = (key: string, row: RegistrationRequest) => {
+  const value = row.extra ? row.extra[key] : ''
+  return value ? EXTRA_TEXT[key]?.[value] || value : '-'
+}
 const taxLabel = (tax: string) => (tax === 'general' ? '一般纳税人' : '小规模纳税人')
 const statusText = (status?: string | null) => (status ? STATUS_TEXT[status] || status : '-')
 const statusTag = (status?: string | null) => (status ? STATUS_TAG[status] || 'info' : 'info')
