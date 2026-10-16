@@ -107,7 +107,7 @@
           <el-table-column prop="orderNo" label="订单编号" width="180" />
           <el-table-column label="业务" width="100" align="center">
             <template #default="{ row }">
-              <el-tag size="small">{{ ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' } as any)[row.module] || row.module || '-' }}</el-tag>
+              <el-tag size="small">{{ moduleLabel(row.module) }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="fulfillmentNo" label="履约单号" min-width="170" show-overflow-tooltip />
@@ -227,14 +227,71 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import type { FormInstance, FormItemRule, UploadInstance, UploadRawFile, UploadRequestOptions } from 'element-plus'
+import axios from 'axios'
 import { getOutletsAPI, getOutletAPI, v2GetFulfillments, v2AcceptFulfillment, v2StartFulfillment, v2DeliverFulfillment, uploadImage } from '@/api'
+import type { Outlet, OutletFulfillmentSummary } from '@/api/types'
+import { unwrapData, unwrapUploadUrl, unwrapV2 } from '@/api/unwrap'
 import { formatDate } from '@/utils/format'
 import {
   outletFulfillmentStatusText,
   outletFulfillmentStatusTag,
   FULFILLMENT_TODO_PRIORITY,
 } from '@/utils/fulfillment-status'
+import type { FulfillmentStatus } from '@/utils/fulfillment-status'
 import { Refresh, Clock, Tools, CircleCheck, Calendar, List, OfficeBuilding, Plus } from '@element-plus/icons-vue'
+
+interface OutletListResult {
+  list?: Outlet[]
+}
+
+interface FulfillmentOrder extends Omit<OutletFulfillmentSummary, 'status'> {
+  status: FulfillmentStatus
+  module?: string
+  fulfillmentNo?: string
+  assignedAt?: string
+  productionPhotos?: string[]
+  filingPhotos?: string[]
+  qualityCheckPhotos?: string[]
+}
+
+interface FulfillmentListResult {
+  list?: FulfillmentOrder[]
+}
+
+interface DashboardStats {
+  pending: number
+  processing: number
+  completed: number
+  todayTotal: number
+  cancelled: number
+}
+
+const MODULE_LABELS: Record<string, string> = {
+  seal: '刻章',
+  newspaper: '登报',
+  bookkeeping: '记账',
+}
+
+function moduleLabel(module: string | null | undefined): string {
+  return module ? (MODULE_LABELS[module] || module) : '-'
+}
+
+function getApiErrorMessage(error: unknown): string | undefined {
+  if (axios.isAxiosError<{ message?: unknown }>(error)) {
+    const message = error.response?.data?.message
+    if (message) return Array.isArray(message) ? message.join('；') : String(message)
+  }
+  return error instanceof Error ? error.message : undefined
+}
+
+function reportUploadError(options: UploadRequestOptions, error: unknown) {
+  const uploadError = Object.assign(
+    new Error(error instanceof Error ? error.message : '上传失败'),
+    { status: 0, method: options.method, url: options.action },
+  )
+  options.onError(uploadError)
+}
 
 const router = useRouter()
 const loading = ref(false)
@@ -244,24 +301,24 @@ function isOverdue(d?: string) {
   const t = new Date(d.endsWith('Z') ? d.slice(0, -1) : d).getTime()
   return !isNaN(t) && Date.now() - t > 48 * 3600 * 1000
 }
-const outlets = ref<any[]>([])
+const outlets = ref<Outlet[]>([])
 const selectedOutlet = ref('')
-const currentOutlet = ref<any>(null)
-const stats = ref<any>({ pending: 0, processing: 0, completed: 0, todayTotal: 0, cancelled: 0 })
-const recentOrders = ref<any[]>([])
-const currentOrder = ref<any>(null)
+const currentOutlet = ref<Outlet | null>(null)
+const stats = ref<DashboardStats>({ pending: 0, processing: 0, completed: 0, todayTotal: 0, cancelled: 0 })
+const recentOrders = ref<FulfillmentOrder[]>([])
+const currentOrder = ref<FulfillmentOrder | null>(null)
 const acceptDialogVisible = ref(false)
 const startDialogVisible = ref(false)
 const completeDialogVisible = ref(false)
 const actionLoading = ref(false)
-const completeFormRef = ref<any>(null)
-const completeUploadRef = ref<any>(null)
+const completeFormRef = ref<FormInstance>()
+const completeUploadRef = ref<UploadInstance>()
 
 const completeForm = reactive({ expressCompany: '', expressNo: '', remark: '', photos: [] as string[], noExpress: false })
-const requiredIfExpress = (msg: string) => ({
-  validator: (_r: any, v: string, cb: any) => {
-    if (completeForm.noExpress || (v && v.trim())) cb()
-    else cb(new Error(msg))
+const requiredIfExpress = (message: string): FormItemRule => ({
+  validator: (_rule, value, callback) => {
+    if (completeForm.noExpress || (typeof value === 'string' && value.trim())) callback()
+    else callback(new Error(message))
   },
   trigger: 'blur',
 })
@@ -273,8 +330,8 @@ const completeRules = {
 async function loadOutlets() {
   loading.value = true
   try {
-    const res: any = await getOutletsAPI({ page: 1, pageSize: 100, status: 1 })
-    outlets.value = (res as any).data?.list ?? (res as any).list ?? []
+    const result = unwrapData<OutletListResult>(await getOutletsAPI({ page: 1, pageSize: 100, status: 1 }))
+    outlets.value = Array.isArray(result.list) ? result.list : []
     if (outlets.value.length > 0 && !selectedOutlet.value) {
       selectedOutlet.value = outlets.value[0].id
       await loadData()
@@ -288,15 +345,16 @@ async function loadData() {
   if (!selectedOutlet.value) return
   loading.value = true
   try {
-    const [outletRes, fulRes]: any[] = await Promise.all([
+    const [outletResponse, fulfillmentResponse] = await Promise.all([
       getOutletAPI(selectedOutlet.value),
       v2GetFulfillments({ supplierId: selectedOutlet.value, page: 1, pageSize: 100 }),
     ])
-    currentOutlet.value = (outletRes as any)
-    const allOrders = (fulRes as any).list ?? []
+    currentOutlet.value = unwrapData<Outlet>(outletResponse)
+    const fulfillmentResult = unwrapV2<FulfillmentListResult>(fulfillmentResponse)
+    const allOrders = Array.isArray(fulfillmentResult.list) ? fulfillmentResult.list : []
     // 待办（待接单/已接单/制作中）优先置顶，已完成/取消按时间倒序排在后面
     // 保证卡片提示的待办在列表内永远可见可操作（不因 slice 截断被挤出）
-    const sorted = [...allOrders].sort((a: any, b: any) => {
+    const sorted = [...allOrders].sort((a, b) => {
       const pa = FULFILLMENT_TODO_PRIORITY[a.status] ?? 99
       const pb = FULFILLMENT_TODO_PRIORITY[b.status] ?? 99
       if (pa !== pb) return pa - pb
@@ -311,20 +369,20 @@ async function loadData() {
       return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
     }
     stats.value = {
-      pending: allOrders.filter((o: any) => o.status === 'assigned').length,
+      pending: allOrders.filter((order) => order.status === 'assigned').length,
       // 制作中 = 已接单（accepted，含已开始制作 processing）
-      processing: allOrders.filter((o: any) => o.status === 'accepted' || o.status === 'processing').length,
-      completed: allOrders.filter((o: any) => o.status === 'completed').length,
+      processing: allOrders.filter((order) => order.status === 'accepted' || order.status === 'processing').length,
+      completed: allOrders.filter((order) => order.status === 'completed').length,
       // 今日完成 = completedAt 为今天（原「今日新增」按 assignedAt 派单时间算，语义模糊，改为今日成果）
-      todayTotal: allOrders.filter((o: any) => o.status === 'completed' && isSameDay(o.completedAt)).length,
-      cancelled: allOrders.filter((o: any) => o.status === 'cancelled').length,
+      todayTotal: allOrders.filter((order) => order.status === 'completed' && isSameDay(order.completedAt || undefined)).length,
+      cancelled: allOrders.filter((order) => order.status === 'cancelled').length,
     }
-  } catch (err: any) { /* ignore */ } finally {
+  } catch { /* 页面仍可展示空统计 */ } finally {
     loading.value = false
   }
 }
 
-function onAccept(order: any) {
+function onAccept(order: FulfillmentOrder) {
   currentOrder.value = order
   acceptDialogVisible.value = true
 }
@@ -337,35 +395,34 @@ async function onConfirmAccept() {
   }
   actionLoading.value = true
   try {
-    await v2AcceptFulfillment((currentOrder.value as any).id)
+    await v2AcceptFulfillment(currentOrder.value.id)
     ElMessage.success('接单成功')
     acceptDialogVisible.value = false
     loadData()
-  } catch (err: any) {
-    ElMessage.error(err?.response?.data?.message || err?.message || '接单失败')
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '接单失败')
   } finally {
     actionLoading.value = false
   }
 }
 
-function beforePhotoUpload(file: any) {
+function beforePhotoUpload(file: UploadRawFile) {
   const ok = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
   if (!ok) { ElMessage.error('只能上传图片（JPG/PNG/GIF/WebP）'); return false }
   if (file.size > 10 * 1024 * 1024) { ElMessage.error('图片大小不能超过 10MB'); return false }
   return true
 }
 
-async function uploadCompletePhoto(option: any) {
+async function uploadCompletePhoto(option: UploadRequestOptions) {
   try {
-    const res: any = await uploadImage(option.file)
-    const url = res?.data?.url ?? res?.url
-    if (!url) throw new Error('upload failed')
+    const response = await uploadImage(option.file)
+    const url = unwrapUploadUrl(response)
+    if (!url) throw new Error('上传响应缺少文件地址')
     completeForm.photos.push(url)
-    option.file.url = url
-    option.onSuccess(res, option.file)
-  } catch (e: any) {
+    option.onSuccess(response)
+  } catch (error: unknown) {
     ElMessage.error('图片上传失败，请重试')
-    option.onError(e)
+    reportUploadError(option, error)
   }
 }
 
@@ -373,14 +430,14 @@ function onPhotoExceed() {
   ElMessage.warning('最多上传 5 张交货照片')
 }
 
-function onComplete(order: any) {
+function onComplete(order: FulfillmentOrder) {
   currentOrder.value = order
   Object.assign(completeForm, { expressCompany: '', expressNo: '', remark: '', photos: [], noExpress: false })
   completeUploadRef.value?.clearFiles()
   completeDialogVisible.value = true
 }
 
-function onStart(order: any) {
+function onStart(order: FulfillmentOrder) {
   currentOrder.value = order
   startDialogVisible.value = true
 }
@@ -393,12 +450,12 @@ async function onConfirmStart() {
   }
   actionLoading.value = true
   try {
-    await v2StartFulfillment((currentOrder.value as any).id)
+    await v2StartFulfillment(currentOrder.value.id)
     ElMessage.success('已开始制作')
     startDialogVisible.value = false
     loadData()
-  } catch (err: any) {
-    ElMessage.error(err?.response?.data?.message || err?.message || '操作失败')
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '操作失败')
   } finally {
     actionLoading.value = false
   }
@@ -406,8 +463,8 @@ async function onConfirmStart() {
 
 async function onConfirmComplete() {
   // 前端状态校验：只有 processing（制作中）才能交货（accepted 需先开始制作）
-  const st = currentOrder.value?.status
-  if (st !== 'processing') {
+  const order = currentOrder.value
+  if (order?.status !== 'processing') {
     ElMessage.warning('该订单当前状态不允许交货，请刷新页面后重试')
     return
   }
@@ -415,7 +472,7 @@ async function onConfirmComplete() {
   if (!valid) return
   actionLoading.value = true
   try {
-    await v2DeliverFulfillment((currentOrder.value as any).id, {
+    await v2DeliverFulfillment(order.id, {
       expressCompany: completeForm.noExpress ? undefined : completeForm.expressCompany,
       trackingNo: completeForm.noExpress ? undefined : completeForm.expressNo,
       remark: completeForm.noExpress && !completeForm.remark.trim() ? '自提/同城直送' : completeForm.remark,
@@ -424,8 +481,8 @@ async function onConfirmComplete() {
     ElMessage.success('交货成功')
     completeDialogVisible.value = false
     loadData()
-  } catch (err: any) {
-    ElMessage.error(err?.response?.data?.message || err?.message || '交货失败')
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '交货失败')
   } finally {
     actionLoading.value = false
   }

@@ -26,7 +26,7 @@
           <el-button type="primary" @click="search">查询</el-button>
         </el-form-item>
       </el-form>
-      <el-table :data="list" v-loading="loading" stripe @selection-change="selected = $event">
+      <el-table :data="list" v-loading="loading" stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="45" />
         <el-table-column prop="orderNo" label="订单号" width="200" show-overflow-tooltip />
         <el-table-column label="类型" width="80">
@@ -101,21 +101,57 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { v2GetUnassigned, v2AssignBatch, v2GetSuppliers } from '@/api'
+import { toArray, toPaged, unwrapV2 } from '@/api/unwrap'
 
-const moduleLabel = (m: any) => ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' } as any)[m] || m
+interface UnassignedOrderRow {
+  orderNo: string
+  module: string
+  totalAmount?: number | string | null
+  refundStatus?: string | null
+  licenseRegion?: string | null
+  customerRemark?: string | null
+  createdAt?: string | null
+  paidAt?: string | null
+}
+
+interface SupplierItem {
+  id: string
+  name?: string | null
+  region?: string | null
+  status: number
+  bizTypes?: string | string[] | null
+}
+
+interface BatchAssignFailure {
+  orderNo: string
+  reason: string
+}
+
+interface BatchAssignResult {
+  successCount?: number
+  failedCount?: number
+  failed?: BatchAssignFailure[]
+}
+
+const moduleLabels: Record<string, string> = { seal: '刻章', newspaper: '登报', bookkeeping: '记账' }
+const moduleLabel = (module: string | null | undefined) => moduleLabels[module ?? ''] || module || '-'
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
-const fmt = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
+const fmt = (d?: string | null) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
 // 超48h未派单（去 Z 按本地解析，避免 +8h 偏移导致晚8小时才标红）
 const OVERDUE_MS = 48 * 3600 * 1000
-function isOvertime(d?: string) {
+function isOvertime(d?: string | null) {
   if (!d) return false
   const t = new Date(d.endsWith('Z') ? d.slice(0, -1) : d).getTime()
   return !isNaN(t) && Date.now() - t > OVERDUE_MS
 }
 
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback
+}
+
 const router = useRouter()
 const loading = ref(false)
-const list = ref<any[]>([])
+const list = ref<UnassignedOrderRow[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
@@ -124,16 +160,17 @@ const filters = reactive({ module: '', keyword: '' })
 async function load() {
   loading.value = true
   try {
-    const res: any = await v2GetUnassigned({
+    const response: unknown = await v2GetUnassigned({
       page: page.value,
       pageSize: pageSize.value,
       module: filters.module || undefined,
       keyword: filters.keyword.trim() || undefined,
     })
-    list.value = res?.list ?? res?.data?.list ?? []
-    total.value = res?.pagination?.total ?? res?.total ?? res?.data?.total ?? 0
-  } catch (e: any) {
-    ElMessage.error(e?.message || '加载失败')
+    const result = toPaged<UnassignedOrderRow>(response)
+    list.value = result.list
+    total.value = result.total
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '加载失败'))
   } finally {
     loading.value = false
   }
@@ -143,7 +180,7 @@ function search() {
   page.value = 1
   load()
 }
-function openAssign(row: any) {
+function openAssign(row: UnassignedOrderRow) {
   router.push({ path: '/v2/orders/detail', query: { orderNo: row.orderNo, assign: '1' } })
 }
 function openBatch() {
@@ -152,35 +189,41 @@ function openBatch() {
 }
 
 /* 批量派单：勾选多单 → 同一供应商一次派完，后端逐单独立事务 */
-const selected = ref<any[]>([])
+const selected = ref<UnassignedOrderRow[]>([])
 const batchDialogVisible = ref(false)
 const batchSupplierId = ref('')
 const batchSubmitting = ref(false)
-const suppliers = ref<any[]>([])
+const suppliers = ref<SupplierItem[]>([])
 // 已选品类（bookkeeping 与 accounting 归一）；下拉仅留启用且能全接的供应商
 const normBiz = (m: string) => (m === 'bookkeeping' || m === 'accounting' ? 'bookkeeping' : (m || '').toLowerCase())
-const selectedModules = computed(() => [...new Set(selected.value.map((r: any) => r.module).filter(Boolean))])
+const selectedModules = computed(() => [...new Set(selected.value.map(row => row.module).filter(Boolean))])
 const selectedModulesText = computed(() => selectedModules.value.map(moduleLabel).join('、') || '-')
-const batchSuppliers = computed(() => suppliers.value.filter((s: any) => {
-  if (s.status !== 1) return false
-  const biz = String(s.bizTypes || '').split(',').map(normBiz)
+const batchSuppliers = computed(() => suppliers.value.filter((supplier) => {
+  if (supplier.status !== 1) return false
+  const biz = String(supplier.bizTypes || '').split(',').map(normBiz)
   return selectedModules.value.every(m => biz.includes(normBiz(m)))
 }))
+
+function handleSelectionChange(rows: UnassignedOrderRow[]) {
+  selected.value = rows
+}
+
 async function loadSuppliers() {
   try {
-    const res: any = await v2GetSuppliers({})
-    suppliers.value = Array.isArray(res) ? res : res?.list ?? []
+    const response: unknown = await v2GetSuppliers({})
+    suppliers.value = toArray<SupplierItem>(response)
   } catch { suppliers.value = [] }
 }
 async function doBatchAssign() {
   if (!batchSupplierId.value) { ElMessage.warning('请先选择供应商'); return }
   batchSubmitting.value = true
   try {
-    const res: any = await v2AssignBatch(selected.value.map(r => ({ orderNo: r.orderNo, supplierId: batchSupplierId.value })))
-    const ok = res?.successCount ?? 0
-    const fail = res?.failedCount ?? 0
+    const response: unknown = await v2AssignBatch(selected.value.map(row => ({ orderNo: row.orderNo, supplierId: batchSupplierId.value })))
+    const result = unwrapV2<BatchAssignResult>(response)
+    const ok = result?.successCount ?? 0
+    const fail = result?.failedCount ?? 0
     if (fail > 0) {
-      const reasons = (res?.failed ?? []).slice(0, 3).map((f: any) => `${f.orderNo}：${f.reason}`).join('；')
+      const reasons = (result?.failed ?? []).slice(0, 3).map(item => `${item.orderNo}：${item.reason}`).join('；')
       ElMessage.warning(`成功 ${ok} 单，失败 ${fail} 单：${reasons}`)
     } else {
       ElMessage.success(`批量派单成功 ${ok} 单`)
@@ -188,8 +231,8 @@ async function doBatchAssign() {
     batchDialogVisible.value = false
     selected.value = []
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '操作失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '操作失败'))
   } finally {
     batchSubmitting.value = false
   }

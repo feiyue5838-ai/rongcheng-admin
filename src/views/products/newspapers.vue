@@ -232,9 +232,9 @@
         </el-form-item>
         <el-form-item label="级别">
           <el-radio-group v-model="form.level">
-            <el-radio :label="1">普通</el-radio>
-            <el-radio :label="2">省级</el-radio>
-            <el-radio :label="3">国家级</el-radio>
+            <el-radio :value="1">普通</el-radio>
+            <el-radio :value="2">省级</el-radio>
+            <el-radio :value="3">国家级</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="单价(元/字)" required>
@@ -302,8 +302,8 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-radio-group v-model="sectionForm.status">
-            <el-radio :label="1">启用</el-radio>
-            <el-radio :label="0">停用</el-radio>
+            <el-radio :value="1">启用</el-radio>
+            <el-radio :value="0">停用</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注">
@@ -321,12 +321,66 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { getAllNewspapers, createNewspaper, updateNewspaper, deleteNewspaper, getNewspaperSections, createNewspaperSection, updateNewspaperSection, deleteNewspaperSection } from '@/api'
+import type { Newspaper } from '@/api/types'
+import { toArray, unwrapV1 } from '@/api/unwrap'
 import { provinces as sharedProvinceNames, provinceToCities, getProvinceCode, getCityCode } from '@/utils/regions'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Refresh, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 
+interface NewspaperRow extends Newspaper {
+  provinceCode: string
+  cityCode: string
+  region: string
+}
+
+interface NewspaperForm {
+  id: string
+  name: string
+  region: string
+  provinceCode: string
+  cityCode: string
+  level: 1 | 2 | 3
+  pricePerWord: number
+  minWords: number
+  alias: string
+  publisher: string
+  coverage: number
+  image: string
+  description: string
+  sort: number
+  status: number
+  enable_sections: 0 | 1
+}
+
+interface NewspaperSection {
+  id: string
+  name: string
+  category?: string
+  listPrice?: number
+  deadlineTime?: string
+  publishCycle?: string
+  sort?: number
+  status: number
+  remark?: string
+}
+
+interface NewspaperSectionRow extends NewspaperSection {
+  _newspaperId: string
+}
+
+interface NewspaperSectionForm {
+  name: string
+  category: string
+  listPrice: number
+  deadlineTime: string
+  publishCycle: string
+  sort: number
+  status: number
+  remark: string
+}
+
 // ============ 行政区划数据（与小程序 region-data.js 对齐）============
-const PROVINCES = [
+const _PROVINCES = [
   { name: '北京市', code: '11' }, { name: '天津市', code: '12' }, { name: '河北省', code: '13' },
   { name: '山西省', code: '14' }, { name: '内蒙古自治区', code: '15' }, { name: '辽宁省', code: '21' },
   { name: '吉林省', code: '22' }, { name: '黑龙江省', code: '23' }, { name: '上海市', code: '31' },
@@ -344,7 +398,7 @@ const PROVINCES = [
 ];
 
 // 城市代码映射（key = 省份代码）
-const CITY_CODES: Record<string, { name: string; code: string }[]> = {
+const _CITY_CODES: Record<string, { name: string; code: string }[]> = {
   '11': [{ name: '北京市', code: '110100' }],
   '12': [{ name: '天津市', code: '120100' }],
   '13': [
@@ -586,8 +640,8 @@ const sectionIsEdit = ref(false)
 const currentNewspaperId = ref('')
 const editingSectionId = ref('')
 const expandedRows = ref<Set<string>>(new Set())
-const sections = ref<any[]>([])
-const sectionForm = reactive<any>({
+const sections = ref<NewspaperSectionRow[]>([])
+const sectionForm = reactive<NewspaperSectionForm>({
   name: '',
   category: '',
   listPrice: 0,
@@ -597,8 +651,7 @@ const sectionForm = reactive<any>({
   status: 1,
   remark: '',
 })
-const sectionFormRef = ref()
-const allNewspapers = ref<any[]>([])
+const allNewspapers = ref<NewspaperRow[]>([])
 const searchKey = ref('')
 const filterRegion = ref('')
 const filterProvince = ref('')
@@ -611,7 +664,8 @@ const dialogVisible = ref(false)
 const isEdit = ref(false)
 const provinces = ALIGNED_PROVINCES
 
-const form = reactive<any>({
+const form = reactive<NewspaperForm>({
+  id: '',
   name: '',
   region: '',
   provinceCode: '',
@@ -687,9 +741,9 @@ async function fetchNewspapers() {
   try {
     // 一次性拉全量，前端过滤 + 统计
     // getAllNewspapers() 返回 newspapers[] 数组（无包装）
-    const res: any = await getAllNewspapers()
-    const list = Array.isArray(res) ? res : (res?.list || [])
-    allNewspapers.value = list.map((newspaper: any) => {
+    const response = unwrapV1<unknown>(await getAllNewspapers())
+    const list = toArray<Newspaper>(response)
+    allNewspapers.value = list.map(newspaper => {
       const provinceCode = newspaper.provinceCode || getProvinceCode(newspaper.province || '')
       const cityCode = newspaper.cityCode || getCityCode(newspaper.city || '', newspaper.province || '')
       const inferredRegion = PROVINCE_TO_REGION[provinceCode] || newspaper.region || ''
@@ -711,7 +765,7 @@ const stats = computed(() => {
   const active = allNewspapers.value.filter(n => n.status === 1).length
   const inactive = allNewspapers.value.filter(n => n.status === 0).length
   const avgPrice = allNewspapers.value.length > 0 
-    ? (allNewspapers.value.reduce((sum, n) => sum + parseFloat(n.pricePerWord || 0), 0) / allNewspapers.value.length).toFixed(2)
+    ? (allNewspapers.value.reduce((sum, newspaper) => sum + Number(newspaper.pricePerWord || 0), 0) / allNewspapers.value.length).toFixed(2)
     : '0.00'
   return { total, active, inactive, avgPrice: `¥${avgPrice}` }
 })
@@ -829,7 +883,7 @@ function handlePageChange(val: number) {
   pageNum.value = val
 }
 
-function showDialog(type: string, row?: any) {
+function showDialog(type: 'add' | 'edit', row?: NewspaperRow) {
   isEdit.value = type === 'edit'
   if (row) {
     Object.assign(form, {
@@ -839,7 +893,7 @@ function showDialog(type: string, row?: any) {
       provinceCode: row.provinceCode || '',
       cityCode: row.cityCode || '',
       level: row.level || 1,
-      pricePerWord: parseFloat(row.pricePerWord) || 0.5,
+      pricePerWord: Number(row.pricePerWord) || 0.5,
       minWords: row.minWords || 50,
       alias: row.alias || '',
       publisher: row.publisher || '',
@@ -848,10 +902,11 @@ function showDialog(type: string, row?: any) {
       description: row.description || '',
       sort: row.sort || 0,
       status: row.status ?? 1,
-      enable_sections: row.enableSections ?? 1,
+      enable_sections: row.enableSections === false || row.enableSections === 0 ? 0 : 1,
     })
   } else {
     Object.assign(form, {
+      id: '',
       name: '',
           region: '',
       provinceCode: '',
@@ -916,7 +971,7 @@ async function saveNewspaper() {
   }
 }
 
-async function handleDelete(row: any) {
+async function handleDelete(row: NewspaperRow) {
   try {
     await ElMessageBox.confirm('确认删除该报纸？', '提示')
     await deleteNewspaper(row.id)
@@ -928,7 +983,7 @@ async function handleDelete(row: any) {
   }
 }
 
-async function toggleStatus(row: any) {
+async function toggleStatus(row: NewspaperRow) {
   const nextStatus = row.status
   try {
     await updateNewspaper(row.id, { status: nextStatus })
@@ -939,7 +994,7 @@ async function toggleStatus(row: any) {
 }
 
 // ==================== 版面管理 ====================
-async function handleExpandChange(row: any) {
+async function handleExpandChange(row: NewspaperRow) {
   if (expandedRows.value.has(row.id)) {
     expandedRows.value.delete(row.id)
     expandedRows.value = new Set(expandedRows.value) // trigger reactivity
@@ -949,9 +1004,8 @@ async function handleExpandChange(row: any) {
   expandedRows.value = new Set(expandedRows.value) // trigger reactivity
   if (sections.value.find(s => s._newspaperId === row.id)) return
   try {
-    const res: any = await getNewspaperSections(row.id)
-    const list: any[] = Array.isArray(res) ? res : ((res as any)?.list || [])
-    list.forEach((s: any) => { s._newspaperId = row.id })
+    const response = unwrapV1<unknown>(await getNewspaperSections(row.id))
+    const list = toArray<NewspaperSection>(response).map(section => ({ ...section, _newspaperId: row.id }))
     sections.value = [...sections.value.filter(s => s._newspaperId !== row.id), ...list]
   } catch {
     // 接口错误由全局响应拦截器统一提示
@@ -962,7 +1016,7 @@ function getRowSections(newspaperId: string) {
   return sections.value.filter(s => s._newspaperId === newspaperId)
 }
 
-function openAddSection(row: any) {
+function openAddSection(row: NewspaperRow) {
   currentNewspaperId.value = row.id
   sectionIsEdit.value = false
   sectionDialogTitle.value = `添加版面 - ${row.name}`
@@ -970,7 +1024,7 @@ function openAddSection(row: any) {
   sectionDialogVisible.value = true
 }
 
-function openEditSection(row: any, section: any) {
+function openEditSection(row: NewspaperRow, section: NewspaperSectionRow) {
   currentNewspaperId.value = row.id
   sectionIsEdit.value = true
   editingSectionId.value = section.id
@@ -1002,9 +1056,8 @@ async function saveSection() {
     ElMessage.success('保存成功')
     sectionDialogVisible.value = false
     const rowId = currentNewspaperId.value
-    const res: any = await getNewspaperSections(rowId)
-    const list: any[] = Array.isArray(res) ? res : ((res as any)?.list || [])
-    list.forEach((s: any) => { s._newspaperId = rowId })
+    const response = unwrapV1<unknown>(await getNewspaperSections(rowId))
+    const list = toArray<NewspaperSection>(response).map(section => ({ ...section, _newspaperId: rowId }))
     sections.value = [...sections.value.filter(s => s._newspaperId !== rowId), ...list]
   } catch {
     // 接口错误由全局响应拦截器统一提示
@@ -1013,7 +1066,7 @@ async function saveSection() {
   }
 }
 
-async function deleteSection(row: any, section: any) {
+async function deleteSection(row: NewspaperRow, section: NewspaperSectionRow) {
   await ElMessageBox.confirm('确认删除该版面？', '提示')
   try {
     await deleteNewspaperSection(row.id, section.id)

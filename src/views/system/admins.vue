@@ -66,14 +66,31 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'elem
 import dayjs from 'dayjs'
 import { ADMIN_ROLES, ROLE_LABELS } from '@/constants/roles'
 import { useAuthStore } from '@/stores/auth'
+import type { Admin, AdminCreatePayload, AdminRole, AdminStatus, AdminUpdatePayload } from '@/api/types'
 
-const loading = ref(false), saving = ref(false), admins = ref<any[]>([])
+type AdminForm = {
+  username: string
+  nickname: string
+  password: string
+  role: AdminRole | ''
+  status: AdminStatus
+}
+
+const emptyAdminForm = (): AdminForm => ({
+  username: '',
+  nickname: '',
+  password: '',
+  role: ADMIN_ROLES.order_admin,
+  status: 1,
+})
+
+const loading = ref(false), saving = ref(false), admins = ref<Admin[]>([])
 const dialogVisible = ref(false), isEdit = ref(false)
 const formRef = ref<FormInstance>()
 const authStore = useAuthStore()
 const query = reactive({ page: 1, pageSize: 20 })
 const pagination = reactive({ total: 0 })
-const form = reactive<any>({ username: '', nickname: '', password: '', role: ADMIN_ROLES.order_admin, status: 1 })
+const form = reactive<AdminForm>(emptyAdminForm())
 const editingId = ref('')
 const legacyRole = ref(false)
 const isCurrentAdmin = computed(() => isEdit.value && editingId.value === authStore.adminInfo?.id)
@@ -91,45 +108,61 @@ const formRules: FormRules = {
 }
 
 function formatDate(d?: string | null) { return d ? dayjs(d).format('YYYY-MM-DD HH:mm') : '-' }
-function roleLabel(role: string) {
+function roleLabel(role: Admin['role']) {
   // 保留旧 admin 账号的可读展示；新建账号只允许选择统一角色枚举。
   return ROLE_LABELS[role] || (role === 'admin' ? '普通管理员（旧角色）' : role)
 }
 async function fetchAdmins() {
   loading.value = true
   try {
-    const res: any = await getAdmins(query)
-    admins.value = res.list || []
-    pagination.total = res.pagination?.total ?? res.total ?? admins.value.length
+    const res = await getAdmins(query)
+    admins.value = res.list
+    pagination.total = res.pagination.total
   } finally { loading.value = false }
 }
-function showDialog(type: string, row?: any) {
+function showDialog(type: 'add' | 'edit', row?: Admin) {
   isEdit.value = type === 'edit'
   editingId.value = row?.id || ''
   legacyRole.value = row?.role === 'admin'
   if (row) {
-    Object.assign(form, { ...row, role: legacyRole.value ? '' : row.role, password: '' })
+    Object.assign(form, {
+      username: row.username,
+      nickname: row.nickname || '',
+      password: '',
+      role: row.role === 'admin' ? '' : row.role,
+      status: row.status,
+    })
   } else {
-    Object.assign(form, { username: '', nickname: '', password: '', role: ADMIN_ROLES.order_admin, status: 1 })
+    Object.assign(form, emptyAdminForm())
   }
   dialogVisible.value = true
   nextTick(() => formRef.value?.clearValidate())
 }
 async function saveAdmin() {
   if (!formRef.value || !(await formRef.value.validate().catch(() => false))) return
+  if (!form.role) return
   saving.value = true
   try {
-    const payload = { ...form }
-    if (isEdit.value && !payload.password) delete payload.password
-    if (isCurrentAdmin.value) {
-      delete payload.role
-      delete payload.status
+    if (isEdit.value) {
+      const payload: AdminUpdatePayload = {
+        nickname: form.nickname,
+        ...(form.password ? { password: form.password } : {}),
+        ...(isCurrentAdmin.value ? {} : { role: form.role, status: form.status }),
+      }
+      await updateAdmin(editingId.value, payload)
+    } else {
+      const payload: AdminCreatePayload = {
+        username: form.username,
+        nickname: form.nickname,
+        password: form.password,
+        role: form.role,
+      }
+      await createAdmin(payload)
     }
-    if (isEdit.value) { await updateAdmin(editingId.value, payload) } else { await createAdmin(payload) }
     ElMessage.success('保存成功'); dialogVisible.value = false; await fetchAdmins()
   } finally { saving.value = false }
 }
-async function handleDelete(row: any) {
+async function handleDelete(row: Admin) {
   if (row.id === authStore.adminInfo?.id) return ElMessage.warning('不能删除当前登录账号')
   await ElMessageBox.confirm('确认删除该管理员？')
   await deleteAdmin(row.id)

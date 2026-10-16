@@ -346,7 +346,7 @@
     <el-form-item label="配色" v-if="unifiedType === 'sub'">
       <div style="display:flex;align-items:center;gap:8px;">
         <el-color-picker v-model="unifiedForm.color" />
-        <el-input v-model="unifiedForm.color" style="width:90px" @change="(v:any) => unifiedForm.color = v" />
+        <el-input v-model="unifiedForm.color" style="width:90px" />
       </div>
     </el-form-item>
 
@@ -372,7 +372,7 @@
     <el-form-item label="新的子分组">
       <el-select v-model="batchNewSubKey" placeholder="不选择（清空）" style="width:100%" clearable filterable>
         <el-option
-          v-for="s in (categoryList.find(c => c.id === batchNewCatId)?.subTypes || []).map((st: any) => ({ key: st.key, name: st.name }))"
+          v-for="s in batchSubOptions"
           :key="s.key"
           :label="s.name"
           :value="s.key"
@@ -465,6 +465,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { FormInstance } from 'element-plus'
+import type { Newspaper, NewspaperCategory, NewspaperSubType, NewspaperTemplate } from '@/api/types'
+import { toArray, toPaged, unwrapData, unwrapV1 } from '@/api/unwrap'
 import {
   getNewspapers,
   getAdminTemplates,
@@ -478,13 +481,23 @@ import {
   deleteNewspaperCategory,
 } from '@/api'
 
+interface SubTypeOption extends NewspaperSubType {
+  value?: string
+  label: string
+  catId?: string
+}
+
+interface TemplateMeta {
+  subTypes?: Record<string, NewspaperSubType[]>
+}
+
 // ===== 状态 =====
 const loading = ref(false)
-const categoryList = ref<any[]>([])
-const newspapers = ref<any[]>([])
-const templates = ref<any[]>([])
+const categoryList = ref<NewspaperCategory[]>([])
+const newspapers = ref<Newspaper[]>([])
+const templates = ref<NewspaperTemplate[]>([])
 const templatesTotal = ref(0)
-const subTypesMap = ref<Record<string, { key: string; name: string }[]>>({})
+const subTypesMap = ref<Record<string, NewspaperSubType[]>>({})
 
 // templateType key → 中文标签（兜底用，subTypesMap 为空时生效）
 const TEMPLATE_TYPE_LABELS: Record<string, string> = {
@@ -523,7 +536,7 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 
 // ===== 选中 =====
-const selectedRows = ref<any[]>([])
+const selectedRows = ref<NewspaperTemplate[]>([])
 
 // ===== 统计 =====
 const statTotal = computed(() => templatesTotal.value || templates.value.length)
@@ -547,7 +560,7 @@ const categoryNameMap = computed(() => {
 
 // 当前分类的子分类下拉选项（工具栏用）
 // 优先从 subTypesMap 取（有子分组数据时）；否则从已加载模板的 templateType 动态生成
-const currentSubOptions = computed(() => {
+const currentSubOptions = computed<SubTypeOption[]>(() => {
   const catName = filterCatId.value ? (categoryNameMap.value[filterCatId.value] || '') : ''
   // 有子分组数据时走原有逻辑
   if (catName && subTypesMap.value[catName]?.length) {
@@ -557,16 +570,21 @@ const currentSubOptions = computed(() => {
     // 未选分类：保留全部子分组（不按 key 去重）。
     // 跨分类共用的 key（company/personal/other 等）用「分类名::key」作 value 且标签标注
     // 「名称 (分类)」，选中后 handleSubChange 自动带出分类，避免筛选跨分类错乱。
-    const all = []
+    const all: SubTypeOption[] = []
     const keyCount: Record<string, number> = {}
     for (const subs of Object.values(subTypesMap.value)) {
-      for (const s of (subs as any[])) keyCount[s.key] = (keyCount[s.key] || 0) + 1
+      for (const subType of subs) keyCount[subType.key] = (keyCount[subType.key] || 0) + 1
     }
     for (const [cName, subs] of Object.entries(subTypesMap.value)) {
-      for (const s of (subs as any[])) {
-        const dup = (keyCount[s.key] || 0) > 1
+      for (const subType of subs) {
+        const dup = (keyCount[subType.key] || 0) > 1
         const catId = Object.keys(categoryNameMap.value).find(id => categoryNameMap.value[id] === cName) || ''
-        all.push({ ...s, value: dup ? `${cName}::${s.key}` : s.key, label: dup ? `${s.name} (${cName})` : s.name, catId })
+        all.push({
+          ...subType,
+          value: dup ? `${cName}::${subType.key}` : subType.key,
+          label: dup ? `${subType.name} (${cName})` : subType.name,
+          catId,
+        })
       }
     }
     return all.sort((a, b) => a.label.localeCompare(b.label, 'zh'))
@@ -587,7 +605,7 @@ const currentSubOptions = computed(() => {
 })
 
 // 模板编辑弹窗的子分类选项（优先 subTypesMap；无数据时从已加载模板动态生成）
-const currentTemplateSubOptions = computed(() => {
+const currentTemplateSubOptions = computed<NewspaperSubType[]>(() => {
   if (templateForm.value.categoryId) {
     const catName = categoryNameMap.value[templateForm.value.categoryId] || ''
     if (subTypesMap.value[catName]?.length) return subTypesMap.value[catName]
@@ -640,7 +658,7 @@ const paginatedTemplates = computed(() => {
 // ===== 模板编辑弹窗 =====
 const templateDialogVisible = ref(false)
 const isTemplateEdit = ref(false)
-const templateFormRef = ref()
+const templateFormRef = ref<FormInstance>()
 const templateSubmitting = ref(false)
 const templateForm = ref({
   id: '',
@@ -660,7 +678,7 @@ const templateRules = {
 }
 const deletingId = ref('')
 
-function openTemplateDialog(mode: 'add' | 'edit', row?: any) {
+function openTemplateDialog(mode: 'add' | 'edit', row?: NewspaperTemplate) {
   isTemplateEdit.value = mode === 'edit'
   if (mode === 'edit' && row) {
     Object.assign(templateForm.value, {
@@ -690,7 +708,9 @@ function onTemplateCatChange() {
 }
 
 async function submitTemplateForm() {
-  const valid = await templateFormRef.value.validate().catch(() => false)
+  const form = templateFormRef.value
+  if (!form) return
+  const valid = await form.validate().catch(() => false)
   if (!valid) return
   templateSubmitting.value = true
   try {
@@ -721,7 +741,7 @@ async function submitTemplateForm() {
   }
 }
 
-async function doDelete(row: any) {
+async function doDelete(row: NewspaperTemplate) {
   await ElMessageBox.confirm(`确认删除模板「${row.name}」？`, '提示')
   deletingId.value = row.id
   try {
@@ -735,7 +755,7 @@ async function doDelete(row: any) {
   }
 }
 
-async function updateStatus(row: any) {
+async function updateStatus(row: NewspaperTemplate) {
   try {
     await updateTemplate(row.id, { status: row.status })
     ElMessage.success('状态已更新')
@@ -828,7 +848,7 @@ async function saveUnified() {
 // ===== 子分类管理弹窗 =====
 const subsDialogVisible = ref(false)
 const subsCatId = ref('')
-const editSubs = ref<any[]>([])
+const editSubs = ref<NewspaperSubType[]>([])
 const subsSaving = ref(false)
 
 function openSubsDialog() {
@@ -840,7 +860,7 @@ function openSubsDialog() {
 
 function syncEditSubs() {
   const cat = categoryList.value.find(c => c.id === subsCatId.value)
-  editSubs.value = (cat?.subTypes || []).map((s: any) => ({ ...s }))
+  editSubs.value = (cat?.subTypes || []).map(subType => ({ ...subType }))
 }
 
 function onSubsCatChange() {
@@ -929,6 +949,9 @@ async function deleteCurrentCategory() {
 const batchCatDialogVisible = ref(false)
 const batchNewCatId = ref('')
 const batchNewSubKey = ref('')
+const batchSubOptions = computed<NewspaperSubType[]>(() =>
+  categoryList.value.find(category => category.id === batchNewCatId.value)?.subTypes || [],
+)
 
 function openBatchCatModal() {
   if (selectedRows.value.length === 0) return
@@ -1018,7 +1041,7 @@ function handleSizeChange() {
   currentPage.value = 1
 }
 
-function onTableSelectionChange(rows: any[]) {
+function onTableSelectionChange(rows: NewspaperTemplate[]) {
   selectedRows.value = rows
 }
 
@@ -1032,12 +1055,12 @@ function subTypeName(key: string, catName?: string): string {
   if (!key) return ''
   // 1. 指定分类内精确查找
   if (catName && subTypesMap.value[catName]) {
-    const found = (subTypesMap.value[catName] as any[]).find(s => s.key === key)
+    const found = subTypesMap.value[catName].find(subType => subType.key === key)
     if (found) return found.name
   }
   // 2. 全局兜底（兼容无分类上下文）
   for (const arr of Object.values(subTypesMap.value)) {
-    const found = (arr as any[]).find(s => s.key === key)
+    const found = arr.find(subType => subType.key === key)
     if (found) return found.name
   }
   // 3. 中文映射兜底
@@ -1045,46 +1068,19 @@ function subTypeName(key: string, catName?: string): string {
 }
 
 // ===== 数据加载 =====
-// 统一数据提取：支持数组/{list}/{data}/单个对象
-function normalize(res: any): any[] {
-  if (!res) return []
-  if (Array.isArray(res)) return res
-  return (res as any)?.list ?? (res as any)?.data ?? (res as any)?.value ?? []
-}
-
-async function reloadTemplateMeta() {
-  const mRes: any = await getTemplateMeta()
-  // getTemplateMeta 返回 {businessTypes, subTypes}（无包装，businessTypes 是数组字段名非分页结构）
-  if (mRes && typeof mRes === 'object' && !Array.isArray(mRes)) {
-    subTypesMap.value = mRes.subTypes || {}
-  }
-}
-
-async function reloadCategories() {
-  const res = await getNewspaperCategories()
-  categoryList.value = normalize(res)
-}
-
-async function reloadNewspapers() {
-  const res = await getNewspapers()
-  // getNewspapers 返回 {list, total}（拦截器不剥包），取 .list
-  newspapers.value = Array.isArray(res) ? res : ((res as any)?.list || [])
-}
-
 // 拉取全部模板：后端 pageSize 有上限（真实后端 1000 / 历史镜像 500），
 // 若单页未取全（list.length < total）则继续翻页补齐，保证列表/统计完整
 const TEMPLATES_PAGE_SIZE = 1000
 const TEMPLATES_MAX_PAGES = 20 // 上限 20000 条，防死循环
 
-async function fetchAllTemplates(): Promise<{ list: any[]; total: number }> {
-  const first = await getAdminTemplates({ page: 1, pageSize: TEMPLATES_PAGE_SIZE })
-  const list = normalize(first)
-  const total = (first as any)?.total ?? list.length
+async function fetchAllTemplates(): Promise<{ list: NewspaperTemplate[]; total: number }> {
+  const firstResponse = unwrapV1<unknown>(await getAdminTemplates({ page: 1, pageSize: TEMPLATES_PAGE_SIZE }))
+  const { list, total } = toPaged<NewspaperTemplate>(firstResponse)
   let all = [...list]
   let page = 2
   while (all.length < total && page <= TEMPLATES_MAX_PAGES) {
-    const more = await getAdminTemplates({ page, pageSize: TEMPLATES_PAGE_SIZE })
-    const moreList = normalize(more)
+    const moreResponse = unwrapV1<unknown>(await getAdminTemplates({ page, pageSize: TEMPLATES_PAGE_SIZE }))
+    const moreList = toArray<NewspaperTemplate>(moreResponse)
     if (!moreList.length) break
     all = all.concat(moreList)
     page++
@@ -1113,18 +1109,14 @@ async function reloadAll() {
       fetchAllTemplates(),
     ])
     // getNewspapers 返回 {list,total}，getTemplateMeta 返回 {businessTypes, subTypes}（均无包装）
-    const nRes = nRaw as any
-    newspapers.value = Array.isArray(nRes) ? nRes : (nRes?.list || [])
-    categoryList.value = normalize(cRes)
-    if (mRaw && typeof mRaw === 'object' && !Array.isArray(mRaw)) {
-      subTypesMap.value = (mRaw as any).subTypes || {}
-    } else {
-      subTypesMap.value = {}
-    }
+    newspapers.value = toArray<Newspaper>(unwrapV1<unknown>(nRaw))
+    categoryList.value = toArray<NewspaperCategory>(unwrapV1<unknown>(cRes))
+    const meta = unwrapData<TemplateMeta>(mRaw)
+    subTypesMap.value = meta?.subTypes || {}
     templates.value = tRaw.list
     templatesTotal.value = tRaw.total
-  } catch (e: any) {
-    console.error('reloadAll error:', e)
+  } catch (error: unknown) {
+    console.error('reloadAll error:', error)
   } finally {
     loading.value = false
   }

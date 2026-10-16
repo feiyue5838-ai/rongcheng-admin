@@ -4,11 +4,11 @@
       <h2>退款管理</h2>
       <div>
         <el-radio-group v-model="statusFilter" size="small" @change="() => { page = 1; load() }">
-          <el-radio-button label="">全部</el-radio-button>
-          <el-radio-button label="applying">待审核</el-radio-button>
-          <el-radio-button label="processing">退款中</el-radio-button>
-          <el-radio-button label="completed">已完成</el-radio-button>
-          <el-radio-button label="rejected">已驳回</el-radio-button>
+          <el-radio-button value="">全部</el-radio-button>
+          <el-radio-button value="applying">待审核</el-radio-button>
+          <el-radio-button value="processing">退款中</el-radio-button>
+          <el-radio-button value="completed">已完成</el-radio-button>
+          <el-radio-button value="rejected">已驳回</el-radio-button>
         </el-radio-group>
         <el-button style="margin-left: 12px" @click="load">刷新</el-button>
       </div>
@@ -19,7 +19,7 @@
         <el-table-column prop="refundNo" label="退款单号" width="190" show-overflow-tooltip />
         <el-table-column prop="orderNo" label="订单号" width="190" show-overflow-tooltip />
         <el-table-column prop="module" label="业务" width="90" align="center">
-          <template #default="{ row }">{{ moduleMap[row.module] || row.module || '—' }}</template>
+          <template #default="{ row }">{{ moduleText(row.module) }}</template>
         </el-table-column>
         <el-table-column prop="refundType" label="类型" width="80" align="center">
           <template #default="{ row }">{{ row.refundType === 'partial' ? '部分' : '全额' }}</template>
@@ -77,16 +77,19 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { v2GetRefunds, v2ApproveRefund, v2RejectRefund } from '@/api'
+import type { RefundStatusV2, RefundV2 } from '@/api/types'
 
-const list = ref<any[]>([])
+type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+const list = ref<RefundV2[]>([])
 const loading = ref(false)
 const submitting = ref(false)
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
-const statusFilter = ref('')
+const statusFilter = ref<RefundStatusV2 | ''>('')
 
-const current = ref<any>(null)
+const current = ref<RefundV2 | null>(null)
 const rejectDialogVisible = ref(false)
 const rejectRemark = ref('')
 
@@ -95,6 +98,7 @@ const statusMap: Record<string, string> = {
   processing: '退款中',
   completed: '已完成',
   rejected: '已驳回',
+  cancelled: '已取消',
   failed: '退款失败',
 }
 const moduleMap: Record<string, string> = {
@@ -103,40 +107,49 @@ const moduleMap: Record<string, string> = {
   bookkeeping: '记账',
 }
 
-const statusTag = (s: string) => {
-  const map: Record<string, string> = {
+const statusTag = (s: RefundStatusV2): TagType => {
+  const map: Record<RefundStatusV2, TagType> = {
     applying: 'warning',
     processing: 'primary',
     completed: 'success',
     rejected: 'info',
+    cancelled: 'info',
     failed: 'danger',
   }
   return map[s] || 'info'
 }
 
+const moduleText = (module: string | null | undefined) =>
+  (module ? moduleMap[module] || module : '—')
+
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
-const fmt = (v?: string) => (v ? v.slice(0, 16).replace('T', ' ') : '—')
+const fmt = (v?: string | null) => (v ? v.slice(0, 16).replace('T', ' ') : '—')
+
+const errorMessage = (error: unknown, fallback: string) =>
+  (error instanceof Error ? error.message : fallback)
 
 async function load() {
   loading.value = true
   try {
-    const res: any = await v2GetRefunds({
+    const res = await v2GetRefunds({
       status: statusFilter.value || undefined,
       page: page.value,
       pageSize: pageSize.value,
     })
-    list.value = res?.list || []
-    total.value = res?.total || 0
-  } catch (e: any) {
-    ElMessage.error(e?.message || '加载退款单失败')
+    list.value = res.list ?? []
+    total.value = res.total ?? 0
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '加载退款单失败'))
   } finally {
     loading.value = false
   }
 }
 
-async function approve(row: any) {
+async function approve(row: unknown) {
+  // Element Plus 表格插槽未透传 data 的行类型；事件来源仅为已类型化的 list。
+  const refund = row as RefundV2
   try {
-    await ElMessageBox.confirm(`确认通过退款单 ${row.refundNo}？通过后将进入退款处理流程。`, '审核通过', {
+    await ElMessageBox.confirm(`确认通过退款单 ${refund.refundNo}？通过后将进入退款处理流程。`, '审核通过', {
       type: 'warning',
       confirmButtonText: '通过',
       cancelButtonText: '取消',
@@ -146,43 +159,49 @@ async function approve(row: any) {
   }
   submitting.value = true
   try {
-    await v2ApproveRefund(row.id, { remark: '管理端审核通过' })
+    await v2ApproveRefund(refund.id, { remark: '管理端审核通过' })
     ElMessage.success('已通过，等待微信退款回调')
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '操作失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '操作失败'))
   } finally {
     submitting.value = false
   }
 }
 
-function openReject(row: any) {
-  current.value = row
+function openReject(row: unknown) {
+  current.value = row as RefundV2
   rejectRemark.value = ''
   rejectDialogVisible.value = true
 }
 
 async function doReject() {
+  const refund = current.value
+  if (!refund) {
+    ElMessage.error('未选择退款申请')
+    return
+  }
   if (!rejectRemark.value.trim()) {
     ElMessage.warning('请填写驳回原因')
     return
   }
   submitting.value = true
   try {
-    await v2RejectRefund(current.value.id, { remark: rejectRemark.value })
+    await v2RejectRefund(refund.id, { remark: rejectRemark.value })
     ElMessage.success('已驳回')
     rejectDialogVisible.value = false
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '操作失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '操作失败'))
   } finally {
     submitting.value = false
   }
 }
 
-function viewOrder(row: any) {
-  if (row.orderNo) {
-    window.open(`/v2/orders/detail?orderNo=${encodeURIComponent(row.orderNo)}`, '_blank')
+function viewOrder(row: unknown) {
+  const refund = row as RefundV2
+  if (refund.orderNo) {
+    window.open(`/v2/orders/detail?orderNo=${encodeURIComponent(refund.orderNo)}`, '_blank')
   }
 }
 

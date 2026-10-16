@@ -189,6 +189,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 import {
@@ -198,7 +199,7 @@ import {
   getRegistrationRequestFollowUps,
   getRegistrationRequests,
 } from '@/api'
-import { unwrapV1 } from '@/api/unwrap'
+import { toArray, toPaged, unwrapV1 } from '@/api/unwrap'
 import { useAuthStore } from '@/stores/auth'
 
 type RegistrationRequest = {
@@ -307,12 +308,14 @@ const statusTag = (status?: string | null) => (status ? STATUS_TAG[status] || 'i
 async function fetchData() {
   loading.value = true
   try {
-    const result: any = await getRegistrationRequests({ ...query })
-    list.value = Array.isArray(result?.list) ? result.list : []
-    pagination.value.total = result?.pagination?.total ?? 0
-  } catch (error: any) {
+    const response: unknown = await getRegistrationRequests({ ...query })
+    const result = toPaged<RegistrationRequest>(response)
+    list.value = result.list
+    pagination.value.total = result.total
+  } catch (error: unknown) {
     list.value = []
-    ElMessage.error(error?.message || '加载工商注册失败')
+    pagination.value.total = 0
+    ElMessage.error(getApiErrorMessage(error, '加载工商注册失败'))
   } finally {
     loading.value = false
   }
@@ -343,12 +346,13 @@ async function showDetail(id: string) {
   detailVisible.value = true
   detailLoading.value = true
   try {
-    detail.value = (await getRegistrationRequestDetail(id)) as unknown as RegistrationRequest
-    const records: any = await getRegistrationRequestFollowUps(id)
-    followUps.value = Array.isArray(records) ? records : []
-  } catch (error: any) {
+    const detailResponse: unknown = await getRegistrationRequestDetail(id)
+    detail.value = unwrapV1<RegistrationRequest>(detailResponse)
+    const timelineResponse: unknown = await getRegistrationRequestFollowUps(id)
+    followUps.value = toArray<FollowUpRecord>(timelineResponse)
+  } catch (error: unknown) {
     detailVisible.value = false
-    ElMessage.error(error?.message || '加载需求详情失败')
+    ElMessage.error(getApiErrorMessage(error, '加载需求详情失败'))
   } finally {
     detailLoading.value = false
   }
@@ -412,15 +416,23 @@ async function submitFollowUp() {
     }
     followUpVisible.value = false
     fetchData()
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error === 'cancel' || error === 'close') return
     // 409 = 期间被别人改过：提示后刷新，不静默覆盖别人的跟进结果
-    const message = error?.response?.data?.message || error?.message || '跟进失败'
-    ElMessage.error(message)
+    ElMessage.error(getApiErrorMessage(error, '跟进失败'))
     fetchData()
   } finally {
     followUpSubmitting.value = false
   }
+}
+
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError<{ message?: unknown }>(error)) {
+    const message = error.response?.data?.message
+    if (Array.isArray(message)) return message.join('；')
+    if (typeof message === 'string' && message) return message
+  }
+  return error instanceof Error && error.message ? error.message : fallback
 }
 
 onMounted(fetchData)

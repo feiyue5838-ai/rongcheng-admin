@@ -6,8 +6,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, nextTick, onUnmounted } from 'vue'
-import type { ECharts, EChartsOption } from 'echarts'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { initECharts, type ECharts, type EChartsOption } from '@/utils/echarts'
+import type { TooltipComponentFormatterCallbackParams } from 'echarts'
 
 interface ModuleItem {
   module?: string
@@ -19,6 +20,10 @@ interface ModuleItem {
 interface Props {
   height?: number
   data?: ModuleItem[]
+}
+
+type ItemTooltipParam = Exclude<TooltipComponentFormatterCallbackParams, readonly unknown[]> & {
+  data?: { count?: unknown }
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -50,25 +55,31 @@ function aggregateByModule(items: ModuleItem[]) {
 
 const chartRef = ref<HTMLElement>()
 let chartInstance: ECharts | null = null
-let isEchartsReady = false
 
-async function loadEchartsInit() {
-  const ec = await import('echarts')
-  const fn: any = (ec as any).default?.init
-    ?? (ec as any).default?.default?.init
-    ?? (ec as any).init
-  if (typeof fn === 'function') return fn
-  const keys = Object.keys(ec as object)
-  for (const k of keys) {
-    const v = (ec as any)[k]
-    if (v && typeof v.init === 'function') return v.init
-    if (v && typeof v.default?.init === 'function') return v.default.init
-  }
-  throw new Error('[ModuleDonut] cannot find echarts init in: ' + keys.join(', '))
+function toFiniteNumber(value: unknown): number {
+  const values: unknown[] = Array.isArray(value) ? value : [value]
+  const rawValue = values[values.length - 1]
+  const numberValue = typeof rawValue === 'number' ? rawValue : Number(rawValue)
+  return Number.isFinite(numberValue) ? numberValue : 0
 }
 
-function totalAmount() {
-  return (props.data || []).reduce((s, d) => s + (Number(d.amount) || 0), 0)
+function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(/[&<>'"]/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;',
+  })[character] || character)
+}
+
+function formatTooltip(param: ItemTooltipParam | ItemTooltipParam[], total: number): string {
+  if (Array.isArray(param)) return ''
+  const amount = toFiniteNumber(param.value)
+  const percentage = total > 0 ? ((amount / total) * 100).toFixed(1) : '0.0'
+  const count = param.data?.count
+  const countText = count === undefined || count === null ? '' : escapeHtml(count)
+  return `${param.marker || ''} ${escapeHtml(param.name)}<br/>¥${amount.toFixed(2)} (${percentage}%)<br/>${countText} 笔`
 }
 
 async function initChart() {
@@ -76,16 +87,7 @@ async function initChart() {
     await new Promise(r => setTimeout(r, 200))
     if (!chartRef.value) return
   }
-  if (!isEchartsReady) {
-    try {
-      const initFn = await loadEchartsInit()
-      chartInstance = (initFn as any).call(null, chartRef.value)
-      isEchartsReady = true
-    } catch (e) {
-      console.error('[ModuleDonut] echarts load error:', e)
-      return
-    }
-  }
+  if (!chartInstance) chartInstance = initECharts(chartRef.value)
   if (!chartInstance) return
   renderChart()
 }
@@ -105,10 +107,7 @@ function renderChart() {
   const option: EChartsOption = {
     tooltip: {
       trigger: 'item',
-      formatter: (p: any) => {
-        const pct = total > 0 ? ((p.value / total) * 100).toFixed(1) : '0.0'
-        return `${p.marker} ${p.name}<br/>¥${p.value.toFixed(2)} (${pct}%)<br/>${p.data?.count ?? ''} 笔`
-      }
+      formatter: (param: ItemTooltipParam | ItemTooltipParam[]) => formatTooltip(param, total)
     },
     legend: {
       type: 'scroll',

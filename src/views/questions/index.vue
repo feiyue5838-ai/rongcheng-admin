@@ -167,21 +167,59 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import axios from 'axios'
 import { Search } from '@element-plus/icons-vue'
 import { getQuestions, updateQuestionStatus, replyQuestion, deleteQuestion, deleteQuestionReply } from '@/api'
+import { toPaged } from '@/api/unwrap'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 
+type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+type AuditStatus = 'approved' | 'rejected'
+
+interface QuestionReply {
+  id: string
+  authorName?: string | null
+  createdAt?: string | null
+  content: string
+}
+
+interface QuestionItem {
+  id: string
+  content: string
+  module: string
+  userName?: string | null
+  questionReplies?: QuestionReply[]
+  status: string
+  createdAt?: string | null
+}
+
+interface QuestionQuery {
+  page: number
+  pageSize: number
+  status: string
+  keyword: string
+  module: string
+}
+
+interface QuestionRequestParams {
+  page: number
+  pageSize: number
+  status?: string
+  keyword?: string
+  module?: string
+}
+
 const loading = ref(false)
 const submitting = ref(false)
-const questions = ref<any[]>([])
+const questions = ref<QuestionItem[]>([])
 const pagination = ref({ page: 1, pageSize: 20, total: 0 })
 
 const activeStatus = ref('pending') // 默认显示待审核
 const searchKeyword = ref('')
 const selectedModule = ref('')
 
-const query = reactive({
+const query = reactive<QuestionQuery>({
   page: 1,
   pageSize: 20,
   status: 'pending' as string,
@@ -191,7 +229,7 @@ const query = reactive({
 
 const replyVisible = ref(false)
 const replyText = ref('')
-const currentQuestion = ref<any>({})
+const currentQuestion = ref<QuestionItem | null>(null)
 
 const detailVisible = ref(false)
 
@@ -204,22 +242,22 @@ function truncateText(text: string, maxLen: number) {
   return text.length > maxLen ? text.slice(0, maxLen) + '...' : text
 }
 
-function getModuleName(module: string) {
+function getModuleName(module: string | null | undefined) {
   const map: Record<string, string> = {
     seal_enterprise: '企业刻章',
     seal_personal: '个人刻章',
     newspaper: '登报',
   }
-  return map[module] || module || '未知'
+  return map[module ?? ''] || module || '未知'
 }
 
-function getModuleTagType(module: string) {
-  const map: Record<string, string> = {
+function getModuleTagType(module: string | null | undefined): TagType {
+  const map: Record<string, TagType> = {
     seal_enterprise: 'primary',
     seal_personal: 'success',
     newspaper: 'warning',
   }
-  return map[module] || 'info'
+  return map[module ?? ''] || 'info'
 }
 
 function indexMethod(index: number) {
@@ -227,8 +265,8 @@ function indexMethod(index: number) {
 }
 
 // 状态 Tab 切换
-function handleStatusChange(tabName: string) {
-  query.status = tabName
+function handleStatusChange(tabName: string | number) {
+  query.status = String(tabName)
   query.page = 1
   fetchQuestions()
 }
@@ -244,7 +282,7 @@ function handleSearch() {
 async function fetchQuestions() {
   loading.value = true
   try {
-    const params: any = { page: query.page, pageSize: query.pageSize }
+    const params: QuestionRequestParams = { page: query.page, pageSize: query.pageSize }
     if (query.status) {
       params.status = query.status
     }
@@ -254,18 +292,19 @@ async function fetchQuestions() {
     if (query.module) {
       params.module = query.module
     }
-    const res: any = await getQuestions(params)
-    questions.value = res.list || res.data?.list || []
-    pagination.value = res.pagination || res.data?.pagination || { page: 1, pageSize: 20, total: 0 }
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '获取列表失败')
+    const response: unknown = await getQuestions(params)
+    const result = toPaged<QuestionItem>(response)
+    questions.value = result.list
+    pagination.value = { page: query.page, pageSize: query.pageSize, total: result.total }
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '获取列表失败')
   } finally {
     loading.value = false
   }
 }
 
 // 审核问答
-async function handleAudit(row: any, status: 'approved' | 'rejected') {
+async function handleAudit(row: QuestionItem, status: AuditStatus) {
   const actionText = status === 'approved' ? '通过' : '驳回'
   try {
     await ElMessageBox.confirm(`确认${actionText}该问答？`, '审核确认', {
@@ -276,43 +315,48 @@ async function handleAudit(row: any, status: 'approved' | 'rejected') {
     await updateQuestionStatus(row.id, status)
     ElMessage.success(`已${actionText}`)
     fetchQuestions()
-  } catch (e: any) {
-    if (e !== 'cancel' && e !== 'close') {
-      ElMessage.error(e?.response?.data?.message || '操作失败')
+  } catch (error: unknown) {
+    if (!isDialogCancellation(error)) {
+      ElMessage.error(getApiErrorMessage(error) || '操作失败')
     }
   }
 }
 
-function showReplyDialog(row: any) {
+function showReplyDialog(row: QuestionItem) {
   currentQuestion.value = row
   replyText.value = ''
   replyVisible.value = true
 }
 
-function showDetailDialog(row: any) {
+function showDetailDialog(row: QuestionItem) {
   currentQuestion.value = row
   detailVisible.value = true
 }
 
 async function submitReply() {
-  if (!replyText.value.trim()) {
+  const content = replyText.value.trim()
+  if (!content) {
     ElMessage.warning('请输入回复内容')
+    return
+  }
+  if (!currentQuestion.value) {
+    ElMessage.error('未找到当前问答')
     return
   }
   submitting.value = true
   try {
-    await replyQuestion(currentQuestion.value.id, replyText.value)
+    await replyQuestion(currentQuestion.value.id, content)
     ElMessage.success('回复成功')
     replyVisible.value = false
     fetchQuestions()
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '回复失败')
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '回复失败')
   } finally {
     submitting.value = false
   }
 }
 
-async function handleDelete(row: any) {
+async function handleDelete(row: QuestionItem) {
   try {
     await ElMessageBox.confirm('确认删除该问答？删除后不可恢复。', '删除确认', {
       confirmButtonText: '确定',
@@ -322,9 +366,9 @@ async function handleDelete(row: any) {
     await deleteQuestion(row.id)
     ElMessage.success('删除成功')
     fetchQuestions()
-  } catch (e: any) {
-    if (e !== 'cancel' && e !== 'close') {
-      ElMessage.error(e?.response?.data?.message || '删除失败')
+  } catch (error: unknown) {
+    if (!isDialogCancellation(error)) {
+      ElMessage.error(getApiErrorMessage(error) || '删除失败')
     }
   }
 }
@@ -341,14 +385,26 @@ async function handleDeleteReply(replyId: string) {
     // 刷新当前问答详情
     fetchQuestions()
     // 更新对话框中的数据
-    if (currentQuestion.value.questionReplies) {
-      currentQuestion.value.questionReplies = currentQuestion.value.questionReplies.filter((r: any) => r.id !== replyId)
+    if (currentQuestion.value?.questionReplies) {
+      currentQuestion.value.questionReplies = currentQuestion.value.questionReplies.filter(reply => reply.id !== replyId)
     }
-  } catch (e: any) {
-    if (e !== 'cancel' && e !== 'close') {
-      ElMessage.error(e?.response?.data?.message || '删除失败')
+  } catch (error: unknown) {
+    if (!isDialogCancellation(error)) {
+      ElMessage.error(getApiErrorMessage(error) || '删除失败')
     }
   }
+}
+
+function getApiErrorMessage(error: unknown): string | undefined {
+  if (axios.isAxiosError<{ message?: unknown }>(error)) {
+    const message = error.response?.data?.message
+    if (message) return Array.isArray(message) ? message.join('；') : String(message)
+  }
+  return error instanceof Error ? error.message : undefined
+}
+
+function isDialogCancellation(error: unknown): boolean {
+  return error === 'cancel' || error === 'close'
 }
 
 onMounted(fetchQuestions)

@@ -183,55 +183,96 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { v2GetSettlements, v2GenerateSettlement, v2ConfirmSettlement, v2PaySettlement, v2GetSettlementDetail, v2GetSuppliers, v2RegisterPayoutInvoice, v2ClearPayoutInvoice } from '@/api'
+import type { SettlementV2 } from '@/api/types'
+import { toArray, toPaged, unwrapV2 } from '@/api/unwrap'
+
+type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+interface SupplierSummary {
+  id: string
+  name: string
+  status: number
+}
+
+interface SettlementItem {
+  orderNo: string
+  module: string
+  orderAmount: number
+  supplierCost?: number
+  refundDeduct: number
+  payableAmount: number
+}
+
+interface SettlementPayout {
+  payoutNo: string
+  amount: number
+  invoiceStatus?: string
+  invoiceNo?: string
+  invoiceAmount?: number
+  invoiceTaxRate?: number
+  invoiceTaxAmount?: number
+  invoiceVerifiedAt?: string
+}
+
+interface SettlementDetail {
+  items?: SettlementItem[]
+  payout?: SettlementPayout
+}
 
 const loading = ref(false)
 const submitting = ref(false)
-const list = ref<any[]>([])
+const list = ref<SettlementV2[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
-const suppliers = ref<any[]>([])
+const suppliers = ref<SupplierSummary[]>([])
 const generateDialogVisible = ref(false)
 const itemsDialogVisible = ref(false)
-const currentItems = ref<any[]>([])
+const currentItems = ref<SettlementItem[]>([])
 const generateForm = reactive({ supplierId: '', periodStart: '', periodEnd: '' })
 
 // 付款（留痕）
 const payDialogVisible = ref(false)
 const paying = ref(false)
-const payTarget = ref<any>(null)
+const payTarget = ref<SettlementV2 | null>(null)
 const payForm = reactive({ paymentMethod: 'bank_transfer', transactionNo: '', bankName: '', bankAccountName: '', bankAccountNo: '' })
 
 // 进项票登记/核销（P1）
 const invoiceDialogVisible = ref(false)
 const invoiceSaving = ref(false)
-const invoiceTarget = ref<any>(null)
-const invoicePayout = ref<any>(null)
+const invoiceTarget = ref<SettlementV2 | null>(null)
+const invoicePayout = ref<SettlementPayout | null>(null)
 const invoiceForm = reactive({ invoiceNo: '', invoiceAmount: undefined as number | undefined, invoiceTaxRate: 1 })
 
 const statusMap: Record<string, string> = { pending: '待确认', confirmed: '已确认', paid: '已付款', cancelled: '已取消' }
-const statusTag = (s: string) => ({ pending: 'warning', confirmed: 'primary', paid: 'success', cancelled: 'danger' } as any)[s] || 'info'
+const statusTags: Record<string, TagType> = { pending: 'warning', confirmed: 'primary', paid: 'success', cancelled: 'danger' }
+const statusTag = (status: string): TagType => statusTags[status] || 'info'
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
 const fmtDate = (d?: string) => (d ? d.slice(0, 10) : '-')
 const fmtTime = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
 
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback
+}
+
 async function load() {
   loading.value = true
   try {
-    const res: any = await v2GetSettlements({ page: page.value, pageSize: pageSize.value })
-    list.value = res.list || []
-    total.value = res.total || 0
-  } catch (e: any) {
-    ElMessage.error(e?.message || '加载失败')
+    const response = unwrapV2<unknown>(await v2GetSettlements({ page: page.value, pageSize: pageSize.value }))
+    const result = toPaged<SettlementV2>(response)
+    list.value = result.list
+    total.value = result.total
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '加载失败'))
   } finally {
     loading.value = false
   }
 }
 async function loadSuppliers() {
   try {
-    const res: any = await v2GetSuppliers({ pageSize: 100 })
+    const response = unwrapV2<unknown>(await v2GetSuppliers({ pageSize: 100 }))
     // 仅展示启用中的供应商（后端 status=1），停用供应商选了会被拒绝生成
-    suppliers.value = (res.list || []).filter((s: any) => s.status === 1)
+    suppliers.value = toArray<SupplierSummary>(response).filter(supplier => supplier.status === 1)
   } catch { /* 忽略 */ }
 }
 function openGenerate() {
@@ -254,13 +295,13 @@ async function doGenerate() {
     ElMessage.success('结算单已生成')
     generateDialogVisible.value = false
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '生成失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '生成失败'))
   } finally {
     submitting.value = false
   }
 }
-async function confirm(row: any) {
+async function confirm(row: SettlementV2) {
   try {
     await ElMessageBox.confirm(
       `确认结算单 ${row.settlementNo}？\n供应商：${row.supplierName}\n结算周期：${fmtDate(row.periodStart)} ~ ${fmtDate(row.periodEnd)}\n总金额：¥${Number(row.totalAmount || 0).toFixed(2)}`,
@@ -274,11 +315,11 @@ async function confirm(row: any) {
     await v2ConfirmSettlement(row.id)
     ElMessage.success('已确认')
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '确认失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '确认失败'))
   }
 }
-function openPayDialog(row: any) {
+function openPayDialog(row: SettlementV2) {
   payTarget.value = row
   payForm.paymentMethod = 'bank_transfer'
   payForm.transactionNo = ''
@@ -292,9 +333,14 @@ async function doPay() {
     ElMessage.warning('请选择付款方式')
     return
   }
+  const target = payTarget.value
+  if (!target) {
+    ElMessage.warning('结算单不存在，请刷新重试')
+    return
+  }
   paying.value = true
   try {
-    await v2PaySettlement(payTarget.value.id, {
+    await v2PaySettlement(target.id, {
       paymentMethod: payForm.paymentMethod,
       transactionNo: payForm.transactionNo || undefined,
       bankName: payForm.bankName || undefined,
@@ -304,22 +350,22 @@ async function doPay() {
     ElMessage.success('已付款')
     payDialogVisible.value = false
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '付款失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '付款失败'))
   } finally {
     paying.value = false
   }
 }
-async function showItems(row: any) {
+async function showItems(row: SettlementV2) {
   try {
-    const d: any = await v2GetSettlementDetail(row.id)
-    currentItems.value = d.items || []
+    const detail = unwrapV2<SettlementDetail>(await v2GetSettlementDetail(row.id))
+    currentItems.value = detail.items || []
     itemsDialogVisible.value = true
-  } catch (e: any) {
-    ElMessage.error(e?.message || '加载明细失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '加载明细失败'))
   }
 }
-async function openInvoiceDialog(row: any) {
+async function openInvoiceDialog(row: SettlementV2) {
   invoiceTarget.value = row
   invoicePayout.value = null
   invoiceForm.invoiceNo = ''
@@ -328,19 +374,20 @@ async function openInvoiceDialog(row: any) {
   invoiceDialogVisible.value = true
   try {
     // 拉详情取付款单（含进项字段）
-    const d: any = await v2GetSettlementDetail(row.id)
-    if (d?.payout) {
-      invoicePayout.value = d.payout
-      if (d.payout.invoiceStatus !== 'verified') {
-        invoiceForm.invoiceAmount = Number(d.payout.amount ?? row.payableAmount ?? 0)
+    const detail = unwrapV2<SettlementDetail>(await v2GetSettlementDetail(row.id))
+    if (detail.payout) {
+      invoicePayout.value = detail.payout
+      if (detail.payout.invoiceStatus !== 'verified') {
+        invoiceForm.invoiceAmount = Number(detail.payout.amount ?? row.payableAmount ?? 0)
       }
     }
-  } catch (e: any) {
-    ElMessage.error(e?.message || '加载付款单失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '加载付款单失败'))
   }
 }
 async function saveInvoice() {
-  if (!invoicePayout.value?.payoutNo) {
+  const payoutNo = invoicePayout.value?.payoutNo
+  if (!payoutNo) {
     ElMessage.warning('付款单不存在，请刷新重试')
     return
   }
@@ -350,7 +397,7 @@ async function saveInvoice() {
   }
   invoiceSaving.value = true
   try {
-    await v2RegisterPayoutInvoice(invoicePayout.value.payoutNo, {
+    await v2RegisterPayoutInvoice(payoutNo, {
       invoiceNo: invoiceForm.invoiceNo.trim(),
       invoiceAmount: invoiceForm.invoiceAmount != null && invoiceForm.invoiceAmount > 0 ? invoiceForm.invoiceAmount : undefined,
       invoiceTaxRate: invoiceForm.invoiceTaxRate != null ? invoiceForm.invoiceTaxRate : undefined,
@@ -358,8 +405,8 @@ async function saveInvoice() {
     ElMessage.success('进项票已登记核销')
     invoiceDialogVisible.value = false
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '登记失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '登记失败'))
   } finally {
     invoiceSaving.value = false
   }
@@ -370,14 +417,19 @@ async function clearInvoice() {
   } catch {
     return
   }
+  const payoutNo = invoicePayout.value?.payoutNo
+  if (!payoutNo) {
+    ElMessage.warning('付款单不存在，请刷新重试')
+    return
+  }
   invoiceSaving.value = true
   try {
-    await v2ClearPayoutInvoice(invoicePayout.value.payoutNo)
+    await v2ClearPayoutInvoice(payoutNo)
     ElMessage.success('已撤销')
     invoiceDialogVisible.value = false
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '撤销失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '撤销失败'))
   } finally {
     invoiceSaving.value = false
   }

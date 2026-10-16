@@ -1,20 +1,21 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login, getMenuRoleConfigs } from '@/api'
+import type { AdminLoginResult, AdminSession } from '@/api/types'
+import { toArray, unwrapV1 } from '@/api/unwrap'
 import router from '@/router'
 import { ROLE_LABELS, hasAccess, hasActionAccess, setMenuConfigs, type MenuRoleItem } from '@/constants/roles'
+import { readStoredJson } from '@/utils/storage'
 
 /** 安全解析 localStorage 中的 admin_info，损坏/被篡改时回退 null，避免整站白屏 */
-function safeParseAdminInfo(): any {
-  const raw = localStorage.getItem('admin_info')
-  if (!raw) return null
-  try { return JSON.parse(raw) } catch { return null }
+function safeParseAdminInfo(): AdminSession | null {
+  return readStoredJson<AdminSession>(localStorage, 'admin_info')
 }
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('admin_token') || '')
   // 从 localStorage 恢复 adminInfo，确保刷新后 role 不丢
-  const adminInfo = ref<any>(safeParseAdminInfo())
+  const adminInfo = ref<AdminSession | null>(safeParseAdminInfo())
 
   /** 当前管理员角色，如 superadmin / order_admin 等 */
   const role = computed(() => adminInfo.value?.role || 'guest')
@@ -41,8 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function loginAction(username: string, password: string) {
-    const res: any = await login(username, password)
-    const data = res.data ?? res
+    const data = unwrapV1<AdminLoginResult>(await login(username, password))
     token.value = data.token
     adminInfo.value = data.admin
     localStorage.setItem('admin_token', data.token)
@@ -50,15 +50,14 @@ export const useAuthStore = defineStore('auth', () => {
     // 登录后立即加载菜单权限配置
     await loadMenuConfigs()
     router.push('/dashboard')
-    return res
+    return data
   }
 
 
   /** 从后端加载菜单权限配置并缓存 */
   async function loadMenuConfigs() {
     try {
-      const res: any = await getMenuRoleConfigs()
-      const configs: MenuRoleItem[] = res.data ?? res
+      const configs = toArray<MenuRoleItem>(await getMenuRoleConfigs())
       setMenuConfigs(configs)
       menuConfigs.value = configs
       return configs

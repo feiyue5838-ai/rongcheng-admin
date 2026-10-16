@@ -30,10 +30,264 @@
   </div>
 </template>
 <script setup lang="ts">
-import{onMounted,reactive,ref}from'vue';import{ElMessage,ElMessageBox}from'element-plus';import{getPointsRewards,createPointsReward,updatePointsReward,disablePointsReward,getPointsRedemptions,shipPointsRedemption,completePointsRedemption,uploadImage}from'@/api'
-const tab=ref('rewards'),loading=ref(false),rewards=ref<any[]>([]),orders=ref<any[]>([]),status=ref(''),page=ref(1),total=ref(0),rewardVisible=ref(false),shipVisible=ref(false),saving=ref(false),uploading=ref(false);const labels:any={pending_shipment:'待发货',shipped:'已发货',completed:'已完成',cancelled:'已取消'},form=reactive<any>({}),shipForm=reactive<any>({})
-const reset=()=>Object.assign(form,{id:null,name:'',description:'',image:'',pointsCost:100,stock:0,perUserLimit:0,requiresAddress:true,active:true});const loadRewards=async()=>{loading.value=true;try{rewards.value=await getPointsRewards()as any}catch{rewards.value=[]}finally{loading.value=false}};const loadOrders=async()=>{loading.value=true;try{const r:any=await getPointsRedemptions({status:status.value||undefined,page:page.value,pageSize:20});orders.value=r?.list??r?.data?.list??[];total.value=r?.pagination?.total??r?.total??0}catch{orders.value=[]}finally{loading.value=false}};const load=()=>tab.value==='rewards'?loadRewards():loadOrders();const openReward=(r?:any)=>{reset();if(r)Object.assign(form,r,{active:r.status===1});rewardVisible.value=true}
-const beforeImageUpload=(f:File)=>{if(!['image/jpeg','image/png','image/gif','image/webp'].includes(f.type)){ElMessage.error('只支持 JPG、PNG、GIF、WebP 格式');return false}if(f.size>2*1024*1024){ElMessage.error('图片大小不能超过 2MB');return false}return true};const uploadRewardImage=async(o:any)=>{uploading.value=true;try{const r:any=await uploadImage(o.file),url=r?.data?.url??r?.url;if(!url)throw Error();form.image=url;if(o.onSuccess)o.onSuccess(r);ElMessage.success('图片上传成功')}catch(e){if(o.onError)o.onError(e);ElMessage.error('奖品图片上传失败，请重试')}finally{uploading.value=false}}
-const save=async()=>{if(saving.value||uploading.value)return;if(!String(form.name||'').trim()){ElMessage.warning('请填写奖品名称');return}if(Number(form.pointsCost)<1){ElMessage.warning('所需积分必须大于 0');return}if(Number(form.stock)<0){ElMessage.warning('库存不能小于 0');return}saving.value=true;try{const d={...form,name:String(form.name).trim(),status:form.active?1:0};if(form.id){await updatePointsReward(form.id,d)}else{await createPointsReward(d)};ElMessage.success('已保存');rewardVisible.value=false;await loadRewards()}finally{saving.value=false}};const down=async(r:any)=>{await ElMessageBox.confirm('确定下架该奖品？');await disablePointsReward(r.id);await loadRewards()};const openShip=(r:any)=>{Object.assign(shipForm,{id:r.id,courierCompany:'',trackingNo:''});shipVisible.value=true};const ship=async()=>{if(!shipForm.courierCompany?.trim()||!shipForm.trackingNo?.trim()){ElMessage.warning('请填写快递公司和快递单号');return}await shipPointsRedemption(shipForm.id,shipForm);ElMessage.success('已发货');shipVisible.value=false;await loadOrders()};const finish=async(r:any)=>{await ElMessageBox.confirm('确认该兑换订单已完成？');await completePointsRedemption(r.id);await loadOrders()};const address=(a:any)=>`${a.contact} ${a.phone} ${a.province||''}${a.city||''}${a.district||''}${a.detail||''}`;onMounted(loadRewards)
+import { onMounted, reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import type { UploadRawFile, UploadRequestOptions } from 'element-plus'
+import {
+  getPointsRewards,
+  createPointsReward,
+  updatePointsReward,
+  disablePointsReward,
+  getPointsRedemptions,
+  shipPointsRedemption,
+  completePointsRedemption,
+  uploadImage,
+} from '@/api'
+import { toArray, toPaged, unwrapUploadUrl } from '@/api/unwrap'
+
+type PointsTab = 'rewards' | 'orders'
+
+interface PointsReward {
+  id: string
+  name: string
+  description?: string | null
+  image?: string | null
+  pointsCost: number
+  stock: number
+  perUserLimit: number
+  requiresAddress: boolean
+  status: number
+}
+
+interface RedemptionAddress {
+  contact: string
+  phone: string
+  province?: string | null
+  city?: string | null
+  district?: string | null
+  detail?: string | null
+}
+
+interface PointsRedemption {
+  id: string
+  redemptionNo: string
+  rewardName: string
+  quantity: number
+  pointsCost: number
+  addressSnapshot?: RedemptionAddress | null
+  status: string
+  courierCompany?: string | null
+  trackingNo?: string | null
+}
+
+interface RewardForm {
+  id: string | null
+  name: string
+  description: string
+  image: string
+  pointsCost: number
+  stock: number
+  perUserLimit: number
+  requiresAddress: boolean
+  active: boolean
+}
+
+interface ShipForm {
+  id: string
+  courierCompany: string
+  trackingNo: string
+}
+
+const tab = ref<PointsTab>('rewards')
+const loading = ref(false)
+const rewards = ref<PointsReward[]>([])
+const orders = ref<PointsRedemption[]>([])
+const status = ref('')
+const page = ref(1)
+const total = ref(0)
+const rewardVisible = ref(false)
+const shipVisible = ref(false)
+const saving = ref(false)
+const uploading = ref(false)
+
+const labels: Record<string, string> = {
+  pending_shipment: '待发货',
+  shipped: '已发货',
+  completed: '已完成',
+  cancelled: '已取消',
+}
+
+const form = reactive<RewardForm>({
+  id: null,
+  name: '',
+  description: '',
+  image: '',
+  pointsCost: 100,
+  stock: 0,
+  perUserLimit: 0,
+  requiresAddress: true,
+  active: true,
+})
+
+const shipForm = reactive<ShipForm>({ id: '', courierCompany: '', trackingNo: '' })
+
+function reset() {
+  Object.assign(form, {
+    id: null,
+    name: '',
+    description: '',
+    image: '',
+    pointsCost: 100,
+    stock: 0,
+    perUserLimit: 0,
+    requiresAddress: true,
+    active: true,
+  })
+}
+
+async function loadRewards() {
+  loading.value = true
+  try {
+    const response: unknown = await getPointsRewards()
+    rewards.value = toArray<PointsReward>(response)
+  } catch {
+    rewards.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadOrders() {
+  loading.value = true
+  try {
+    const response: unknown = await getPointsRedemptions({
+      status: status.value || undefined,
+      page: page.value,
+      pageSize: 20,
+    })
+    const result = toPaged<PointsRedemption>(response)
+    orders.value = result.list
+    total.value = result.total
+  } catch {
+    orders.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+function load() {
+  return tab.value === 'rewards' ? loadRewards() : loadOrders()
+}
+
+function openReward(reward?: PointsReward) {
+  reset()
+  if (reward) {
+    Object.assign(form, {
+      id: reward.id,
+      name: reward.name,
+      description: reward.description ?? '',
+      image: reward.image ?? '',
+      pointsCost: reward.pointsCost,
+      stock: reward.stock,
+      perUserLimit: reward.perUserLimit,
+      requiresAddress: reward.requiresAddress,
+      active: reward.status === 1,
+    })
+  }
+  rewardVisible.value = true
+}
+
+function beforeImageUpload(file: UploadRawFile) {
+  if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+    ElMessage.error('只支持 JPG、PNG、GIF、WebP 格式')
+    return false
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.error('图片大小不能超过 2MB')
+    return false
+  }
+  return true
+}
+
+function reportUploadError(options: UploadRequestOptions, error: unknown) {
+  const uploadError = Object.assign(
+    new Error(error instanceof Error ? error.message : '上传失败'),
+    { status: 0, method: options.method, url: options.action },
+  )
+  options.onError(uploadError)
+}
+
+async function uploadRewardImage(options: UploadRequestOptions) {
+  uploading.value = true
+  try {
+    const response: unknown = await uploadImage(options.file)
+    const url = unwrapUploadUrl(response)
+    if (!url) throw new Error('上传响应缺少文件地址')
+    form.image = url
+    options.onSuccess(response)
+    ElMessage.success('图片上传成功')
+  } catch (error: unknown) {
+    reportUploadError(options, error)
+    ElMessage.error('奖品图片上传失败，请重试')
+  } finally {
+    uploading.value = false
+  }
+}
+
+async function save() {
+  if (saving.value || uploading.value) return
+  const name = form.name.trim()
+  if (!name) { ElMessage.warning('请填写奖品名称'); return }
+  if (form.pointsCost < 1) { ElMessage.warning('所需积分必须大于 0'); return }
+  if (form.stock < 0) { ElMessage.warning('库存不能小于 0'); return }
+
+  saving.value = true
+  try {
+    const data = { ...form, name, status: form.active ? 1 : 0 }
+    if (form.id) await updatePointsReward(form.id, data)
+    else await createPointsReward(data)
+    ElMessage.success('已保存')
+    rewardVisible.value = false
+    await loadRewards()
+  } finally {
+    saving.value = false
+  }
+}
+
+async function down(reward: PointsReward) {
+  await ElMessageBox.confirm('确定下架该奖品？')
+  await disablePointsReward(reward.id)
+  await loadRewards()
+}
+
+function openShip(redemption: PointsRedemption) {
+  Object.assign(shipForm, { id: redemption.id, courierCompany: '', trackingNo: '' })
+  shipVisible.value = true
+}
+
+async function ship() {
+  const courierCompany = shipForm.courierCompany.trim()
+  const trackingNo = shipForm.trackingNo.trim()
+  if (!courierCompany || !trackingNo) {
+    ElMessage.warning('请填写快递公司和快递单号')
+    return
+  }
+  await shipPointsRedemption(shipForm.id, { courierCompany, trackingNo })
+  ElMessage.success('已发货')
+  shipVisible.value = false
+  await loadOrders()
+}
+
+async function finish(redemption: PointsRedemption) {
+  await ElMessageBox.confirm('确认该兑换订单已完成？')
+  await completePointsRedemption(redemption.id)
+  await loadOrders()
+}
+
+function address(value: RedemptionAddress) {
+  return `${value.contact} ${value.phone} ${value.province || ''}${value.city || ''}${value.district || ''}${value.detail || ''}`
+}
+
+onMounted(loadRewards)
 </script>
 <style scoped>.page-container{background:#fff;padding:20px;border-radius:8px}.toolbar{display:flex;justify-content:flex-end;margin-bottom:16px}.hint{margin-left:10px;color:#999}.el-pagination{margin-top:16px;justify-content:flex-end}.reward-thumb{width:56px;height:56px;border-radius:6px}.reward-preview{width:128px;height:128px;border:1px solid #dcdfe6;border-radius:8px;display:block}.remove-image{margin-left:12px}.upload-tip{color:#909399;font-size:12px;margin-top:6px}.reward-uploader{display:inline-block}</style>

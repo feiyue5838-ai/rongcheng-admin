@@ -2,11 +2,18 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { toArray, unwrapV2 } from './unwrap'
 import type {
+  Admin,
+  AdminCreatePayload,
+  AdminListQuery,
+  AdminPage,
+  AdminUpdatePayload,
   ConfigRuntimeStatus,
   ContentAbout,
   FulfillmentDeliveryPayload,
   InvoiceApplicationPage,
   InvoiceApplicationQuery,
+  MenuRoleItem,
+  MenuRolePayload,
   OperationLogPage,
   OperationLogQuery,
   RefundPageV2,
@@ -247,10 +254,14 @@ export const getDashboard = () => request.get('/dashboard')
 export const customerActionAPI = (dto: { action: string; segment: string }) => request.post('/dashboard/customer-action', dto)
 export const getDashboardTrend = (type: 'order' | 'amount' = 'order', days: number = 7) =>
   request.get('/dashboard/trend', { params: { type, days } })
-export const getAdmins = (params?: QueryParams) => request.get('/admin/admins', { params })
-export const createAdmin = (data: RequestBody) => request.post('/admin/admins', data)
-export const updateAdmin = (id: string, data: RequestBody) => request.put(`/admin/admins/${id}`, data)
-export const deleteAdmin = (id: string) => request.delete(`/admin/admins/${id}`)
+export const getAdmins = async (params?: AdminListQuery): Promise<AdminPage> =>
+  await request.get('/admin/admins', { params }) as unknown as AdminPage
+export const createAdmin = async (data: AdminCreatePayload): Promise<Admin> =>
+  await request.post('/admin/admins', data) as unknown as Admin
+export const updateAdmin = async (id: string, data: AdminUpdatePayload): Promise<Admin> =>
+  await request.put(`/admin/admins/${id}`, data) as unknown as Admin
+export const deleteAdmin = async (id: string): Promise<{ id: string }> =>
+  await request.delete(`/admin/admins/${id}`) as unknown as { id: string }
 export const getLogs = async (params?: OperationLogQuery): Promise<OperationLogPage> =>
   await request.get('/admin/logs', { params }) as unknown as OperationLogPage
 export const getLogModules = async (): Promise<string[]> =>
@@ -327,11 +338,16 @@ export const getAvailableOutlets = async (params?: { addressJson?: string; busin
 }
 
 // 菜单权限配置
-export const getMenuRoleConfigs = () => request.get('/menu-roles')
-export const createMenuRoleConfig = (data: RequestBody) => request.post('/menu-roles', data)
-export const updateMenuRoleConfig = (id: string, data: RequestBody) => request.put(`/menu-roles/${id}`, data)
-export const deleteMenuRoleConfig = (id: string) => request.delete(`/menu-roles/${id}`)
-export const resetMenuRoleConfigs = () => request.post('/menu-roles/reset')
+export const getMenuRoleConfigs = async (): Promise<MenuRoleItem[]> =>
+  await request.get('/menu-roles') as unknown as MenuRoleItem[]
+export const createMenuRoleConfig = async (data: MenuRolePayload): Promise<MenuRoleItem> =>
+  await request.post('/menu-roles', data) as unknown as MenuRoleItem
+export const updateMenuRoleConfig = async (id: string, data: MenuRolePayload): Promise<MenuRoleItem> =>
+  await request.put(`/menu-roles/${id}`, data) as unknown as MenuRoleItem
+export const deleteMenuRoleConfig = async (id: string): Promise<{ deleted: boolean }> =>
+  await request.delete(`/menu-roles/${id}`) as unknown as { deleted: boolean }
+export const resetMenuRoleConfigs = async (): Promise<MenuRoleItem[]> =>
+  await request.post('/menu-roles/reset') as unknown as MenuRoleItem[]
 
 // ==================== 结算管理 API ====================
 // V1 settlement 接口已退役（2026-08-29）：待结算数据走 v2GetSettlements（v2Request）

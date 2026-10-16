@@ -380,8 +380,8 @@ import {
 } from '@/api/outlet'
 import { formatDate } from '@/utils/format'
 import {
-  Refresh, Clock, Tools, CircleCheck, DataLine,
-  Check, Box, View, Plus, Shop, Van, Picture, Postcard, Loading, Bell, Document, Setting,
+  Refresh, Clock, Tools, CircleCheck,
+  Check, Box, View, Plus, Van, Picture, Postcard, Loading, Bell, Document, Setting,
 } from '@element-plus/icons-vue'
 
 const outletStore = useOutletStore()
@@ -399,8 +399,6 @@ const detailOrder = ref(null)
 const detailLoading = ref(false)
 const receiptList = ref([])
 const sealImageList = ref([])
-const materialsList = ref([])
-
 // 材料类型中文映射
 const typeLabel = {
   license: '营业执照',
@@ -489,7 +487,7 @@ async function loadData() {
       completed: authorized.filter(o => o.status === 'completed').length,
     }
     loadOrders()
-  } catch (err) {
+  } catch {
     ElMessage.error('加载数据失败')
   } finally {
     loading.value = false
@@ -545,7 +543,7 @@ function onComplete(order) {
 }
 
 async function loadPreferences() {
-  try { const r = await getShippingPreferencesAPI(); Object.assign(preferenceForm, { preferredCouriers: r.preferredCouriers || [], defaultCourier: r.defaultCourier || '', shippingRemark: r.shippingRemark || '' }); commonCouriers.value = r.commonCouriers || [] } catch (_) { /* 发货偏好接口未就绪时静默跳过 */ }
+  try { const r = await getShippingPreferencesAPI(); Object.assign(preferenceForm, { preferredCouriers: r.preferredCouriers || [], defaultCourier: r.defaultCourier || '', shippingRemark: r.shippingRemark || '' }); commonCouriers.value = r.commonCouriers || [] } catch { /* 发货偏好接口未就绪时静默跳过 */ }
 }
 async function savePreferences() {
   preferenceSaving.value = true
@@ -616,7 +614,7 @@ async function onView(order) {
     const allReceipts = orderRes?.order?.deliveryReceipts || []
     sealImageList.value = allReceipts.filter(r => r.type === 'seal')
     receiptList.value = allReceipts.filter(r => r.type !== 'seal')
-  } catch (err) {
+  } catch {
     ElMessage.error('加载详情失败')
   } finally {
     detailLoading.value = false
@@ -647,7 +645,7 @@ async function loadNotifications(showToast = true) {
       }
     }
     lastUnread = unreadCount.value
-  } catch (err) {
+  } catch {
     // 轮询失败静默处理
   }
 }
@@ -668,7 +666,7 @@ async function onMarkAllRead() {
     notifyList.value.forEach((n) => (n.isRead = true))
     unreadCount.value = 0
     lastUnread = 0
-  } catch (err) {
+  } catch {
     ElMessage.error('操作失败')
   }
 }
@@ -680,7 +678,7 @@ async function onNotifyClick(item) {
       item.isRead = true
       unreadCount.value = Math.max(0, unreadCount.value - 1)
       lastUnread = unreadCount.value
-    } catch (err) {
+    } catch {
       // ignore
     }
   }

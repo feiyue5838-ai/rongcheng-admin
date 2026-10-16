@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { unwrapV1, unwrapV2, toArray, toPaged, unwrapUploadUrl } from './unwrap'
+import {
+  isPagedItems,
+  isPagedList,
+  isPagedRows,
+  toArray,
+  toPaged,
+  unwrapData,
+  unwrapUploadUrl,
+  unwrapV1,
+  unwrapV2,
+} from './unwrap'
 
 describe('unwrapV1', () => {
   it('解 {code:0,data} 单层', () => {
@@ -28,12 +38,30 @@ describe('unwrapV2', () => {
   })
 })
 
+describe('unwrapData', () => {
+  it('兼容标准 code 包装和历史无 code data 包装', () => {
+    expect(unwrapData({ code: 0, data: { id: 1 } })).toEqual({ id: 1 })
+    expect(unwrapData({ data: { id: 2 } })).toEqual({ id: 2 })
+  })
+
+  it('无 data 包装时原样返回', () => {
+    const value = { id: 3 }
+    expect(unwrapData(value)).toBe(value)
+    expect(unwrapData(null)).toBeNull()
+  })
+})
+
 describe('unwrapUploadUrl', () => {
   it('兼容 {url} / {data:{url}} / 空值', () => {
     expect(unwrapUploadUrl({ url: 'a' })).toBe('a')
     expect(unwrapUploadUrl({ data: { url: 'b' } })).toBe('b')
     expect(unwrapUploadUrl(null)).toBe('')
     expect(unwrapUploadUrl({})).toBe('')
+  })
+  it('兼容 data 字符串并拒绝错误类型', () => {
+    expect(unwrapUploadUrl({ data: 'direct' })).toBe('direct')
+    expect(unwrapUploadUrl({ url: 1, data: { url: 2 } })).toBe('')
+    expect(unwrapUploadUrl([])).toBe('')
   })
 })
 
@@ -46,6 +74,7 @@ describe('toArray', () => {
     expect(toArray({ data: [1] })).toEqual([1])
     expect(toArray(null)).toEqual([])
     expect(toArray({})).toEqual([])
+    expect(toArray({ data: 'not-array' })).toEqual([])
   })
 })
 
@@ -55,5 +84,17 @@ describe('toPaged', () => {
     expect(toPaged({ items: [1], total: 7 })).toEqual({ list: [1], total: 7 })
     expect(toPaged({ rows: [1], total: 5 })).toEqual({ list: [1], total: 5 })
     expect(toPaged([1, 2])).toEqual({ list: [1, 2], total: 2 })
+    expect(toPaged({ list: [1], pagination: { total: '3' } })).toEqual({ list: [1], total: 3 })
+  })
+})
+
+describe('分页类型守卫', () => {
+  it('只接受字段类型完整的分页对象', () => {
+    expect(isPagedList({ list: [], pagination: { total: 0 } })).toBe(true)
+    expect(isPagedList({ list: [], pagination: null })).toBe(false)
+    expect(isPagedItems({ items: [], total: 0 })).toBe(true)
+    expect(isPagedItems({ items: [], total: '0' })).toBe(false)
+    expect(isPagedRows({ rows: [], total: 0 })).toBe(true)
+    expect(isPagedRows({ rows: null, total: 0 })).toBe(false)
   })
 })

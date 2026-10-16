@@ -21,7 +21,7 @@
         </el-form-item>
       </el-form>
 
-      <el-table :data="list" v-loading="loading" stripe @selection-change="selected = $event">
+      <el-table :data="list" v-loading="loading" stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="45" />
         <el-table-column prop="id" label="ID" width="200" show-overflow-tooltip />
         <el-table-column prop="type" label="类型" width="110" />
@@ -74,36 +74,91 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 import { getComplaints, updateComplaintStatus, batchComplaintStatus } from '@/api'
+import { toPaged, unwrapV1 } from '@/api/unwrap'
+
+type ComplaintStatus = 'pending' | 'resolved' | 'closed'
+type BatchComplaintStatus = Exclude<ComplaintStatus, 'pending'>
+
+interface ComplaintItem {
+  id: string
+  type: string
+  orderNo?: string | null
+  description: string
+  phone: string
+  userId?: string | null
+  status: ComplaintStatus
+  createdAt?: string | null
+  reply?: string | null
+  replyAt?: string | null
+}
+
+interface ComplaintQuery {
+  keyword: string
+  status: string
+  page: number
+  pageSize: number
+}
+
+interface ComplaintPagination {
+  page?: number
+  pageSize?: number
+  total?: number
+}
+
+interface ComplaintPageResponse {
+  list?: ComplaintItem[]
+  pagination?: ComplaintPagination
+  total?: number
+}
+
+interface BatchComplaintResult {
+  successCount?: number
+  failedCount?: number
+}
 
 const loading = ref(false)
-const list = ref<any[]>([])
+const list = ref<ComplaintItem[]>([])
 const pagination = ref({ page: 1, pageSize: 20, total: 0 })
-const query = reactive({ keyword: '', status: '', page: 1, pageSize: 20 })
+const query = reactive<ComplaintQuery>({ keyword: '', status: '', page: 1, pageSize: 20 })
 
 function formatDate(d?: string | null) { return d ? dayjs(d).format('YYYY-MM-DD HH:mm') : '-' }
 
 const detailVisible = ref(false)
-const detailRow = ref<any>(null)
+const detailRow = ref<ComplaintItem | null>(null)
 const replyText = ref('')
 const replying = ref(false)
-const selected = ref<any[]>([])
-async function handleBatch(status: string) {
+const selected = ref<ComplaintItem[]>([])
+
+async function handleBatch(status: BatchComplaintStatus) {
   const ids = selected.value.map(r => r.id).filter(Boolean)
   if (ids.length === 0) return
   try {
     await ElMessageBox.confirm(`确认批量${status === 'resolved' ? '标记已处理' : '关闭'} ${ids.length} 条投诉？`, '提示', { type: status === 'resolved' ? 'success' : 'warning' })
-    const res: any = await batchComplaintStatus(ids, status)
-    const ok = res?.successCount ?? 0
-    const fail = res?.failedCount ?? 0
+    const response: unknown = await batchComplaintStatus(ids, status)
+    const result = unwrapV1<BatchComplaintResult>(response)
+    const ok = result?.successCount ?? 0
+    const fail = result?.failedCount ?? 0
     ElMessage[fail > 0 ? 'warning' : 'success'](fail > 0 ? `成功 ${ok} 条，失败 ${fail} 条` : `批量处理成功 ${ok} 条`)
     selected.value = []
     fetchData()
-  } catch (e: any) { if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.message || '操作失败') }
+  } catch (error: unknown) {
+    if (!isDialogCancellation(error)) ElMessage.error(getApiErrorMessage(error) || '操作失败')
+  }
 }
-function handleView(row: any) { detailRow.value = row; replyText.value = row.reply || ''; detailVisible.value = true }
+
+function handleSelectionChange(rows: ComplaintItem[]) {
+  selected.value = rows
+}
+
+function handleView(row: ComplaintItem) {
+  detailRow.value = row
+  replyText.value = row.reply || ''
+  detailVisible.value = true
+}
 
 async function handleReply() {
   if (!detailRow.value) return
@@ -114,18 +169,30 @@ async function handleReply() {
     ElMessage.success('已回复并标记为已处理')
     detailVisible.value = false
     fetchData()
-  } catch (e: any) { ElMessage.error(e?.message || '操作失败') } finally { replying.value = false }
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '操作失败')
+  } finally {
+    replying.value = false
+  }
 }
 
 async function fetchData() {
   loading.value = true
   try {
-    const res: any = await getComplaints({ ...query })
-    list.value = Array.isArray(res?.list) ? res.list : []
-    pagination.value = res?.pagination ?? { page: query.page, pageSize: query.pageSize, total: 0 }
-    if (res?.pagination?.page) query.page = res.pagination.page
-  } catch (e: any) {
-    ElMessage.error(e?.message || '加载失败')
+    const response: unknown = await getComplaints({ ...query })
+    const result = toPaged<ComplaintItem>(response)
+    const pageResponse = unwrapV1<ComplaintPageResponse>(response)
+    const responsePage = pageResponse?.pagination?.page
+    const responsePageSize = pageResponse?.pagination?.pageSize
+    list.value = result.list
+    pagination.value = {
+      page: responsePage ?? query.page,
+      pageSize: responsePageSize ?? query.pageSize,
+      total: result.total,
+    }
+    if (responsePage) query.page = responsePage
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '加载失败')
     list.value = []
   } finally { loading.value = false }
 }
@@ -133,21 +200,37 @@ function search() { query.page = 1; fetchData() }
 function reset() { query.keyword = ''; query.status = ''; search() }
 function handleSizeChange() { query.page = 1; fetchData() }
 
-async function handleResolve(row: any) {
+async function handleResolve(row: ComplaintItem) {
   try {
     await ElMessageBox.confirm(`确认将投诉 ${row.id.slice(0,8)} 标记为已处理？`, '提示', { type: 'info' })
     await updateComplaintStatus(row.id, 'resolved')
     ElMessage.success('已标记为已处理')
     fetchData()
-  } catch (e: any) { if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.message || '操作失败') }
+  } catch (error: unknown) {
+    if (!isDialogCancellation(error)) ElMessage.error(getApiErrorMessage(error) || '操作失败')
+  }
 }
-async function handleClose(row: any) {
+async function handleClose(row: ComplaintItem) {
   try {
     await ElMessageBox.confirm(`确认关闭投诉 ${row.id.slice(0,8)}？`, '提示', { type: 'warning' })
     await updateComplaintStatus(row.id, 'closed')
     ElMessage.success('已关闭')
     fetchData()
-  } catch (e: any) { if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.message || '操作失败') }
+  } catch (error: unknown) {
+    if (!isDialogCancellation(error)) ElMessage.error(getApiErrorMessage(error) || '操作失败')
+  }
+}
+
+function getApiErrorMessage(error: unknown): string | undefined {
+  if (axios.isAxiosError<{ message?: unknown }>(error)) {
+    const message = error.response?.data?.message
+    if (message) return Array.isArray(message) ? message.join('；') : String(message)
+  }
+  return error instanceof Error ? error.message : undefined
+}
+
+function isDialogCancellation(error: unknown): boolean {
+  return error === 'cancel' || error === 'close'
 }
 
 onMounted(fetchData)

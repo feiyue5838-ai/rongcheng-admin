@@ -88,8 +88,10 @@
 </template>
 
 <script setup lang="ts">
+import axios from 'axios'
 import { ref, reactive, onMounted } from 'vue'
 import { getLogs, getLogModules } from '@/api'
+import type { OperationLogItem } from '@/api/types'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 import {
@@ -102,8 +104,12 @@ import {
   parseOperationLogDetail,
 } from '@/utils/operation-log'
 
+type OperationLogDetailView = OperationLogItem & {
+  _parsedDetail: ReturnType<typeof parseOperationLogDetail>
+}
+
 const loading = ref(false)
-const logs = ref<any[]>([])
+const logs = ref<OperationLogItem[]>([])
 const pagination = ref({ total: 0 })
 const query = reactive({ module: '', startDate: '', endDate: '', page: 1, pageSize: 20 })
 const dateRange = ref<string[]>([])
@@ -114,7 +120,7 @@ const modulesLoading = ref(false)
 
 // 详情弹窗
 const detailVisible = ref(false)
-const currentLog = ref<any>(null)
+const currentLog = ref<OperationLogDetailView | null>(null)
 
 function formatDate(d: string) {
   if (!d) return '-'
@@ -128,19 +134,21 @@ async function loadModules(visible?: boolean) {
   modulesLoading.value = true
   try {
     const res = await getLogModules()
-    moduleOptions.value = Array.isArray(res) ? res : (Array.isArray((res as any)?.data) ? (res as any).data : [])
-  } catch (e: any) {
+    moduleOptions.value = Array.isArray(res) ? res.filter(module => typeof module === 'string') : []
+  } catch (error: unknown) {
     // 降级：不阻塞表格，静默失败仅提示
-    console.warn('[logs] loadModules failed', e?.message || e)
+    console.warn('[logs] loadModules failed', error instanceof Error ? error.message : error)
   } finally {
     modulesLoading.value = false
   }
 }
 
-function openDetail(row: any) {
-  const parsed = parseOperationLogDetail(row.detail)
+function openDetail(row: unknown) {
+  // Element Plus 表格插槽未透传 data 的行类型；事件来源仅为已类型化的 logs。
+  const log = row as OperationLogItem
+  const parsed = parseOperationLogDetail(log.detail)
   // 不直接变异表格行，避免污染列表响应式
-  currentLog.value = { ...row, _parsedDetail: parsed }
+  currentLog.value = { ...log, _parsedDetail: parsed }
   detailVisible.value = true
 }
 
@@ -149,15 +157,21 @@ async function fetchLogs() {
   query.startDate = dateRange.value?.[0] || ''
   query.endDate = dateRange.value?.[1] || ''
   try {
-    const res: any = await getLogs({ ...query })
-    logs.value = Array.isArray(res?.list) ? res.list : []
-    const pg = res?.pagination
-    pagination.value.total = Number(pg?.total ?? 0)
+    const res = await getLogs({ ...query })
+    logs.value = Array.isArray(res.list) ? res.list : []
+    const pg = res.pagination
+    pagination.value.total = Number(pg.total ?? 0)
     // 服务端可能纠正页码/页大小，保持前端一致但不触发二次请求
-    if (pg?.page && pg.page !== query.page) query.page = pg.page
-    if (pg?.pageSize && pg.pageSize !== query.pageSize) query.pageSize = pg.pageSize
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || e?.message || '加载日志失败')
+    if (pg.page !== query.page) query.page = pg.page
+    if (pg.pageSize !== query.pageSize) query.pageSize = pg.pageSize
+  } catch (error: unknown) {
+    const responseMessage = axios.isAxiosError<{ message?: unknown }>(error)
+      ? error.response?.data?.message
+      : undefined
+    const message = Array.isArray(responseMessage)
+      ? responseMessage.join('；')
+      : typeof responseMessage === 'string' ? responseMessage : undefined
+    ElMessage.error(message || (error instanceof Error ? error.message : '加载日志失败'))
     logs.value = []
     pagination.value.total = 0
   } finally {

@@ -56,8 +56,8 @@
         </el-form-item>
         <el-form-item label="允许角色">
           <el-checkbox-group v-model="form.roles">
-            <el-checkbox v-for="(label, key) in roleLabels" :key="key" :label="key">{{ label }}</el-checkbox>
-            <el-checkbox label="*">全部角色</el-checkbox>
+            <el-checkbox v-for="(label, key) in roleLabels" :key="key" :value="key">{{ label }}</el-checkbox>
+            <el-checkbox value="*">全部角色</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
         <el-form-item label="排序">
@@ -80,6 +80,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { createMenuRoleConfig, updateMenuRoleConfig, deleteMenuRoleConfig, resetMenuRoleConfigs } from '@/api'
 import { ROLE_LABELS } from '@/constants/roles'
+import type { MenuRoleItem, MenuRolePayload } from '@/constants/roles'
 import { useAuthStore } from '@/stores/auth'
 
 const roleLabels = ROLE_LABELS
@@ -140,16 +141,18 @@ const pathLabels: Record<string, string> = {
   '/v2/invoices': '开票管理(V2)',
   '/v2/suppliers': '供应商(V2)',
 }
-const tableData = ref<any[]>([])
-const dialogVisible = ref(false)
-const editId = ref<string | null>(null)
-const form = ref({
+const emptyForm = (sort = 0): MenuRolePayload => ({
   path: '',
   pathType: 'exact',
-  roles: [] as string[],
-  sort: 0,
+  roles: [],
+  sort,
   enabled: true,
 })
+
+const tableData = ref<MenuRoleItem[]>([])
+const dialogVisible = ref(false)
+const editId = ref<string | null>(null)
+const form = ref<MenuRolePayload>(emptyForm())
 
 async function loadData() {
   const configs = await authStore.loadMenuConfigs()
@@ -158,11 +161,11 @@ async function loadData() {
 
 function handleAdd() {
   editId.value = null
-  form.value = { path: '', pathType: 'exact', roles: [], sort: tableData.value.length, enabled: true }
+  form.value = emptyForm(tableData.value.length)
   dialogVisible.value = true
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: MenuRoleItem) {
   editId.value = row.id
   form.value = {
     path: row.path,
@@ -197,7 +200,7 @@ async function handleSubmit() {
   await loadData()
 }
 
-async function handleDelete(row: any) {
+async function handleDelete(row: MenuRoleItem) {
   await ElMessageBox.confirm(`确定删除 ${row.path}？`, '删除确认')
   await deleteMenuRoleConfig(row.id)
   ElMessage.success('删除成功')

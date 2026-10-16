@@ -17,8 +17,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, onUnmounted } from 'vue'
-import type { ECharts, EChartsOption } from 'echarts'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import type { TooltipComponentFormatterCallbackParams } from 'echarts'
+import { initECharts, type ECharts, type EChartsOption } from '@/utils/echarts'
 
 interface TrendItem {
   day: string
@@ -52,26 +53,37 @@ const trendEmpty = computed(() => !props.data?.length)
 const chartRef = ref<HTMLElement>()
 const selectedRange = ref(props.modelValue)
 let chartInstance: ECharts | null = null
-let isEchartsReady = false
 
-async function loadEchartsInit() {
-  // 动态加载 echarts，找所有可能包含 init 的导出形式
-  const ec = await import('echarts')
-  // 可能的形态：ec.init / ec.default.init / ec.default.default.init
-  const fn: any = (ec as any).default?.init
-    ?? (ec as any).default?.default?.init
-    ?? (ec as any).init
-  if (typeof fn === 'function') {
-    return fn
-  }
-  // 兜底：遍历所有导出找 init
-  const keys = Object.keys(ec as object)
-  for (const k of keys) {
-    const v = (ec as any)[k]
-    if (v && typeof v.init === 'function') return v.init
-    if (v && typeof v.default?.init === 'function') return v.default.init
-  }
-  throw new Error('[TrendChart] cannot find echarts init in: ' + keys.join(', '))
+type AxisTooltipItem = Exclude<TooltipComponentFormatterCallbackParams, readonly unknown[]> & {
+  axisValue?: string | number
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(/[&<>'"]/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;',
+  })[character] || character)
+}
+
+function formatCurrency(value: unknown): string {
+  const values: unknown[] = Array.isArray(value) ? value : [value]
+  const rawValue = values[values.length - 1]
+  const amount = typeof rawValue === 'number' ? rawValue : Number(rawValue)
+  return Number.isFinite(amount) ? amount.toFixed(2) : '0.00'
+}
+
+function formatTooltip(params: AxisTooltipItem | AxisTooltipItem[]): string {
+  if (!Array.isArray(params)) return ''
+  const first = params[0]
+  if (!first) return ''
+  let html = `<b>${escapeHtml(first.axisValue ?? first.name)}</b><br/>`
+  params.forEach((item) => {
+    html += `${item.marker || ''} ${escapeHtml(item.seriesName || item.name)}: ¥${formatCurrency(item.value)}<br/>`
+  })
+  return html
 }
 
 async function initChart() {
@@ -82,16 +94,7 @@ async function initChart() {
     }
   }
 
-  if (!isEchartsReady) {
-    try {
-      const initFn = await loadEchartsInit()
-      chartInstance = (initFn as any).call(null, chartRef.value)
-      isEchartsReady = true
-    } catch (e) {
-      console.error('[TrendChart] echarts load error:', e)
-      return
-    }
-  }
+  if (!chartInstance) chartInstance = initECharts(chartRef.value)
 
   if (!chartInstance) {
     return
@@ -112,14 +115,7 @@ function renderChart() {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      formatter: (params: any) => {
-        if (!Array.isArray(params)) return ''
-        let html = `<b>${params[0]?.axisValue}</b><br/>`
-        params.forEach((p: any) => {
-          html += `${p.marker} ${p.seriesName}: ¥${(p.value || 0).toFixed(2)}<br/>`
-        })
-        return html
-      }
+      formatter: formatTooltip
     },
     legend: {
       data: ['收入', '退款', '支出'],

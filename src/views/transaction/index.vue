@@ -11,7 +11,7 @@
         <div class="stat-label">今日收入</div>
         <div class="stat-value income">¥{{ formatMoney(stats.today?.income || 0) }}</div>
         <div class="stat-trend" :class="getTrendClass(stats.today?.incomeTrend)">
-          <span v-if="stats.today?.incomeTrend !== null">
+          <span v-if="stats.today?.incomeTrend != null">
             {{ stats.today.incomeTrend > 0 ? '↑' : '↓' }}
             {{ Math.abs(stats.today.incomeTrend) }}% 较昨日
           </span>
@@ -22,7 +22,7 @@
         <div class="stat-label">今日退款</div>
         <div class="stat-value refund">¥{{ formatMoney(stats.today?.refund || 0) }}</div>
         <div class="stat-trend">
-          <span v-if="stats.today?.refundTrend !== null">
+          <span v-if="stats.today?.refundTrend != null">
             {{ stats.today.refundTrend > 0 ? '↑' : '↓' }}
             {{ Math.abs(stats.today.refundTrend) }}% 较昨日
           </span>
@@ -63,7 +63,7 @@
       <el-form :inline="true" :model="filterParams">
         <el-form-item label="交易时间">
           <el-date-picker
-            v-model="(dateRange as any)"
+            v-model="dateRange"
             type="daterange"
             range-separator="至"
             start-placeholder="开始日期"
@@ -250,6 +250,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import type { TransactionFlow } from '@/api/types'
 import {
   ElCheckTag,
   ElPagination,
@@ -275,20 +276,56 @@ import {
   getOutletsWithFlows,
 } from '@/api'
 
+type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+type DateRange = [string, string]
+type UnknownRecord = Record<string, unknown>
+
+interface TransactionPeriodStats {
+  income?: number
+  refund?: number
+  net?: number
+  count?: number
+  incomeTrend?: number | null
+  refundTrend?: number | null
+}
+
+interface TransactionStats {
+  today?: TransactionPeriodStats
+  month?: TransactionPeriodStats
+}
+
+interface TransactionRow extends TransactionFlow {
+  transactionId?: string
+  remark?: string
+}
+
+interface OutletOption {
+  label: string
+  value: string
+}
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value ? value : undefined
+}
+
 // 统计数据
-const stats = ref<any>({})
+const stats = ref<TransactionStats>({})
 const authStore = useAuthStore()
 // 交易流水导出是独立操作权限，不继承页面查看权限
 const canExport = computed(() => authStore.canPerform('/transaction/export'))
-const tableData = ref<any[]>([])
+const tableData = ref<TransactionRow[]>([])
 const total = ref(0)
 const loading = ref(false)
 const exporting = ref(false)
 const detailVisible = ref(false)
-const currentRow = ref<any>(null)
+const currentRow = ref<TransactionRow | null>(null)
 
 // 日期范围
-const dateRange = ref<string[]>([])
+const dateRange = ref<DateRange | []>([])
 
 // 筛选参数
 const filterParams = reactive({
@@ -303,17 +340,21 @@ const filterParams = reactive({
 })
 
 // 合作供应商（网点）选项
-const outletOptions = ref<any[]>([])
+const outletOptions = ref<OutletOption[]>([])
 async function loadOutlets() {
   try {
     const resp = await getOutletsWithFlows()
     // api 层已解两层包装，resp 即数组
-    const list = Array.isArray(resp) ? resp : []
-    outletOptions.value = list.map((o: any) => ({
-      label: o.outletName || o.outlet_name || '未知',
-      value: o.outletId || o.outlet_id || o.id || '',
-    }))
-
+    const list: unknown[] = Array.isArray(resp) ? resp : []
+    outletOptions.value = list.map((item) => {
+      const outlet = isRecord(item) ? item : {}
+      const label = optionalString(outlet.outletName)
+        ?? optionalString(outlet.outlet_name)
+        ?? optionalString(outlet.name)
+        ?? '未知'
+      const rawValue = outlet.outletId ?? outlet.outlet_id ?? outlet.id ?? ''
+      return { label, value: String(rawValue) }
+    })
   } catch (e) {
     console.error('加载供应商列表失败', e)
   }
@@ -338,7 +379,7 @@ async function loadStats() {
   try {
     const resp = await getTransactionStats()
     // api 层已解两层包装，resp 即统计对象
-    stats.value = resp || {}
+    stats.value = isRecord(resp) ? resp as TransactionStats : {}
   } catch (e) {
     console.error('加载统计数据失败', e)
   }
@@ -362,7 +403,7 @@ async function loadData() {
     // api 层已解两层包装，resp 即 {items,total}
     tableData.value = resp?.items ?? resp?.list ?? []
     total.value = resp?.total ?? 0
-  } catch (e: any) {
+  } catch {
     ElMessage.error('加载数据失败')
   } finally {
     loading.value = false
@@ -402,7 +443,7 @@ function onQuickFilter(value: string) {
 }
 
 // 日期范围变化
-function onDateRangeChange(val: string[]) {
+function onDateRangeChange(val: DateRange | null) {
   if (val && val.length === 2) {
     filterParams.startDate = val[0]
     filterParams.endDate = val[1]
@@ -471,16 +512,17 @@ async function onExport() {
     a.remove()
     URL.revokeObjectURL(url)
     ElMessage.success('交易流水已导出')
-  } catch (e: any) {
-    ElMessage.error(e?.message || '导出失败')
+  } catch (error: unknown) {
+    ElMessage.error(error instanceof Error ? error.message : '导出失败')
   } finally {
     exporting.value = false
   }
 }
 
 // 查看详情
-function showDetail(row: any) {
-  currentRow.value = row
+function showDetail(row: unknown) {
+  // Element Plus 表格插槽未透传 data 的行类型；事件来源仅为已类型化的 tableData。
+  currentRow.value = row as TransactionRow
   detailVisible.value = true
 }
 
@@ -505,22 +547,22 @@ function formatDateTime(date: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
-function getTrendClass(trend: number | null): string {
+function getTrendClass(trend: number | null | undefined): string {
   if (trend === null || trend === undefined) return ''
   return trend >= 0 ? 'trend-up' : 'trend-down'
 }
 
-function getModuleTagType(module: string): any {
-  const map: Record<string, string> = {
+function getModuleTagType(module: string): TagType {
+  const map: Record<string, TagType> = {
     seal: 'primary',
-    newspaper: 'purple',
+    newspaper: 'info',
     bookkeeping: 'warning',
     refund: 'danger',
   }
   return map[module] || 'info'
 }
 
-function getTradeTagType(tradeType: string): any {
+function getTradeTagType(tradeType: string): TagType {
   return tradeType === 'income' ? 'success' : 'danger'
 }
 
@@ -547,8 +589,8 @@ function getAmountClass(tradeType: string): string {
   return tradeType === 'refund' ? 'amount-refund' : 'amount-income'
 }
 
-function getStatusTagType(status: string): any {
-  const map: Record<string, string> = {
+function getStatusTagType(status: string): TagType {
+  const map: Record<string, TagType> = {
     success: 'success',
     pending: 'warning',
     failed: 'danger',

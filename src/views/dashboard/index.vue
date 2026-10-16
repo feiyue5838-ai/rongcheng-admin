@@ -287,22 +287,64 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, reactive, watch, type Component } from 'vue'
 import { getDashboard, getDashboardTrend, getOutletsAPI, v2GetSettlements, customerActionAPI } from '@/api'
-import * as echarts from 'echarts'
-import { Refresh, Promotion, Download, Service, User, UserFilled, CircleCheck, ChatDotRound, Clock, Document, Lightning, WarningFilled, Star } from '@element-plus/icons-vue'
+import type { Outlet, SettlementV2 } from '@/api/types'
+import { toArray, unwrapData, unwrapV2 } from '@/api/unwrap'
+import { initECharts, type ECharts } from '@/utils/echarts'
+import { Refresh, Promotion, Download, Service, ChatDotRound, Lightning, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
-type StatConfig = {
-  label: string
-  value: number
-  icon: string
-  accent: string
-  accentEnd: string
-  bgLight: string
-  bgDark: string
-  bgBorder: string
+interface DashboardData {
+  revenueMasked?: boolean
+  totalRevenue?: number
+  totalOrders?: number
+  pendingOrders?: number
+  todayOrders?: number
+  completedOrders?: number
+  totalUsers?: number
+  todayUsers?: number
+  pendingReviews?: number
+  totalCustomers?: number
+  activeCustomers?: number
+  silentCustomers?: number
+  vipCustomers?: number
+  _detail?: {
+    sealRevenue?: number
+    newspaperRevenue?: number
+    bookkeepingRevenue?: number
+  }
 }
+
+interface DashboardTrendData {
+  amountMasked?: boolean
+  dates?: string[]
+  seal?: number[]
+  newspaper?: number[]
+  bookkeeping?: number[]
+}
+
+interface CustomerActionResult {
+  count?: number
+}
+
+interface PendingSettlement {
+  outletId: string
+  outletAmount: number
+}
+
+interface BusinessTypeSummary {
+  name?: string
+  code?: string
+}
+
+interface ChartTooltipParam {
+  axisValue?: string | number
+  marker: string
+  seriesName: string
+  value: number
+}
+
 const stats = reactive({
   totalUsers:     { label: '用户总数',   value: 0, icon: 'User',         accent: '#5B6FE8', accentEnd: '#7B8FF8', bgLight: '#eef2ff', bgDark: '#dde4ff', bgBorder: 'rgba(91,111,232,.15)' },
   todayUsers:     { label: '今日新增',   value: 0, icon: 'UserFilled',   accent: '#13c2c2', accentEnd: '#36cfc9', bgLight: '#e6fffb', bgDark: '#b5f5ec', bgBorder: 'rgba(19,194,194,.15)' },
@@ -324,7 +366,7 @@ const customerStats = reactive({
   silentCustomers: { label: '沉默客户',  period: '7-30 天无操作',   action: 'wake',    actionLabel: '唤醒', value: 0, icon: 'Clock',      trend: 0, accent: '#fa8c16', accentEnd: '#ffc53d', bgLight: '#fffbe6', bgDark: '#fff1b8', bgBorder: 'rgba(250,140,22,.15)' },
   vipCustomers:    { label: 'VIP客户',   period: '累计消费 ≥ ¥500', action: 'service', actionLabel: '客服', value: 0, icon: 'Star',       trend: 0, accent: '#722ed1', accentEnd: '#9254de', bgLight: '#f9f0ff', bgDark: '#e8d5ff', bgBorder: 'rgba(114,46,209,.15)' },
 })
-const customerActionIcons: Record<string, any> = {
+const customerActionIcons: Record<string, Component> = {
   export: Download,
   push: Promotion,
   wake: ChatDotRound,
@@ -365,27 +407,16 @@ async function onCustomerAction(action: string) {
   }
   const segment = actionSegment[action] || 'all'
   try {
-    const res: any = await customerActionAPI({ action, segment })
-    const data = res.data ?? res
+    const data = unwrapData<CustomerActionResult>(await customerActionAPI({ action, segment }))
     const count = data.count ?? 0
     ElMessage.success(`已向 ${count} 位${segmentLabel[segment] || ''}客户触发${actionLabel[action] || action}`)
-  } catch (e) {
+  } catch {
     ElMessage.error('操作失败，请稍后重试')
   }
 }
 
 const customerKeys = ['totalCustomers', 'activeCustomers', 'silentCustomers', 'vipCustomers'] as const
 const kpiKeys = ['totalUsers', 'todayUsers', 'completedOrders', 'pendingOrders'] as const
-
-const pendingPercent = computed(() => {
-  const t = stats.totalOrders.value || 1
-  return Math.min(100, Math.round((stats.pendingOrders.value / t) * 100))
-})
-
-const reviewPercent = computed(() => {
-  if (stats.pendingReviews.value === 0) return 0
-  return Math.min(100, stats.pendingReviews.value * 15)
-})
 
 const trendPercent = computed(() => {
   if (stats.totalOrders.value === 0) return 0
@@ -410,7 +441,7 @@ const revenueMasked = ref(false)
 const amountMasked = ref(false)
 const chartType = ref<'order' | 'amount'>('order')
 const chartRef = ref<HTMLElement>()
-let chart: echarts.ECharts | null = null
+let chart: ECharts | null = null
 const trendData = reactive({
   dates: [] as string[],
   seal: [] as number[],
@@ -419,50 +450,50 @@ const trendData = reactive({
 })
 
 // ── 供应商监控（网点 + 待结算） ──
-const outletList = ref<any[]>([])
-const pendingSettlements = ref<any[]>([])
+const outletList = ref<Outlet[]>([])
+const pendingSettlements = ref<PendingSettlement[]>([])
 
 const pendingSettleCount = computed(() => pendingSettlements.value.length)
 const pendingSettleAmount = computed(() =>
-  pendingSettlements.value.reduce((s: number, r: any) => s + (Number(r.outletAmount ?? r.outlet_amount ?? 0)), 0)
+  pendingSettlements.value.reduce((sum, settlement) => sum + settlement.outletAmount, 0)
 )
 const outletsWithAlert = computed(() => {
-  const ids = new Set(pendingSettlements.value.map((r: any) => r.outletId))
+  const ids = new Set(pendingSettlements.value.map(settlement => settlement.outletId))
   return outletList.value
-    .filter((o: any) => ids.has(o.id))
-    .map((o: any) => ({
-      id: o.id,
-      name: o.name,
-      avatarText: (o.name || '').replace('蓉城刻章', '').slice(0, 1) || '店',
-      status: o.status,
-      totalOrders: o.totalOrders || 0,
+    .filter(outlet => ids.has(outlet.id))
+    .map(outlet => ({
+      id: outlet.id,
+      name: outlet.name,
+      avatarText: (outlet.name || '').replace('蓉城刻章', '').slice(0, 1) || '店',
+      status: outlet.status,
+      totalOrders: outlet.totalOrders || 0,
       pendingAmount: pendingSettlements.value
-        .filter((r: any) => r.outletId === o.id)
-        .reduce((s: number, r: any) => s + (Number(r.outletAmount ?? r.outlet_amount ?? 0)), 0),
-      bizList: o.businessTypes || [],
+        .filter(settlement => settlement.outletId === outlet.id)
+        .reduce((sum, settlement) => sum + settlement.outletAmount, 0),
+      bizList: outlet.businessTypes || [],
     }))
 })
 const outletAlertCount = computed(() => outletsWithAlert.value.length)
 const outletRanking = computed(() => {
   return [...outletList.value]
-    .sort((a: any, b: any) => (b.totalOrders || 0) - (a.totalOrders || 0))
+    .sort((a, b) => (b.totalOrders || 0) - (a.totalOrders || 0))
     .slice(0, 3)
-    .map((o: any) => ({
-      id: o.id,
-      name: o.name,
-      totalOrders: o.totalOrders || 0,
-      bizText: (o.businessTypes || []).map((b: string) => bizLabel(b)).join('·'),
+    .map(outlet => ({
+      id: outlet.id,
+      name: outlet.name,
+      totalOrders: outlet.totalOrders || 0,
+      bizText: (outlet.businessTypes || []).map(businessType => bizLabel(businessType)).join('·'),
     }))
 })
 const todoTotal = computed(
   () => stats.pendingOrders.value + pendingSettleCount.value + stats.pendingReviews.value
 )
 
-function bizLabel(b: any) {
+function bizLabel(businessType: string | BusinessTypeSummary) {
   const map: Record<string, string> = { seal: '刻章', newspaper: '登报', bookkeeping: '记账' }
-  if (typeof b === 'string') return map[b] || b
-  if (b && typeof b === 'object') return b.name || map[b.code] || b.code || '业务'
-  return '业务'
+  if (typeof businessType === 'string') return map[businessType] || businessType
+  const code = businessType.code || ''
+  return businessType.name || map[code] || code || '业务'
 }
 
 // 动态生成 hero sparkline SVG points（基于后端 /dashboard/trend 返回的 trendData 全量合计）
@@ -491,7 +522,9 @@ function formatMoney(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function animateValue(key: string, target: number, duration = 1100) {
+type StatKey = keyof typeof stats
+
+function animateValue(key: StatKey, target: number, duration = 1100) {
   const start = performance.now()
   const startVal = 0
   const isMoney = key === 'totalRevenue'
@@ -499,9 +532,9 @@ function animateValue(key: string, target: number, duration = 1100) {
     const t = Math.min(1, (now - start) / duration)
     const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
     const cur = startVal + (target - startVal) * eased
-    ;(stats as any)[key].value = isMoney ? Number(cur.toFixed(2)) : Math.round(cur)
+    stats[key].value = isMoney ? Number(cur.toFixed(2)) : Math.round(cur)
     if (t < 1) requestAnimationFrame(step)
-    else if (isMoney) (stats as any)[key].value = Number(Number(target).toFixed(2))
+    else if (isMoney) stats[key].value = Number(Number(target).toFixed(2))
   }
   requestAnimationFrame(step)
 }
@@ -509,8 +542,7 @@ function animateValue(key: string, target: number, duration = 1100) {
 async function fetchData() {
   loading.value = true
   try {
-    const res: any = await getDashboard()
-    const data = res.data ?? res
+    const data = unwrapData<DashboardData>(await getDashboard())
     revenueMasked.value = data.revenueMasked === true
     if (!revenueMasked.value) {
       animateValue('totalRevenue', data.totalRevenue ?? 0, 1300)
@@ -540,15 +572,13 @@ async function fetchData() {
 
 async function loadOutlets() {
   try {
-    const oRes: any = await getOutletsAPI({ page: 1, pageSize: 100 })
-    const oData = oRes.data ?? oRes
-    outletList.value = oData.list || []
+    const outletResponse = unwrapData<unknown>(await getOutletsAPI({ page: 1, pageSize: 100 }))
+    outletList.value = toArray<Outlet>(outletResponse)
     // V2 结算（供应商=网点维度，2026-08-29 替代 V1 getSettlementRecords）：待结算 = 未付款单（pending/confirmed），拉 500 条避免截断
-    const sRes: any = await v2GetSettlements({ pageSize: 500 })
-    const rawList: any[] = sRes.list ?? sRes.data?.list ?? []
-    pendingSettlements.value = rawList
-      .filter((r: any) => r.status === 'pending' || r.status === 'confirmed')
-      .map((r: any) => ({ outletId: r.supplierId ?? r.outletId ?? r.supplier_id, outletAmount: Number(r.payableAmount ?? r.payable_amount ?? r.outletAmount ?? 0) }))
+    const settlementResponse = unwrapV2<unknown>(await v2GetSettlements({ pageSize: 500 }))
+    pendingSettlements.value = toArray<SettlementV2>(settlementResponse)
+      .filter(settlement => settlement.status === 'pending' || settlement.status === 'confirmed')
+      .map(settlement => ({ outletId: settlement.supplierId, outletAmount: Number(settlement.payableAmount ?? 0) }))
   } catch (e) {
     console.error('获取网点/结算数据失败', e)
   }
@@ -561,8 +591,7 @@ function refresh() {
 
 async function fetchTrend() {
   try {
-    const res: any = await getDashboardTrend(chartType.value, 7)
-    const data = res.data ?? res
+    const data = unwrapData<DashboardTrendData>(await getDashboardTrend(chartType.value, 7))
     amountMasked.value = data.amountMasked === true
     trendData.dates = data.dates || []
     trendData.seal = data.seal || []
@@ -576,8 +605,12 @@ async function fetchTrend() {
 
 function initChart() {
   if (!chartRef.value) return
-  chart = echarts.init(chartRef.value)
+  if (!chart) chart = initECharts(chartRef.value)
   updateChart()
+}
+
+function resizeChart() {
+  chart?.resize()
 }
 
 function updateChart() {
@@ -586,9 +619,9 @@ function updateChart() {
   const option = {
     tooltip: {
       trigger: 'axis',
-      formatter: (params: any) => {
+      formatter: (params: ChartTooltipParam[]) => {
         let html = params[0]?.axisValue + '<br/>'
-        params.forEach((p: any) => {
+        params.forEach(p => {
           const val = isAmount ? '¥' + p.value.toFixed(2) : p.value
           html += `${p.marker} ${p.seriesName}: ${val}<br/>`
         })
@@ -630,6 +663,13 @@ onMounted(() => {
   fetchData()
   initChart()
   fetchTrend()
+  window.addEventListener('resize', resizeChart)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resizeChart)
+  chart?.dispose()
+  chart = null
 })
 </script>
 

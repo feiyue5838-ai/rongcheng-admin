@@ -144,6 +144,7 @@ const DETAIL_KEY_LABELS: Record<string, string> = {
   size: '文件大小',
   url: '文件地址',
   urls: '文件地址列表',
+  items: '项目',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -210,10 +211,14 @@ export function operationLogTargetText(value: unknown): string {
     .trim() || '未记录'
 }
 
-export function operationLogOperatorText(row: any): string {
-  const name = String(row?.admin?.nickname || row?.admin?.username || '').trim()
+export function operationLogOperatorText(row: unknown): string {
+  const record = row && typeof row === 'object' && !Array.isArray(row) ? row as LogData : {}
+  const admin = record.admin && typeof record.admin === 'object' && !Array.isArray(record.admin)
+    ? record.admin as LogData
+    : {}
+  const name = String(admin.nickname || admin.username || '').trim()
   if (name) return name
-  return row?.adminId ? '已删除的管理员' : '系统或业务端'
+  return record.adminId ? '已删除的管理员' : '系统或业务端'
 }
 
 function parseDetail(detail: unknown): LogData | null {
@@ -270,7 +275,7 @@ export function operationLogSummary(detail: unknown, action: unknown): string {
   const fields = ['status', 'role', 'nickname', 'name', 'phone', 'contact']
   const changed = fields
     .filter(key => data[key] !== undefined)
-    .map(key => `${DETAIL_KEY_LABELS[key] || key}：${displayValue(key, data[key])}`)
+    .map(key => `${DETAIL_KEY_LABELS[key]}：${displayValue(key, data[key])}`)
   if (changed.length) return changed.join('；')
   const fallback = data.name ?? data.username ?? data.nickname ?? shortId(data.id, 12)
   return fallback == null || String(fallback).trim() === '' ? '无结果摘要' : String(fallback)

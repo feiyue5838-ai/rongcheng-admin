@@ -26,7 +26,7 @@
           <el-descriptions-item label="履约状态">
             <el-tag :type="fulfillmentTag(detail.order.fulfillmentStatus)">{{ fulfillmentStatusMap[detail.order.fulfillmentStatus] || detail.order.fulfillmentStatus }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="退款状态">{{ refundStatusMap[detail.order.refundStatus] || detail.order.refundStatus || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="退款状态">{{ refundStatusMap[detail.order.refundStatus || ''] || detail.order.refundStatus || '-' }}</el-descriptions-item>
           <el-descriptions-item label="用户备注" :span="2">{{ detail.order.customerRemark || '-' }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.order.adminRemark" label="管理员备注">{{ detail.order.adminRemark }}</el-descriptions-item>
         </el-descriptions>
@@ -272,16 +272,141 @@ import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRoute } from 'vue-router'
 import { v2GetOrderDetail, v2AssignOrder, v2ReassignOrder, v2GetSuppliers, v2ConfirmReceipt } from '@/api'
-import { toArray } from '@/api/unwrap'
+import { toArray, unwrapV2 } from '@/api/unwrap'
 import { FULFILLMENT_STATUS_TEXT, fulfillmentStatusTag } from '@/utils/fulfillment-status'
+
+type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+interface AddressSnapshot {
+  receiver_name?: string
+  name?: string
+  receiver_phone?: string
+  phone?: string
+  province?: string
+  city?: string
+  district?: string
+  address?: string
+  detail?: string
+  contactPhone?: string
+}
+
+interface SupplyOrder {
+  orderNo: string
+  module: string
+  orderStatus: string
+  paymentStatus: string
+  fulfillmentStatus: string
+  refundStatus?: string
+  customerRemark?: string
+  adminRemark?: string
+  createdAt?: string
+  paidAt?: string
+  completedAt?: string
+  totalAmount?: number | string
+  payAmount?: number | string
+  paidAmount?: number | string
+  payMethod?: string
+  transactionId?: string
+  addressSnapshot?: AddressSnapshot
+}
+
+interface SealDetails {
+  routeType?: string
+  sealCount?: number
+  sealTypes?: string[]
+  productionRequirement?: string
+  deliveryRequirement?: string
+  holderName?: string
+  holderIdNo?: string
+  companyName?: string
+  legalPerson?: string
+  legalPhone?: string
+  certValidUntil?: string
+  licenseRegion?: string
+  licenseNo?: string
+  licenseExpiryDate?: string
+}
+
+interface NewspaperDetails {
+  newspaperName?: string
+  contentCharCount?: number
+  content?: string
+}
+
+interface BookkeepingDetails {
+  companyName?: string
+  packageName?: string
+  taxpayerType?: string
+  servicePeriod?: string
+  currentPeriod?: number | string
+  periodsCompleted?: number
+}
+
+interface MaterialItem {
+  id: string | number
+  url: string
+  type: string
+  typeLabel?: string
+  createdAt?: string
+}
+
+interface FulfillmentItem {
+  id: string | number
+  status: string
+  supplierName?: string
+  fulfillmentNo?: string
+  cancelReason?: string
+  assignedAt?: string
+  acceptedAt?: string
+  startedAt?: string
+  completedAt?: string
+  cancelledAt?: string
+  productionPhotos?: string[]
+  filingPhotos?: string[]
+  qualityCheckPhotos?: string[]
+}
+
+interface OrderEvent {
+  eventType: string
+  eventName?: string
+  createdAt?: string
+}
+
+interface SupplyOrderDetail {
+  order: SupplyOrder
+  sealDetails?: SealDetails
+  newspaperDetails?: NewspaperDetails
+  bookkeepingDetails?: BookkeepingDetails
+  materials?: MaterialItem[]
+  fulfillments?: FulfillmentItem[]
+  events?: OrderEvent[]
+}
+
+interface SupplierItem {
+  id: string
+  name: string
+  region?: string
+  status: number
+}
+
+interface SubjectRow {
+  label: string
+  value: string
+}
+
+interface SubjectCard {
+  visible: boolean
+  title: string
+  rows: SubjectRow[]
+}
 
 const route = useRoute()
 const orderNo = ref('')
 const loading = ref(false)
 const submitting = ref(false)
 
-const detail = ref<any>(null)
-const suppliers = ref<any[]>([])
+const detail = ref<SupplyOrderDetail | null>(null)
+const suppliers = ref<SupplierItem[]>([])
 const assignDialogVisible = ref(false)
 const reassignDialogVisible = ref(false)
 const assignForm = reactive({ supplierId: '', remark: '' })
@@ -295,24 +420,26 @@ const paymentStatusMap: Record<string, string> = { unpaid: '未支付', paid: '�
 const refundStatusMap: Record<string, string> = { none: '无', applying: '申请中', partial_refund: '部分退款', full_refund: '已退款', rejected: '已驳回' }
 // 订单层履约状态字典（共享单一数据源，见 utils/fulfillment-status.ts）
 const fulfillmentStatusMap: Record<string, string> = FULFILLMENT_STATUS_TEXT
-const moduleLabel = (m: string) => ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' } as any)[m] || m
-const moduleType = (m: string) => ({ seal: 'primary', newspaper: 'success', bookkeeping: 'warning' } as any)[m] || 'info'
+const moduleLabels: Record<string, string> = { seal: '刻章', newspaper: '登报', bookkeeping: '记账' }
+const moduleTypes: Record<string, TagType> = { seal: 'primary', newspaper: 'success', bookkeeping: 'warning' }
+const moduleLabel = (module: string | null | undefined) => moduleLabels[module ?? ''] || module || '-'
+const moduleType = (module: string | null | undefined): TagType => moduleTypes[module ?? ''] || 'info'
 // 2026-09-06：记账纳税人类型/服务周期文案（与小程序/网点端统一口径）
-const taxpayerTypeLabel = (t: string) =>
-  ({ small: '小规模纳税人', general: '一般纳税人', individual: '个体户' } as any)[t] || t || '-'
-const servicePeriodLabel = (s: string) =>
-  ({ year: '全年', half: '半年', preorder: '9.9 预定' } as any)[s] || s || '-'
+const taxpayerTypeLabels: Record<string, string> = { small: '小规模纳税人', general: '一般纳税人', individual: '个体户' }
+const servicePeriodLabels: Record<string, string> = { year: '全年', half: '半年', preorder: '9.9 预定' }
+const taxpayerTypeLabel = (type: string | null | undefined) => taxpayerTypeLabels[type ?? ''] || type || '-'
+const servicePeriodLabel = (period: string | null | undefined) => servicePeriodLabels[period ?? ''] || period || '-'
 // 印章三类隔离：enterprise=企业刻章 / personal=个人印章 / electronic=电子印章
-const sealRouteTypeLabel = (t: string) =>
-  ({ enterprise: '企业刻章', personal: '个人印章', electronic: '电子印章' } as any)[t] || t || '-'
+const sealRouteTypeLabels: Record<string, string> = { enterprise: '企业刻章', personal: '个人印章', electronic: '电子印章' }
+const sealRouteTypeLabel = (type: string | null | undefined) => sealRouteTypeLabels[type ?? ''] || type || '-'
 /** ③ 主体卡：按 routeType 切卡（阶段 5）——企业看执照、个人看持章人、电子看签发；全空不渲染 */
-const subjectCard = computed(() => {
-  const sd: any = detail.value?.sealDetails
-  if (!sd) return { visible: false, title: '', rows: [] as any[] }
+const subjectCard = computed<SubjectCard>(() => {
+  const sd = detail.value?.sealDetails
+  if (!sd) return { visible: false, title: '', rows: [] }
   const route = sd.routeType || 'enterprise'
-  const contactPhone = (detail.value?.order as any)?.addressSnapshot?.contactPhone || ''
-  const row = (label: string, value: any) => ({ label, value: value || '-' })
-  const has = (v: any) => v !== undefined && v !== null && String(v).trim() !== ''
+  const contactPhone = detail.value?.order.addressSnapshot?.contactPhone || ''
+  const has = (value: unknown) => value !== undefined && value !== null && String(value).trim() !== ''
+  const row = (label: string, value: unknown): SubjectRow => ({ label, value: has(value) ? String(value) : '-' })
   if (route === 'personal') {
     const holder = sd.holderName || sd.legalPerson
     const rows = [
@@ -347,16 +474,23 @@ const subjectCard = computed(() => {
   const visible = has(sd.companyName) || has(sd.legalPerson) || has(sd.licenseRegion)
   return { visible, title: '企业与执照', rows }
 })
-const statusTag = (s: string) => ({ pending_payment: 'warning', paid: 'success', completed: 'info', cancelled: 'danger', processing: 'primary' } as any)[s] || 'info'
+const orderStatusTags: Record<string, TagType> = {
+  pending_payment: 'warning',
+  paid: 'success',
+  completed: 'info',
+  cancelled: 'danger',
+  processing: 'primary',
+}
+const statusTag = (status: string): TagType => orderStatusTags[status] || 'info'
 const fulfillmentTag = (s: string) => fulfillmentStatusTag(s)
 // 材料下载文件名：类型_订单号_ID.扩展名（取 URL 后缀，默认 jpg）
-const materialFileName = (mt: any) => {
-  const m = String(mt?.url || '').split('?')[0].match(/\.([a-zA-Z0-9]+)$/)
+const materialFileName = (material: MaterialItem) => {
+  const m = material.url.split('?')[0].match(/\.([a-zA-Z0-9]+)$/)
   const ext = m ? m[1] : 'jpg'
-  return `${mt?.typeLabel || '证件'}_${detail.value?.order?.orderNo || ''}_${mt?.id || ''}.${ext}`
+  return `${material.typeLabel || '证件'}_${detail.value?.order.orderNo || ''}_${material.id}.${ext}`
 }
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
-const fmt = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
+const fmt = (d?: string | null) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
 // 状态轨进度：完成4 > 已派单3 > 已支付2 > 已下单1
 const firstAssignedAt = computed(() =>
   detail.value?.fulfillments && detail.value.fulfillments.length > 0
@@ -382,11 +516,11 @@ const MATERIAL_ORDER: Record<string, number> = {
 }
 const sortedMaterials = computed(() => {
   const list = detail.value?.materials || []
-  return [...list].sort((a: any, b: any) => {
-    const oa = MATERIAL_ORDER[a?.type] ?? 50
-    const ob = MATERIAL_ORDER[b?.type] ?? 50
+  return [...list].sort((a, b) => {
+    const oa = MATERIAL_ORDER[a.type] ?? 50
+    const ob = MATERIAL_ORDER[b.type] ?? 50
     if (oa !== ob) return oa - ob
-    return String(a?.createdAt || '').localeCompare(String(b?.createdAt || ''))
+    return String(a.createdAt || '').localeCompare(String(b.createdAt || ''))
   })
 })
 
@@ -406,10 +540,10 @@ const materialGroups = computed(() => {
   const groups = MATERIAL_GROUPS.map(g => ({
     key: g.key,
     label: g.label,
-    items: list.filter((m: any) => g.types.includes(m.type)),
+    items: list.filter(material => g.types.includes(material.type)),
   }))
-  const assigned = new Set(groups.flatMap(g => g.items.map((m: any) => m.id)))
-  const others = list.filter((m: any) => !assigned.has(m.id))
+  const assigned = new Set(groups.flatMap(g => g.items.map(material => material.id)))
+  const others = list.filter(material => !assigned.has(material.id))
   if (others.length > 0) {
     const og = groups.find(g => g.key === 'other')
     if (og) og.items.push(...others)
@@ -418,25 +552,29 @@ const materialGroups = computed(() => {
   return groups.filter(g => g.items.length > 0)
 })
 /** 履约回执照片分组（仅返回非空组） */
-function receiptPhotoGroups(f: any) {
+function receiptPhotoGroups(fulfillment: FulfillmentItem) {
   const groups = [
-    { label: '制作/成品', list: f?.productionPhotos || [] },
-    { label: '备案', list: f?.filingPhotos || [] },
-    { label: '质检', list: f?.qualityCheckPhotos || [] },
+    { label: '制作/成品', list: fulfillment.productionPhotos || [] },
+    { label: '备案', list: fulfillment.filingPhotos || [] },
+    { label: '质检', list: fulfillment.qualityCheckPhotos || [] },
   ]
   return groups.filter(g => g.list.length > 0)
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback
 }
 
 async function load() {
   loading.value = true
   try {
-    detail.value = await v2GetOrderDetail(orderNo.value) as any
+    detail.value = unwrapV2<SupplyOrderDetail>(await v2GetOrderDetail(orderNo.value))
     // 详情已拿到 module 后按品类重拉供应商，避免首屏 module=undefined 的全量/错类
     if (detail.value?.order?.module) {
       await loadSuppliers()
     }
-  } catch (e: any) {
-    ElMessage.error(e?.message || '加载失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '加载失败'))
   } finally {
     loading.value = false
   }
@@ -446,9 +584,9 @@ async function loadSuppliers() {
   try {
     // 按订单业务类型过滤：仅返回能承接该业务的供应商（刻章/登报/记账不混交）
     const module = detail.value?.order?.module
-    const res: any = await v2GetSuppliers({ pageSize: 100, module: module || undefined })
+    const res: unknown = await v2GetSuppliers({ pageSize: 100, module: module || undefined })
     // 仅启用供应商可派单/改派（停用的选了也会被后端拒绝，直接不展示）
-    suppliers.value = toArray(res).filter((s: any) => s.status === 1)
+    suppliers.value = toArray<SupplierItem>(res).filter(supplier => supplier.status === 1)
   } catch { /* 忽略 */ }
 }
 
@@ -460,8 +598,8 @@ async function doAssign() {
     ElMessage.success('派单成功')
     assignDialogVisible.value = false
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '派单失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '派单失败'))
   } finally {
     submitting.value = false
   }
@@ -475,8 +613,8 @@ async function doReassign() {
     ElMessage.success('改派成功')
     reassignDialogVisible.value = false
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '改派失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '改派失败'))
   } finally {
     submitting.value = false
   }
@@ -491,8 +629,8 @@ async function onConfirmReceipt() {
     await v2ConfirmReceipt(orderNo.value)
     ElMessage.success('已确认收货')
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '确认失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '确认失败'))
   } finally {
     submitting.value = false
   }

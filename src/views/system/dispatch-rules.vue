@@ -225,7 +225,7 @@
             </el-table-column>
             <el-table-column prop="module" label="业务" width="80" align="center">
               <template #default="{ row }">
-                <el-tag size="small">{{ ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' } as any)[row.module] || row.module }}</el-tag>
+                <el-tag size="small">{{ moduleLabel(row.module) }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="fulfillmentNo" label="履约单号" min-width="170" show-overflow-tooltip />
@@ -327,39 +327,126 @@ import {
   getForcedRegions, addForcedRegion as addForcedRegionAPI, removeForcedRegion,
   v2GetDispatchRecords, v2GetDispatchStats, v2GetSuppliers
 } from '@/api'
+import { toArray, toPaged, unwrapV1, unwrapV2 } from '@/api/unwrap'
 import { FULFILLMENT_STATUS_TEXT, fulfillmentStatusText, fulfillmentStatusTag } from '@/utils/fulfillment-status'
+
+type DispatchMode = 'hybrid' | 'auto' | 'manual'
+
+interface DispatchConfig {
+  mode: DispatchMode
+  auto_assign: boolean
+  business_type_filter: boolean
+}
+
+interface ServiceAreaEntry {
+  province?: string
+  city?: string
+}
+
+interface DispatchPriority {
+  outlet_id: string
+  priority: number
+  remark: string
+  outlet: {
+    name: string
+    province?: string
+    city?: string
+    service_area?: string
+  }
+}
+
+interface ForcedRegion {
+  id: string
+  province: string
+  city?: string
+  remark?: string
+  created_at: string
+}
+
+interface SupplierSummary {
+  id: string
+  name: string
+}
+
+interface DispatchRecord {
+  orderNo: string
+  module: string
+  fulfillmentNo?: string
+  supplierName?: string
+  status: string
+  assignedAt?: string
+  acceptedAt?: string
+  remark?: string
+}
+
+interface DispatchRecordDetail {
+  orderNo: string
+  companyName?: string
+  outletName?: string
+  assignedBy?: string
+  matchScore?: number
+  status: number
+  status_text?: string
+  assigned_at?: string
+  acceptMinutes?: number
+  remark?: string
+}
+
+interface DispatchStats {
+  total?: number
+  today?: number
+  byStatus?: Record<string, number>
+}
+
+interface DispatchRecordQuery {
+  orderNo?: string
+  supplierId?: string
+  status?: string
+  startDate?: string
+  endDate?: string
+  page: number
+  pageSize: number
+}
 
 const activeTab = ref('mode')
 const loading = ref(false)
 
 // ====== 派单记录 Tab 状态（V2 履约维度，2026-08-29 替代 V1 order_assignments） ======
 const drLoading = ref(false)
-const drTableData = ref<any[]>([])
-const drSupplierList = ref<any[]>([])
+const drTableData = ref<DispatchRecord[]>([])
+const drSupplierList = ref<SupplierSummary[]>([])
 const drStats = reactive({ total: 0, today: 0, processing: 0, completed: 0 })
 const drFilters = reactive({ orderNo: '', supplierId: '', status: '' as string, startDate: '', endDate: '' })
 const drDateRange = ref<string[]>([])
 const drPagination = reactive({ page: 1, pageSize: 20, total: 0 })
 const drDetailVisible = ref(false)
-const drCurrentRecord = ref<any>(null)
+const drCurrentRecord = ref<DispatchRecordDetail | null>(null)
 const submitting = ref(false)
 const batchPriority = ref(0)
-const selectedRows = ref<any[]>([])
+const selectedRows = ref<DispatchPriority[]>([])
 const showAddForced = ref(false)
 
-const config = reactive({ mode: 'hybrid', auto_assign: true, business_type_filter: true })
-const priorities = ref<any[]>([])
-const forcedRegions = ref<any[]>([])
+const config = reactive<DispatchConfig>({ mode: 'hybrid', auto_assign: true, business_type_filter: true })
+const priorities = ref<DispatchPriority[]>([])
+const forcedRegions = ref<ForcedRegion[]>([])
 
 const priorityKeyword = ref('')
 
-function serviceAreaText(row: any): string {
-  const raw = row?.outlet?.service_area
+function isServiceAreaEntry(value: unknown): value is ServiceAreaEntry {
+  return typeof value === 'object' && value !== null
+}
+
+function serviceAreaText(row: DispatchPriority): string {
+  const raw = row.outlet.service_area
   if (raw) {
     try {
-      const arr = JSON.parse(raw)
-      if (Array.isArray(arr) && arr.length > 0) {
-        return arr.map((s: any) => [s.province, s.city].filter(Boolean).join(' ')).join('；')
+      const parsed: unknown = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+          .filter(isServiceAreaEntry)
+          .map(area => [area.province, area.city].filter(Boolean).join(' '))
+          .filter(Boolean)
+          .join('；')
       }
     } catch { /* fallthrough */ }
   }
@@ -372,16 +459,21 @@ function serviceAreaText(row: any): string {
 const filteredPriorities = computed(() => {
   const kw = priorityKeyword.value.trim().toLowerCase()
   if (!kw) return priorities.value
-  return priorities.value.filter((r: any) => {
-    const name = r?.outlet?.name || ''
-    const province = r?.outlet?.province || ''
-    const city = r?.outlet?.city || ''
-    const area = serviceAreaText(r)
+  return priorities.value.filter(priority => {
+    const name = priority.outlet.name || ''
+    const province = priority.outlet.province || ''
+    const city = priority.outlet.city || ''
+    const area = serviceAreaText(priority)
     return `${name} ${province} ${city} ${area}`.toLowerCase().includes(kw)
   })
 })
 
 const forcedForm = reactive({ province: '', city: '', remark: '' })
+const MODULE_LABELS: Record<string, string> = { seal: '刻章', newspaper: '登报', bookkeeping: '记账' }
+
+function moduleLabel(module: string): string {
+  return MODULE_LABELS[module] || module
+}
 
 const PROVINCES = [
   '北京市','天津市','上海市','重庆市',
@@ -410,8 +502,8 @@ function formatDate(d: string) {
 
 async function loadConfig() {
   try {
-    const res = await getDispatchConfig()
-    Object.assign(config, res)
+    const result = unwrapV1<DispatchConfig>(await getDispatchConfig())
+    Object.assign(config, result)
   } catch {
     ElMessage.error('派单配置加载失败，请刷新后重试')
   }
@@ -429,8 +521,7 @@ async function saveConfig() {
 async function loadPriorities() {
   loading.value = true
   try {
-    const raw = (await getDispatchPriorities()) as any
-    priorities.value = Array.isArray(raw) ? raw : []
+    priorities.value = toArray<DispatchPriority>(unwrapV1<unknown>(await getDispatchPriorities()))
   } catch {
     ElMessage.error('网点优先级加载失败，请刷新后重试')
   } finally {
@@ -438,7 +529,7 @@ async function loadPriorities() {
   }
 }
 
-async function setPriority(row: any) {
+async function setPriority(row: DispatchPriority) {
   try {
     await setDispatchPriority(row.outlet_id, { priority: row.priority, remark: row.remark })
     ElMessage.success(`「${row.outlet.name}」优先级已更新`)
@@ -448,7 +539,7 @@ async function setPriority(row: any) {
   }
 }
 
-function handleSelectionChange(rows: any[]) {
+function handleSelectionChange(rows: DispatchPriority[]) {
   selectedRows.value = rows
 }
 
@@ -473,8 +564,7 @@ async function batchSetPriority() {
 async function loadForcedRegions() {
   loading.value = true
   try {
-    const raw = (await getForcedRegions()) as any
-    forcedRegions.value = Array.isArray(raw) ? raw : []
+    forcedRegions.value = toArray<ForcedRegion>(unwrapV1<unknown>(await getForcedRegions()))
   } catch {
     ElMessage.error('强制手动地区加载失败，请刷新后重试')
   } finally {
@@ -513,23 +603,23 @@ async function deleteForced(id: string) {
 // ====== 派单记录 Tab 函数（V2 履约维度） ======
 async function fetchDrSuppliers() {
   try {
-    const res: any = await v2GetSuppliers({ pageSize: 100 })
-    drSupplierList.value = res?.list || []
+    const response = unwrapV2<unknown>(await v2GetSuppliers({ pageSize: 100 }))
+    drSupplierList.value = toArray<SupplierSummary>(response)
   } catch { /* ignore */ }
 }
 
 async function fetchDrStats() {
   try {
-    const res: any = await v2GetDispatchStats({
+    const result = unwrapV2<DispatchStats>(await v2GetDispatchStats({
       supplierId: drFilters.supplierId || undefined,
       status: drFilters.status || undefined,
       startDate: drFilters.startDate || undefined,
       endDate: drFilters.endDate || undefined,
-    })
-    const byStatus = res?.byStatus || {}
+    }))
+    const byStatus = result.byStatus || {}
     Object.assign(drStats, {
-      total: res?.total || 0,
-      today: res?.today || 0,
+      total: result.total || 0,
+      today: result.today || 0,
       processing: Number(byStatus.processing || 0) + Number(byStatus.assigned || 0) + Number(byStatus.accepted || 0),
       completed: Number(byStatus.completed || 0),
     })
@@ -539,7 +629,7 @@ async function fetchDrStats() {
 async function fetchDrData() {
   drLoading.value = true
   try {
-    const params: any = {
+    const params: DispatchRecordQuery = {
       orderNo: drFilters.orderNo || undefined,
       supplierId: drFilters.supplierId || undefined,
       status: drFilters.status || undefined,
@@ -548,9 +638,10 @@ async function fetchDrData() {
       page: drPagination.page,
       pageSize: drPagination.pageSize,
     }
-    const res: any = await v2GetDispatchRecords(params)
-    drTableData.value = res?.list || []
-    drPagination.total = res?.total || 0
+    const response = unwrapV2<unknown>(await v2GetDispatchRecords(params))
+    const result = toPaged<DispatchRecord>(response)
+    drTableData.value = result.list
+    drPagination.total = result.total
     fetchDrStats()
   } catch {
     ElMessage.error('加载数据失败')
@@ -559,7 +650,7 @@ async function fetchDrData() {
   }
 }
 
-function handleDrDateChange(val: string[]) {
+function handleDrDateChange(val: string[] | null) {
   if (val && val.length === 2) {
     drFilters.startDate = val[0]
     drFilters.endDate = val[1]
@@ -576,7 +667,7 @@ function resetDrFilters() {
   fetchDrData()
 }
 
-function drViewOrder(row: any) {
+function drViewOrder(row: DispatchRecord) {
   window.open(`/v2/orders/detail?orderNo=${row.orderNo}`, '_blank')
 }
 

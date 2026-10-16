@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
+import type { FulfillmentDeliveryPayload } from './types'
 
 // 网点端 API 实例（使用 outlet_token）
 const outletRequest = axios.create({
@@ -76,7 +77,7 @@ export const v2OutletAcceptFulfillment = (id: string) =>
   outletRequest.post(`/v2/outlet/fulfillments/${id}/accept`)
 export const v2OutletStartFulfillment = (id: string) =>
   outletRequest.post(`/v2/outlet/fulfillments/${id}/start`)
-export const v2OutletDeliverFulfillment = (id: string, data: any) =>
+export const v2OutletDeliverFulfillment = (id: string, data: FulfillmentDeliveryPayload) =>
   outletRequest.post(`/v2/outlet/fulfillments/${id}/deliver`, data || {})
 export const v2OutletGetOrderDetail = (orderNo: string) =>
   outletRequest.get(`/v2/outlet/orders/${orderNo}`)

@@ -31,6 +31,8 @@ export interface MenuRoleItem {
   enabled: boolean
 }
 
+export type MenuRolePayload = Omit<MenuRoleItem, 'id'>
+
 /** 缓存的权限配置 */
 let cachedConfigs: MenuRoleItem[] | null = null
 

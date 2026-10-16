@@ -113,16 +113,60 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import axios from 'axios'
 import { getReviews, replyReview, deleteReview, updateReviewStatus } from '@/api'
+import { toPaged, unwrapV1 } from '@/api/unwrap'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 
+type AuditStatus = 'approved' | 'rejected'
+
+interface ReviewItem {
+  id: string
+  userId?: string | null
+  user?: { nickname?: string | null } | null
+  sealOrders?: { orderNo?: string | null } | null
+  rating: number
+  content: string
+  images?: string[] | null
+  module?: string | null
+  status: string
+  reply?: string | null
+  createdAt?: string | null
+}
+
+interface ReviewQuery {
+  page: number
+  pageSize: number
+  status: string
+  keyword: string
+  module: string
+  rating?: number
+}
+
+interface ReviewRequestParams {
+  page: number
+  pageSize: number
+  status?: string
+  keyword?: string
+  module?: string
+  rating?: number
+}
+
+interface ReviewPageResponse {
+  pagination?: {
+    page?: number
+    pageSize?: number
+    total?: number
+  }
+}
+
 const loading = ref(false)
 const submitting = ref(false)
-const reviews = ref<any[]>([])
+const reviews = ref<ReviewItem[]>([])
 const pagination = ref({ page: 1, pageSize: 20, total: 0 })
 const activeStatus = ref('pending') // 默认显示待审核
-const query = reactive({
+const query = reactive<ReviewQuery>({
   page: 1,
   pageSize: 20,
   status: 'pending' as string,
@@ -132,7 +176,7 @@ const query = reactive({
 })
 const replyVisible = ref(false)
 const replyText = ref('')
-const currentReview = ref<any>({})
+const currentReview = ref<ReviewItem | null>(null)
 
 function formatDate(d?: string | null) { return d ? dayjs(d).format('YYYY-MM-DD HH:mm') : '-' }
 function shortId(id?: string) { return id ? id.slice(0, 8) : '未知' }
@@ -141,8 +185,8 @@ function moduleLabel(module?: string) {
 }
 
 // 状态 Tab 切换
-function handleStatusChange(tabName: string) {
-  query.status = tabName
+function handleStatusChange(tabName: string | number) {
+  query.status = String(tabName)
   query.page = 1
   fetchReviews()
 }
@@ -150,7 +194,7 @@ function handleStatusChange(tabName: string) {
 async function fetchReviews() {
   loading.value = true
   try {
-    const params: any = {
+    const params: ReviewRequestParams = {
       page: query.page,
       pageSize: query.pageSize,
       ...(query.status ? { status: query.status } : {}),
@@ -158,10 +202,18 @@ async function fetchReviews() {
       ...(query.module ? { module: query.module } : {}),
       ...(query.rating ? { rating: query.rating } : {}),
     }
-    const res: any = await getReviews(params)
-    reviews.value = Array.isArray(res?.list) ? res.list : []
-    pagination.value = res?.pagination ?? { page: query.page, pageSize: query.pageSize, total: 0 }
-    if (res?.pagination?.page) query.page = res.pagination.page
+    const response: unknown = await getReviews(params)
+    const result = toPaged<ReviewItem>(response)
+    const pageResponse = unwrapV1<ReviewPageResponse>(response)
+    const responsePage = pageResponse?.pagination?.page
+    const responsePageSize = pageResponse?.pagination?.pageSize
+    reviews.value = result.list
+    pagination.value = {
+      page: responsePage ?? query.page,
+      pageSize: responsePageSize ?? query.pageSize,
+      total: result.total,
+    }
+    if (responsePage) query.page = responsePage
   } catch {
     reviews.value = []
     pagination.value = { page: query.page, pageSize: query.pageSize, total: 0 }
@@ -171,7 +223,7 @@ async function fetchReviews() {
 }
 
 // 审核评价
-async function handleAudit(row: any, status: 'approved' | 'rejected') {
+async function handleAudit(row: ReviewItem, status: AuditStatus) {
   const actionText = status === 'approved' ? '通过' : '驳回'
   try {
     await ElMessageBox.confirm(`确认${actionText}该评价？`, '审核确认', {
@@ -182,38 +234,43 @@ async function handleAudit(row: any, status: 'approved' | 'rejected') {
     await updateReviewStatus(row.id, status)
     ElMessage.success(`已${actionText}`)
     fetchReviews()
-  } catch (e: any) {
-    if (e !== 'cancel' && e !== 'close') {
-      ElMessage.error(e?.response?.data?.message || '操作失败')
+  } catch (error: unknown) {
+    if (!isDialogCancellation(error)) {
+      ElMessage.error(getApiErrorMessage(error) || '操作失败')
     }
   }
 }
 
-function showReplyDialog(row: any) {
+function showReplyDialog(row: ReviewItem) {
   currentReview.value = row
   replyText.value = row.reply || ''
   replyVisible.value = true
 }
 
 async function submitReply() {
-  if (!replyText.value.trim()) {
+  const reply = replyText.value.trim()
+  if (!reply) {
     ElMessage.warning('请输入回复内容')
+    return
+  }
+  if (!currentReview.value) {
+    ElMessage.error('未找到当前评价')
     return
   }
   submitting.value = true
   try {
-    await replyReview(currentReview.value.id, replyText.value.trim())
+    await replyReview(currentReview.value.id, reply)
     ElMessage.success('回复成功')
     replyVisible.value = false
     fetchReviews()
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '回复失败')
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '回复失败')
   } finally {
     submitting.value = false
   }
 }
 
-async function handleDelete(row: any) {
+async function handleDelete(row: ReviewItem) {
   try {
     await ElMessageBox.confirm('确认删除该评价？', '删除确认', {
       confirmButtonText: '确定',
@@ -223,9 +280,9 @@ async function handleDelete(row: any) {
     await deleteReview(row.id)
     ElMessage.success('删除成功')
     fetchReviews()
-  } catch (e: any) {
-    if (e !== 'cancel' && e !== 'close') {
-      ElMessage.error(e?.response?.data?.message || '删除失败')
+  } catch (error: unknown) {
+    if (!isDialogCancellation(error)) {
+      ElMessage.error(getApiErrorMessage(error) || '删除失败')
     }
   }
 }
@@ -245,6 +302,18 @@ function resetFilters() {
 function handleSizeChange() {
   query.page = 1
   fetchReviews()
+}
+
+function getApiErrorMessage(error: unknown): string | undefined {
+  if (axios.isAxiosError<{ message?: unknown }>(error)) {
+    const message = error.response?.data?.message
+    if (message) return Array.isArray(message) ? message.join('；') : String(message)
+  }
+  return error instanceof Error ? error.message : undefined
+}
+
+function isDialogCancellation(error: unknown): boolean {
+  return error === 'cancel' || error === 'close'
 }
 
 onMounted(fetchReviews)

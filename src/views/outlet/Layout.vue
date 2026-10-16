@@ -39,12 +39,10 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
 import { useOutletStore } from '@/stores/outlet'
 import { ElMessage } from 'element-plus'
 import { Shop, ArrowDown } from '@element-plus/icons-vue'
 
-const router = useRouter()
 const outletStore = useOutletStore()
 
 function handleCommand(command) {

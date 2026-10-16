@@ -22,6 +22,64 @@ export interface ApiResponse<T = unknown> {
   data: T
 }
 
+/** 系统配置读取视图；value 已由后端按 valueType 解码。 */
+export interface SystemConfigItem {
+  id: string
+  key: string
+  value: unknown
+  valueType: string | null
+  group: string | null
+  name: string | null
+  description: string | null
+  sort: number | null
+  status: number | null
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+export interface ConfigRuntimeStatus {
+  source: string
+  wechat: {
+    configured: boolean
+    appId: string
+    appSecretConfigured: boolean
+    subscribeTemplateConfigured: boolean
+  }
+  payment: {
+    enabled: boolean
+    mode: 'live' | 'disabled'
+    configured: boolean
+    mchId: string
+    apiV3KeyConfigured: boolean
+    serialNo: string
+    privateKeyConfigured: boolean
+    certificateConfigured: boolean
+    notifyUrlConfigured: boolean
+    refundNotifyUrlConfigured: boolean
+  }
+}
+
+export interface ContentAbout {
+  id: string
+  appName: string | null
+  phone: string | null
+  wechat: string | null
+  serviceTime: string | null
+  intro: string | null
+  address: string | null
+  copyright: string | null
+  image: string | null
+  logoUrl: string | null
+  version: string | null
+  companyName: string | null
+  termsContent: string | null
+  privacyContent: string | null
+  materialCommitment: string | null
+  updatedBy: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 /** 分页形态一：{ list, pagination }（/orders/admin/list、/outlets 列表等） */
 export interface PagedList<T> {
   list: T[]
@@ -46,16 +104,82 @@ export const ADMIN_ROLE_VALUES = [
   'superadmin', 'finance', 'outlet_admin', 'order_admin', 'product_admin', 'content_admin',
 ] as const
 export type AdminRole = typeof ADMIN_ROLE_VALUES[number]
+export type AdminStatus = 0 | 1
 
 export interface Admin {
   id: string
   username: string
-  nickname: string
+  nickname: string | null
   role: AdminRole | 'admin' // 'admin' 为历史旧角色
-  status: number
+  status: AdminStatus
   lastLoginAt: string | null
   createdAt: string
 }
+
+export interface AdminListQuery {
+  page?: number
+  pageSize?: number
+  keyword?: string
+}
+
+export type AdminPage = PagedList<Admin>
+
+export interface AdminCreatePayload {
+  username: string
+  nickname?: string
+  password: string
+  role: AdminRole
+}
+
+export interface AdminUpdatePayload {
+  nickname?: string
+  password?: string
+  role?: AdminRole
+  status?: AdminStatus
+}
+
+/** 管理端登录成功后保存在本地会话中的最小字段集合。 */
+export interface AdminSession {
+  id?: string
+  username?: string
+  nickname?: string
+  role: string
+}
+
+export interface AdminLoginResult {
+  token: string
+  admin: AdminSession
+}
+
+export interface OperationLogAdmin {
+  id: string
+  username: string
+  nickname: string | null
+}
+
+/** 管理端操作日志视图（AdminOperationLogQueryService.toView）。 */
+export interface OperationLogItem {
+  id: string
+  adminId: string | null
+  module: string | null
+  action: string | null
+  target: string | null
+  detail: string | null
+  ip: string | null
+  userAgent: string | null
+  createdAt: string
+  admin: OperationLogAdmin | null
+}
+
+export interface OperationLogQuery {
+  module?: string
+  startDate?: string
+  endDate?: string
+  page?: number
+  pageSize?: number
+}
+
+export type OperationLogPage = PagedList<OperationLogItem>
 
 // ==================== 网点 ====================
 
@@ -79,6 +203,37 @@ export interface Outlet {
   businessTypes?: Array<{ id: string; code: string; name: string }>
   createdAt: string
   updatedAt: string
+}
+
+/** 网点端登录会话只依赖这些展示字段，不与完整网点 DTO 强耦合。 */
+export interface OutletSession {
+  id: string
+  name: string
+  contact: string
+}
+
+export interface OutletLoginResult {
+  token: string
+  outlet?: OutletSession
+  /** 兼容历史接口曾返回的首字母大写字段。 */
+  Outlet?: OutletSession
+}
+
+/** 网点工作台缓存的履约单最小契约。 */
+export interface OutletFulfillmentSummary {
+  id: string
+  orderNo: string
+  status: string
+  acceptedAt?: string | null
+  completedAt?: string | null
+}
+
+export interface FulfillmentDeliveryPayload {
+  /** 自提/同城直送时无需快递字段。 */
+  expressCompany?: string
+  trackingNo?: string
+  remark?: string
+  photos?: string[]
 }
 
 /** /outlets/admin/overview summary（订单量字段后端为 snake_case，已由 OutletOverview.normalizeOverview 归一化） */
@@ -207,30 +362,55 @@ export interface Newspaper {
   id: string
   name: string
   pricePerWord: number
+  minWords?: number
   status: number
   level: 1 | 2 | 3
   province?: string
   city?: string
   region?: string
+  provinceCode?: string
+  cityCode?: string
+  alias?: string | null
+  publisher?: string | null
+  coverage?: number | null
+  image?: string | null
+  description?: string | null
+  sort?: number
   /** 后端契约字段待确认：表单为 enable_sections，响应侧 camelCase */
-  enableSections?: boolean
+  enableSections?: boolean | 0 | 1
   createdAt: string
+}
+
+export interface NewspaperSubType {
+  key: string
+  name: string
+  desc?: string | null
+  color?: string | null
+  sort?: number
+  hot?: boolean
 }
 
 export interface NewspaperCategory {
   id: string
   name: string
   /** 分类图标（用户端渲染为 iconSvg）；新增分类时前端曾误把"描述"提交至此，注意区分 */
-  icon: string
+  icon: string | null
   sort: number
   status: number
-  subTypes?: Array<{ key: string; name: string; desc?: string; color?: string; sort?: number; hot?: boolean }>
+  subTypes?: NewspaperSubType[]
 }
 
 export interface NewspaperTemplate {
   id: string
   name: string
-  categoryId: string
+  categoryId: string | null
+  newspaperId?: string | null
+  templateType?: string | null
+  content?: string
+  sampleData?: string | null
+  desc?: string | null
+  color?: string | null
+  newspaperCategories?: { id?: string; name: string } | null
   status: number
   sort: number
   createdAt: string
@@ -262,6 +442,53 @@ export interface TransactionFlow {
   createdAt: string
 }
 
+// ==================== 开票申请（V2） ====================
+
+export type InvoiceApplicationStatus = 'pending' | 'issued' | 'rejected'
+export type InvoiceTitleType = 'personal' | 'company'
+export type InvoiceType = 1 | 2
+
+/** 后端 InvoiceApplicationViewAssembler 返回的管理端开票申请视图。 */
+export interface InvoiceApplication {
+  id: string
+  applicationNo: string
+  orderNo: string
+  userId: string
+  module: OrderModule | null
+  type: InvoiceType
+  title: string
+  titleType: InvoiceTitleType | null
+  taxNo: string | null
+  email: string | null
+  address: string | null
+  phone: string | null
+  bank: string | null
+  bankAccount: string | null
+  amount: string | null
+  status: InvoiceApplicationStatus
+  appliedBy: string | null
+  appliedAt: string | null
+  reviewedBy: string | null
+  reviewedAt: string | null
+  reviewRemark: string | null
+  issuedAt: string | null
+  createdAt: string
+}
+
+export interface InvoiceApplicationQuery {
+  status?: InvoiceApplicationStatus
+  keyword?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface InvoiceApplicationPage {
+  list: InvoiceApplication[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 // ==================== 结算 / 退款（V2） ====================
 
 export type SettlementStatusV2 = 'pending' | 'confirmed' | 'paid' | 'cancelled'
@@ -277,19 +504,47 @@ export interface SettlementV2 {
   orderAmount: number
   refundDeduct: number
   payableAmount: number
+  orderCount: number
   status: SettlementStatusV2
   createdAt: string
 }
 
+export type RefundStatusV2 = 'applying' | 'processing' | 'completed' | 'rejected' | 'cancelled' | 'failed'
+export type RefundTypeV2 = 'full' | 'partial'
+
+/** 管理端退款列表 DTO（OrderV2RefundQueryService.adminDto）。 */
 export interface RefundV2 {
   id: string
   refundNo: string
-  orderNo: string
-  orderId?: string
+  orderId: string
+  orderNo: string | null
+  module: OrderModule | null
+  paymentId: string | null
+  refundType: RefundTypeV2
   amount: number
-  status: string // applying / pending / approved / rejected / paid ...
-  remark?: string
+  reason: string | null
+  remark: string | null
+  status: RefundStatusV2
+  appliedBy: string | null
+  appliedAt: string | null
+  reviewedBy: string | null
+  reviewedAt: string | null
+  reviewRemark: string | null
+  failureReason: string | null
   createdAt: string
+}
+
+export interface RefundQueryV2 {
+  status?: RefundStatusV2
+  page?: number
+  pageSize?: number
+}
+
+export interface RefundPageV2 {
+  list: RefundV2[]
+  total: number
+  page: number
+  pageSize: number
 }
 
 // ==================== 用户 / 内容运营 ====================
@@ -302,6 +557,39 @@ export interface UserProfile {
   lastLoginAt?: string
   createdAt: string
 }
+
+export type UserStatus = 0 | 1
+
+/** 管理端用户列表视图（UserAdministrationService.toListItem）。 */
+export interface UserListItem {
+  id: string
+  nickname: string | null
+  avatar: string | null
+  phone: string | null
+  realname: string | null
+  status: UserStatus
+  lastLoginAt: string | null
+  createdAt: string
+}
+
+export interface UserDetail extends UserListItem {
+  openid: string | null
+  unionid: string | null
+  updatedAt: string
+}
+
+export interface UserListQuery {
+  keyword?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface UserUpdatePayload {
+  status?: UserStatus
+  realname?: string
+}
+
+export type UserPage = PagedList<UserListItem>
 
 export type ReviewStatus = 'pending' | 'approved' | 'rejected'
 
@@ -350,7 +638,7 @@ export interface FaqItem {
 
 // ==================== 菜单权限（re-export 自 constants/roles） ====================
 
-export type { MenuRoleItem } from '@/constants/roles'
+export type { MenuRoleItem, MenuRolePayload } from '@/constants/roles'
 
 // ==================== 已知契约不一致清单（改造时逐项对齐） ====================
 

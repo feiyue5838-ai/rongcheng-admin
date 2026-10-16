@@ -205,10 +205,28 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
-import * as echarts from 'echarts'
+import { initECharts, type ECharts, type EChartsOption } from '@/utils/echarts'
 import { Refresh, OfficeBuilding, CircleCheck, Document, Bell, TrendCharts, DataAnalysis, Warning, CircleCheckFilled, Histogram } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getOutletOverviewAPI } from '@/api'
+import type { OutletOverviewRow, OutletOverviewSummary } from '@/api/types'
+import { unwrapV1 } from '@/api/unwrap'
+
+type UnknownRecord = Record<string, unknown>
+
+interface OutletOverviewData {
+  summary: OutletOverviewSummary
+  regions: OutletOverviewRow[]
+  outlets: OutletOverviewRow[]
+  topOutlets: OutletOverviewRow[]
+}
+
+interface ChartTooltipParam {
+  dataIndex?: number
+  marker?: unknown
+  seriesName?: unknown
+  value?: unknown
+}
 
 const L = {
   name: '网点名称',
@@ -226,10 +244,10 @@ const L = {
 }
 
 const loading = ref(false)
-const overview = ref<any>(null)
+const overview = ref<OutletOverviewData | null>(null)
 const updateTime = ref('')
 const chartRef = ref<HTMLElement>()
-let chart: echarts.ECharts | null = null
+let chart: ECharts | null = null
 
 // 自动刷新：页头标注“自动刷新”，这里补上真正的定时刷新逻辑
 const AUTO_REFRESH_INTERVAL = 30000
@@ -269,30 +287,94 @@ const activeRatio = computed(() => {
 
 // 后端 getOverview 混用两套命名：summary 用 camelCase，订单量字段用 snake_case（total_orders）。
 // 此处统一归一化为 camelCase，避免页面各处 totalOrders 取不到值。
-function normalizeOverview(raw: any): any {
-  if (!raw || typeof raw !== 'object') return raw
-  const pick = (v: any, key: string, alt: string) => (v?.[key] ?? v?.[alt] ?? 0)
-  const normSummary = (s: any) => s ? {
-    ...s,
-    totalOrders: pick(s, 'totalOrders', 'total_orders'),
-    totalPending: pick(s, 'totalPending', 'total_pending'),
-    totalCompleted: pick(s, 'totalCompleted', 'total_completed'),
-  } : s
-  const normRow = (r: any) => r ? { ...r, totalOrders: pick(r, 'totalOrders', 'total_orders') } : r
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function numberValue(record: UnknownRecord, key: string, alternate = key): number {
+  const value = record[key] ?? record[alternate] ?? 0
+  const number = Number(value)
+  return Number.isFinite(number) ? number : 0
+}
+
+function optionalNumber(record: UnknownRecord, key: string, alternate = key): number | undefined {
+  if (record[key] == null && record[alternate] == null) return undefined
+  return numberValue(record, key, alternate)
+}
+
+function optionalString(record: UnknownRecord, key: string): string | undefined {
+  const value = record[key]
+  return typeof value === 'string' ? value : undefined
+}
+
+function normalizeRow(raw: unknown): OutletOverviewRow | null {
+  if (!isRecord(raw)) return null
+  const provinces = Array.isArray(raw.provinces)
+    ? raw.provinces.filter((item): item is string => typeof item === 'string')
+    : undefined
   return {
-    ...raw,
-    summary: normSummary(raw.summary),
-    regions: Array.isArray(raw.regions) ? raw.regions.map(normRow) : raw.regions,
-    outlets: Array.isArray(raw.outlets) ? raw.outlets.map(normRow) : raw.outlets,
-    topOutlets: Array.isArray(raw.topOutlets) ? raw.topOutlets.map(normRow) : raw.topOutlets,
+    id: optionalString(raw, 'id'),
+    name: optionalString(raw, 'name'),
+    province: optionalString(raw, 'province'),
+    city: optionalString(raw, 'city'),
+    region: optionalString(raw, 'region') || '-',
+    status: optionalNumber(raw, 'status'),
+    outletCount: optionalNumber(raw, 'outletCount', 'outlet_count'),
+    provinces,
+    totalOrders: numberValue(raw, 'totalOrders', 'total_orders'),
+    pending: numberValue(raw, 'pending', 'total_pending'),
+    processing: numberValue(raw, 'processing', 'total_processing'),
+    completed: numberValue(raw, 'completed', 'total_completed'),
+    today: numberValue(raw, 'today', 'today_total'),
   }
+}
+
+function normalizeRows(value: unknown): OutletOverviewRow[] {
+  if (!Array.isArray(value)) return []
+  return value.map(normalizeRow).filter((row): row is OutletOverviewRow => row !== null)
+}
+
+function normalizeOverview(raw: unknown): OutletOverviewData | null {
+  if (!isRecord(raw)) return null
+  const summary = isRecord(raw.summary) ? raw.summary : {}
+  return {
+    summary: {
+      totalOutlets: numberValue(summary, 'totalOutlets', 'total_outlets'),
+      activeOutlets: numberValue(summary, 'activeOutlets', 'active_outlets'),
+      inactiveOutlets: numberValue(summary, 'inactiveOutlets', 'inactive_outlets'),
+      totalOrders: numberValue(summary, 'totalOrders', 'total_orders'),
+      totalPending: numberValue(summary, 'totalPending', 'total_pending'),
+      totalProcessing: numberValue(summary, 'totalProcessing', 'total_processing'),
+      totalCompleted: numberValue(summary, 'totalCompleted', 'total_completed'),
+      todayTotal: numberValue(summary, 'todayTotal', 'today_total'),
+    },
+    regions: normalizeRows(raw.regions),
+    outlets: normalizeRows(raw.outlets),
+    topOutlets: normalizeRows(raw.topOutlets),
+  }
+}
+
+function isChartTooltipParam(value: unknown): value is ChartTooltipParam {
+  return isRecord(value)
+}
+
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(/[&<>"']/g, character => HTML_ESCAPES[character] || character)
 }
 
 async function loadData(silent = false) {
   loading.value = true
   try {
-    const res: any = await getOutletOverviewAPI()
-    overview.value = normalizeOverview(res)
+    const response: unknown = await getOutletOverviewAPI()
+    overview.value = normalizeOverview(unwrapV1<unknown>(response))
     updateTime.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
     await nextTick()
     initChart()
@@ -305,31 +387,32 @@ async function loadData(silent = false) {
 
 function initChart() {
   if (!chartRef.value || !overview.value) return
-  if (!chart) chart = echarts.init(chartRef.value)
+  if (!chart) chart = initECharts(chartRef.value)
   const regions = overview.value.regions || []
-  const option: echarts.EChartsOption = {
+  const option: EChartsOption = {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      formatter: (params: any) => {
-        const idx = params[0].dataIndex
-        const r = regions[idx]
-        const provList = (r.provinces || []).join('、') || '—'
-        let html = `<div style="font-weight:600;margin-bottom:6px">${r.region} 大区</div>`
-        html += `<div style="color:#999;font-size:12px;margin-bottom:4px">覆盖 ${r.outletCount} 家网点 / ${(r.provinces || []).length} 个省份</div>`
-        html += `<div style="color:#999;font-size:12px;margin-bottom:8px">省份：${provList}</div>`
-        for (const p of params) {
-          const color = p.color
-          html += `<div style="display:flex;justify-content:space-between;gap:16px;margin:2px 0"><span>${p.marker}${p.seriesName}</span><span style="font-weight:600">${p.value}</span></div>`
+      formatter: (params: unknown) => {
+        const items = (Array.isArray(params) ? params : [params]).filter(isChartTooltipParam)
+        const index = items[0]?.dataIndex
+        const region = typeof index === 'number' ? regions[index] : undefined
+        if (!region) return ''
+        const provList = (region.provinces || []).join('、') || '—'
+        let html = `<div style="font-weight:600;margin-bottom:6px">${escapeHtml(region.region)} 大区</div>`
+        html += `<div style="color:#999;font-size:12px;margin-bottom:4px">覆盖 ${region.outletCount ?? 0} 家网点 / ${(region.provinces || []).length} 个省份</div>`
+        html += `<div style="color:#999;font-size:12px;margin-bottom:8px">省份：${escapeHtml(provList)}</div>`
+        for (const item of items) {
+          html += `<div style="display:flex;justify-content:space-between;gap:16px;margin:2px 0"><span>${String(item.marker ?? '')}${escapeHtml(item.seriesName)}</span><span style="font-weight:600">${escapeHtml(item.value)}</span></div>`
         }
-        html += `<div style="border-top:1px solid #eee;margin-top:6px;padding-top:4px;color:#999;font-size:12px">待接 ${r.pending} · 制作 ${r.processing} · 完成 ${r.completed}</div>`
+        html += `<div style="border-top:1px solid #eee;margin-top:6px;padding-top:4px;color:#999;font-size:12px">待接 ${region.pending} · 制作 ${region.processing} · 完成 ${region.completed}</div>`
         return html
       },
     },
     legend: { data: ['订单量', '网点数'], top: 8 },
     grid: { left: '3%', right: '4%', bottom: '3%', top: 50, containLabel: true },
-    xAxis: { type: 'category', data: regions.map((r: any) => r.region) },
-    yAxis: { type: 'value', min: 0, max: (value: any) => Math.max(value.max * 1.25, 4) },
+    xAxis: { type: 'category', data: regions.map(region => region.region) },
+    yAxis: { type: 'value', min: 0, max: (value: { max: number }) => Math.max(value.max * 1.25, 4) },
     series: [
       {
         name: '订单量',
@@ -337,7 +420,7 @@ function initChart() {
         barMaxWidth: 48,
         barGap: '30%',
         barCategoryGap: '50%',
-        data: regions.map((r: any) => r.totalOrders),
+        data: regions.map(region => region.totalOrders),
         itemStyle: { color: '#5B6FE8', borderRadius: [4, 4, 0, 0] },
         label: { show: true, position: 'top', fontSize: 11, color: '#5B6FE8' },
       },
@@ -347,7 +430,7 @@ function initChart() {
         barMaxWidth: 48,
         barGap: '30%',
         barCategoryGap: '50%',
-        data: regions.map((r: any) => r.outletCount),
+        data: regions.map(region => region.outletCount ?? 0),
         itemStyle: { color: '#52c41a', borderRadius: [4, 4, 0, 0] },
         label: { show: true, position: 'top', fontSize: 11, color: '#52c41a' },
       },
@@ -370,12 +453,22 @@ function stopAutoRefresh() {
   }
 }
 
+function resizeChart() {
+  chart?.resize()
+}
+
 onMounted(() => {
   loadData()
   startAutoRefresh()
+  window.addEventListener('resize', resizeChart)
 })
 
-onBeforeUnmount(stopAutoRefresh)
+onBeforeUnmount(() => {
+  stopAutoRefresh()
+  window.removeEventListener('resize', resizeChart)
+  chart?.dispose()
+  chart = null
+})
 </script>
 
 <style lang="scss" scoped>

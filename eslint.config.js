@@ -3,7 +3,7 @@
 // 安装后运行：npm run lint（package.json 已有 lint 脚本）
 import js from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
-import vueTsEslintConfig from '@vue/eslint-config-typescript'
+import tseslint from 'typescript-eslint'
 
 export default [
   {
@@ -26,6 +26,7 @@ export default [
     ],
   },
   js.configs.recommended,
+  ...tseslint.configs.recommended,
   {
     // pm2 配置是 CommonJS：声明 module/require 等 Node 全局
     files: ['ecosystem.admin.config.*'],
@@ -41,20 +42,29 @@ export default [
     },
   },
   ...pluginVue.configs['flat/recommended'],
-  ...vueTsEslintConfig(),
   {
-    files: ['**/*.{ts,vue}'],
+    files: ['**/*.vue'],
+    languageOptions: {
+      parserOptions: {
+        parser: tseslint.parser,
+        extraFileExtensions: ['.vue'],
+      },
+    },
+  },
+  {
+    files: ['**/*.{ts,tsx,vue}'],
     rules: {
-      // 与项目现状对齐的宽松项（后续可逐步收紧）
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      // TypeScript/vue-tsc 负责标识符解析；ESLint 的 no-undef 不理解 DOM 类型与 Vue SFC。
+      'no-undef': 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'vue/block-lang': 'off', // 项目内存在大量纯 JS 的 SFC，暂不强制 lang="ts"（全量迁移另立项）
       'vue/multi-word-component-names': 'off',
       'vue/max-attributes-per-line': 'off',
       'vue/singleline-html-element-content-newline': 'off',
       'vue/html-self-closing': 'off',
       'vue/attributes-order': 'off',
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': ['error', { allow: ['warn', 'error'] }],
     },
   },
 ]

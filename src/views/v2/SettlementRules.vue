@@ -149,26 +149,98 @@ import {
   v2DeleteSettlementRule,
   getOutletsAPI,
 } from '@/api'
+import { toArray, toPaged } from '@/api/unwrap'
+
+type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+type SettlementRuleType = 'percent' | 'fixed'
+
+interface SettlementRule {
+  id: string
+  name: string
+  module?: string | null
+  outletId?: string | null
+  type: SettlementRuleType
+  percent?: number | string | null
+  fixedAmount?: number | string | null
+  minOrderAmount?: number | string | null
+  status: number
+  isDefault?: boolean | number
+  remark?: string | null
+  validFrom?: string | null
+  validTo?: string | null
+}
+
+interface SettlementRuleForm {
+  id: string
+  name: string
+  module: string
+  outletId: string
+  type: SettlementRuleType
+  percent: number
+  fixedAmount: number
+  minOrderAmount: number
+  statusOn: boolean
+  isDefault: boolean
+  remark: string
+  validRange: [Date, Date] | null
+}
+
+interface SettlementRulePayload {
+  name: string
+  type: SettlementRuleType
+  percent?: number
+  fixedAmount?: number
+  minOrderAmount: number
+  status: 0 | 1
+  isDefault: 0 | 1
+  outletId: string
+  remark: string
+  module?: string
+  validFrom?: string
+  validTo?: string
+}
+
+interface OutletOption {
+  id: string
+  name: string
+  status: number
+}
 
 const loading = ref(false)
 const submitting = ref(false)
-const list = ref<any[]>([])
+const list = ref<SettlementRule[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
 const query = reactive({ module: '', keyword: '' })
 const dialogVisible = ref(false)
-const form = reactive<any>({})
-const outlets = ref<any[]>([])
+const form = reactive<SettlementRuleForm>({
+  id: '',
+  name: '',
+  module: '',
+  outletId: '',
+  type: 'percent',
+  percent: 5,
+  fixedAmount: 0,
+  minOrderAmount: 0,
+  statusOn: true,
+  isDefault: false,
+  remark: '',
+  validRange: null,
+})
+const outlets = ref<OutletOption[]>([])
 
-const moduleText = (m?: string) =>
+const moduleText = (m?: string | null) =>
   m === 'seal' ? '刻章' : m === 'newspaper' ? '登报' : m === 'bookkeeping' ? '记账' : '全部'
-const moduleTag = (m?: string) =>
+const moduleTag = (m?: string | null): TagType =>
   m === 'seal' ? 'danger' : m === 'newspaper' ? 'primary' : m === 'bookkeeping' ? 'warning' : 'info'
-const outletName = (id?: string) => { const o = outlets.value.find((x: any) => x.id === id); return o ? o.name : id || '全局' }
-const fmtDate = (d?: string) => (d ? d.slice(0, 10) : '不限')
+const outletName = (id?: string | null) => {
+  const outlet = outlets.value.find(item => item.id === id)
+  return outlet ? outlet.name : id || '全局'
+}
+const fmtDate = (d?: string | null) => (d ? d.slice(0, 10) : '不限')
 // 后端时间为「本地时间 + Z 后缀」格式：去 Z 按本地解析/按本地回传，避免 new Date/toISOString 造成 ±8h 漂移
-const parseLocal = (s?: string) => {
+const parseLocal = (s?: string | null) => {
   if (!s) return null
   const d = new Date(s.endsWith('Z') ? s.slice(0, -1) : s)
   return isNaN(d.getTime()) ? null : d
@@ -176,6 +248,10 @@ const parseLocal = (s?: string) => {
 const formatLocal = (d: Date) => {
   const p = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback
 }
 
 function resetForm() {
@@ -196,16 +272,17 @@ function resetForm() {
 async function load() {
   loading.value = true
   try {
-    const res: any = await v2GetSettlementRules({
+    const response: unknown = await v2GetSettlementRules({
       page: page.value,
       pageSize: pageSize.value,
       module: query.module || undefined,
       keyword: query.keyword || undefined,
     })
-    list.value = res.list || []
-    total.value = res.total || 0
-  } catch (e: any) {
-    ElMessage.error(e?.message || '加载失败')
+    const result = toPaged<SettlementRule>(response)
+    list.value = result.list
+    total.value = result.total
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '加载失败'))
   } finally {
     loading.value = false
   }
@@ -218,8 +295,10 @@ function openCreate() {
   resetForm()
   dialogVisible.value = true
 }
-function openEdit(row: any) {
+function openEdit(row: SettlementRule) {
   resetForm()
+  const validFrom = parseLocal(row.validFrom)
+  const validTo = parseLocal(row.validTo)
   Object.assign(form, {
     id: row.id,
     name: row.name,
@@ -232,14 +311,13 @@ function openEdit(row: any) {
     statusOn: row.status === 1,
     isDefault: !!row.isDefault,
     remark: row.remark || '',
-    validRange:
-      row.validFrom && row.validTo ? [parseLocal(row.validFrom), parseLocal(row.validTo)] : null,
+    validRange: validFrom && validTo ? [validFrom, validTo] : null,
   })
   dialogVisible.value = true
 }
-function toPayload() {
-  const p: any = {
-    name: form.name?.trim(),
+function toPayload(): SettlementRulePayload {
+  const payload: SettlementRulePayload = {
+    name: form.name.trim(),
     type: form.type,
     percent: form.type === 'percent' ? Number(form.percent ?? 0) : undefined,
     fixedAmount: form.type === 'fixed' ? Number(form.fixedAmount ?? 0) : undefined,
@@ -247,14 +325,14 @@ function toPayload() {
     status: form.statusOn ? 1 : 0,
     isDefault: form.isDefault ? 1 : 0,
     outletId: form.outletId || '',
-    remark: form.remark?.trim() || '',
+    remark: form.remark.trim(),
   }
-  if (form.module) p.module = form.module
+  if (form.module) payload.module = form.module
   if (form.validRange && form.validRange.length === 2) {
-    p.validFrom = formatLocal(form.validRange[0])
-    p.validTo = formatLocal(form.validRange[1])
+    payload.validFrom = formatLocal(form.validRange[0])
+    payload.validTo = formatLocal(form.validRange[1])
   }
-  return p
+  return payload
 }
 async function save() {
   if (!form.name) {
@@ -280,13 +358,13 @@ async function save() {
     }
     dialogVisible.value = false
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '保存失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '保存失败'))
   } finally {
     submitting.value = false
   }
 }
-async function remove(row: any) {
+async function remove(row: SettlementRule) {
   try {
     await ElMessageBox.confirm(`确定删除规则「${row.name}」？删除后相关订单将按全额结算（平台零差价）。`, '删除结算规则', {
       type: 'warning',
@@ -298,16 +376,15 @@ async function remove(row: any) {
     await v2DeleteSettlementRule(row.id)
     ElMessage.success('已删除')
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '删除失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '删除失败'))
   }
 }
 
 async function loadOutlets() {
   try {
-    const res: any = await getOutletsAPI({ page: 1, pageSize: 500 })
-    const rows = Array.isArray(res) ? res : ((res && (res.list || res.data?.list)) || [])
-    outlets.value = (rows || []).filter((o: any) => Number(o.status) === 1)
+    const response: unknown = await getOutletsAPI({ page: 1, pageSize: 500 })
+    outlets.value = toArray<OutletOption>(response).filter(outlet => Number(outlet.status) === 1)
   } catch { /* 忽略 */ }
 }
 

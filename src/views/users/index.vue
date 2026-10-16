@@ -44,10 +44,11 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getUsers, updateUser, deleteUser } from '@/api'
+import type { UserListItem, UserStatus } from '@/api/types'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
-const list = ref<any[]>([])
+const list = ref<UserListItem[]>([])
 const pagination = ref({ page: 1, pageSize: 20, total: 0 })
 const query = reactive({ keyword: '', page: 1, pageSize: 20 })
 const router = useRouter()
@@ -57,10 +58,10 @@ function shortId(id?: string) { return id ? id.slice(0, 8) : '未知' }
 async function fetchUsers() {
   loading.value = true
   try {
-    const res: any = await getUsers({ ...query })
-    list.value = Array.isArray(res?.list) ? res.list : []
-    pagination.value = res?.pagination ?? { page: query.page, pageSize: query.pageSize, total: 0 }
-    if (res?.pagination?.page) query.page = res.pagination.page
+    const res = await getUsers({ ...query })
+    list.value = Array.isArray(res.list) ? res.list : []
+    pagination.value = res.pagination
+    if (res.pagination.page > 0) query.page = res.pagination.page
   } catch {
     list.value = []
     pagination.value = { page: query.page, pageSize: query.pageSize, total: 0 }
@@ -68,26 +69,39 @@ async function fetchUsers() {
     loading.value = false
   }
 }
-function viewOrders(row: any) {
-  router.push({ path: '/v2/orders', query: { keyword: row.phone || row.id } })
+function viewOrders(row: unknown) {
+  const user = row as UserListItem
+  router.push({ path: '/v2/orders', query: { keyword: user.phone || user.id } })
 }
-async function handleToggleStatus(row: any) {
-  const newStatus = row.status === 1 ? 0 : 1
-  const oldStatus = row.status
+async function handleToggleStatus(row: unknown) {
+  // Element Plus 表格插槽未透传 data 的行类型；事件来源仅为已类型化的 list。
+  const user = row as UserListItem
+  const newStatus: UserStatus = user.status === 1 ? 0 : 1
+  const oldStatus = user.status
   try {
     await ElMessageBox.confirm(`确定要${newStatus === 1 ? '启用' : '禁用'}该用户吗？`, '提示', { type: 'warning' })
-    await updateUser(row.id, { status: newStatus })
-    row.status = newStatus
+    await updateUser(user.id, { status: newStatus })
+    user.status = newStatus
     ElMessage.success(newStatus === 1 ? '已启用' : '已禁用')
-  } catch (e: any) { if (e !== 'cancel' && e !== 'close') { row.status = oldStatus; ElMessage.error(e.message || '操作失败') } }
+  } catch (error: unknown) {
+    if (error !== 'cancel' && error !== 'close') {
+      user.status = oldStatus
+      ElMessage.error(error instanceof Error ? error.message : '操作失败')
+    }
+  }
 }
-async function handleDelete(row: any) {
+async function handleDelete(row: unknown) {
+  const user = row as UserListItem
   try {
     await ElMessageBox.confirm('确定删除该用户？删除后不可恢复。', '危险操作', { type: 'error', confirmButtonText: '删除' })
-    await deleteUser(row.id)
+    await deleteUser(user.id)
     ElMessage.success('删除成功')
     fetchUsers()
-  } catch (e: any) { if (e !== 'cancel' && e !== 'close') ElMessage.error(e.message || '删除失败') }
+  } catch (error: unknown) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(error instanceof Error ? error.message : '删除失败')
+    }
+  }
 }
 function search() { query.page = 1; fetchUsers() }
 function reset() { query.keyword = ''; search() }

@@ -4,10 +4,10 @@
       <h2>开票管理</h2>
       <div>
         <el-radio-group v-model="statusFilter" size="small" @change="() => { page = 1; load() }">
-          <el-radio-button label="">全部</el-radio-button>
-          <el-radio-button label="pending">待处理</el-radio-button>
-          <el-radio-button label="issued">已开票</el-radio-button>
-          <el-radio-button label="rejected">已驳回</el-radio-button>
+          <el-radio-button value="">全部</el-radio-button>
+          <el-radio-button value="pending">待处理</el-radio-button>
+          <el-radio-button value="issued">已开票</el-radio-button>
+          <el-radio-button value="rejected">已驳回</el-radio-button>
         </el-radio-group>
         <el-input
           v-model="keyword"
@@ -27,7 +27,7 @@
         <el-table-column prop="applicationNo" label="申请单号" width="200" show-overflow-tooltip />
         <el-table-column prop="orderNo" label="订单号" width="180" show-overflow-tooltip />
         <el-table-column prop="module" label="业务" width="80" align="center">
-          <template #default="{ row }">{{ moduleMap[row.module] || row.module || '—' }}</template>
+          <template #default="{ row }">{{ moduleText(row.module) }}</template>
         </el-table-column>
         <el-table-column prop="type" label="类型" width="80" align="center">
           <template #default="{ row }">{{ row.type === 2 ? '专票' : '普票' }}</template>
@@ -70,7 +70,7 @@
       <el-descriptions :column="2" border size="small" v-if="current">
         <el-descriptions-item label="申请单号" :span="2">{{ current.applicationNo }}</el-descriptions-item>
         <el-descriptions-item label="订单号" :span="2">{{ current.orderNo }}</el-descriptions-item>
-        <el-descriptions-item label="业务">{{ moduleMap[current.module] || current.module }}</el-descriptions-item>
+        <el-descriptions-item label="业务">{{ moduleText(current.module) }}</el-descriptions-item>
         <el-descriptions-item label="类型">{{ current.type === 2 ? '专票' : '普票' }}</el-descriptions-item>
         <el-descriptions-item label="抬头" :span="2">{{ current.title }}</el-descriptions-item>
         <el-descriptions-item label="抬头类型">{{ current.titleType === 'company' ? '企业' : '个人' }}</el-descriptions-item>
@@ -118,17 +118,20 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { v2GetInvoiceApplications, v2IssueInvoice, v2RejectInvoice } from '@/api'
+import type { InvoiceApplication, InvoiceApplicationStatus } from '@/api/types'
 
-const list = ref<any[]>([])
+type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+const list = ref<InvoiceApplication[]>([])
 const loading = ref(false)
 const submitting = ref(false)
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
-const statusFilter = ref('')
+const statusFilter = ref<InvoiceApplicationStatus | ''>('')
 const keyword = ref('')
 
-const current = ref<any>(null)
+const current = ref<InvoiceApplication | null>(null)
 const detailVisible = ref(false)
 const rejectDialogVisible = ref(false)
 const rejectRemark = ref('')
@@ -144,8 +147,8 @@ const moduleMap: Record<string, string> = {
   bookkeeping: '记账',
 }
 
-const statusTag = (s: string) => {
-  const map: Record<string, string> = {
+const statusTag = (s: InvoiceApplicationStatus): TagType => {
+  const map: Record<InvoiceApplicationStatus, TagType> = {
     pending: 'warning',
     issued: 'success',
     rejected: 'info',
@@ -153,36 +156,41 @@ const statusTag = (s: string) => {
   return map[s] || 'info'
 }
 
+const moduleText = (module: string | null | undefined) =>
+  (module ? moduleMap[module] || module : '—')
+
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
-const fmt = (v?: string) => (v ? v.slice(0, 16).replace('T', ' ') : '—')
+const fmt = (v?: string | null) => (v ? v.slice(0, 16).replace('T', ' ') : '—')
 
 async function load() {
   loading.value = true
   try {
-    const res: any = await v2GetInvoiceApplications({
+    const res = await v2GetInvoiceApplications({
       status: statusFilter.value || undefined,
       keyword: keyword.value || undefined,
       page: page.value,
       pageSize: pageSize.value,
     })
-    list.value = res?.list || []
-    total.value = res?.total || 0
-  } catch (e: any) {
-    ElMessage.error(e?.message || '加载开票申请失败')
+    list.value = res.list ?? []
+    total.value = res.total ?? 0
+  } catch (error: unknown) {
+    ElMessage.error(error instanceof Error ? error.message : '加载开票申请失败')
   } finally {
     loading.value = false
   }
 }
 
-function viewDetail(row: any) {
-  current.value = row
+function viewDetail(row: unknown) {
+  // Element Plus 表格插槽未透传 data 的行类型；事件来源仅为已类型化的 list。
+  current.value = row as InvoiceApplication
   detailVisible.value = true
 }
 
-async function issue(row: any) {
+async function issue(row: unknown) {
+  const application = row as InvoiceApplication
   try {
     await ElMessageBox.confirm(
-      `确认为订单 ${row.orderNo} 开具发票（抬头：${row.title}）？确认后状态变为已开票。`,
+      `确认为订单 ${application.orderNo} 开具发票（抬头：${application.title}）？确认后状态变为已开票。`,
       '开票确认',
       { type: 'warning', confirmButtonText: '确认开票', cancelButtonText: '取消' },
     )
@@ -191,43 +199,49 @@ async function issue(row: any) {
   }
   submitting.value = true
   try {
-    await v2IssueInvoice(row.id, { remark: '管理端已开票' })
+    await v2IssueInvoice(application.id, { remark: '管理端已开票' })
     ElMessage.success('已开票')
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '操作失败')
+  } catch (error: unknown) {
+    ElMessage.error(error instanceof Error ? error.message : '操作失败')
   } finally {
     submitting.value = false
   }
 }
 
-function openReject(row: any) {
-  current.value = row
+function openReject(row: unknown) {
+  current.value = row as InvoiceApplication
   rejectRemark.value = ''
   rejectDialogVisible.value = true
 }
 
 async function doReject() {
+  const application = current.value
+  if (!application) {
+    ElMessage.error('未选择开票申请')
+    return
+  }
   if (!rejectRemark.value.trim()) {
     ElMessage.warning('请填写驳回原因')
     return
   }
   submitting.value = true
   try {
-    await v2RejectInvoice(current.value.id, { remark: rejectRemark.value })
+    await v2RejectInvoice(application.id, { remark: rejectRemark.value })
     ElMessage.success('已驳回')
     rejectDialogVisible.value = false
     load()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '操作失败')
+  } catch (error: unknown) {
+    ElMessage.error(error instanceof Error ? error.message : '操作失败')
   } finally {
     submitting.value = false
   }
 }
 
-function viewOrder(row: any) {
-  if (row.orderNo) {
-    window.open(`/v2/orders/detail?orderNo=${encodeURIComponent(row.orderNo)}`, '_blank')
+function viewOrder(row: unknown) {
+  const application = row as InvoiceApplication
+  if (application.orderNo) {
+    window.open(`/v2/orders/detail?orderNo=${encodeURIComponent(application.orderNo)}`, '_blank')
   }
 }
 

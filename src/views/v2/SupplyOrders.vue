@@ -124,20 +124,52 @@ import { useLatest } from '@/composables/useLatest'
 import { useAuthStore } from '@/stores/auth'
 import { FULFILLMENT_STATUS_TEXT, fulfillmentStatusTag } from '@/utils/fulfillment-status'
 
+type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+interface SupplyOrderRow {
+  orderNo: string
+  module: string
+  routeType?: string | null
+  orderStatus: string
+  paymentStatus: string
+  fulfillmentStatus: string
+  refundStatus?: string | null
+  totalAmount?: number | string | null
+  createdAt?: string | null
+}
+
+interface SupplyOrderFilters {
+  module: string
+  routeType: string
+  orderStatus: string
+  fulfillmentStatus: string
+  keyword: string
+}
+
+interface SupplyOrderQuery {
+  module?: string
+  routeType?: string
+  orderStatus?: string
+  fulfillmentStatus?: string
+  keyword?: string
+  page?: number
+  pageSize?: number
+}
+
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
 const loading = ref(false)
 const exporting = ref(false)
-const list = ref<any[]>([])
+const list = ref<SupplyOrderRow[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
 const unassignedCount = ref(0)
 const canExport = computed(() => authStore.canPerform('/v2/orders/export'))
 
-const filters = reactive<any>({
+const filters = reactive<SupplyOrderFilters>({
   module: '',
   routeType: '',
   orderStatus: '',
@@ -155,20 +187,33 @@ const paymentStatusMap: Record<string, string> = {
 const refundStatusMap: Record<string, string> = {
   none: '无', applying: '退款中', partial_refund: '部分退款', full_refund: '已退款', rejected: '已驳回',
 }
-const refundTag = (s: string) =>
-  ({ applying: 'warning', partial_refund: 'warning', full_refund: 'info', rejected: 'danger' } as any)[s] || 'info'
+const refundTags: Record<string, TagType> = {
+  applying: 'warning', partial_refund: 'warning', full_refund: 'info', rejected: 'danger',
+}
+const refundTag = (status: string | null | undefined): TagType => refundTags[status ?? ''] || 'info'
 // 订单层履约状态字典（共享单一数据源，见 utils/fulfillment-status.ts）
 const fulfillmentStatusMap: Record<string, string> = FULFILLMENT_STATUS_TEXT
 
-const moduleLabel = (m: string) => ({ seal: '刻章', newspaper: '登报', bookkeeping: '记账' } as any)[m] || m
-const moduleType = (m: string) => ({ seal: 'primary', newspaper: 'success', bookkeeping: 'warning' } as any)[m] || 'info'
-const statusTag = (s: string) =>
-  ({ pending_payment: 'warning', paid: 'success', completed: 'info', cancelled: 'danger', processing: 'primary' } as any)[s] || 'info'
+const moduleLabels: Record<string, string> = { seal: '刻章', newspaper: '登报', bookkeeping: '记账' }
+const moduleTypes: Record<string, TagType> = { seal: 'primary', newspaper: 'success', bookkeeping: 'warning' }
+const orderStatusTags: Record<string, TagType> = {
+  pending_payment: 'warning', paid: 'success', completed: 'info', cancelled: 'danger', processing: 'primary',
+}
+const routeTypeLabels: Record<string, string> = { enterprise: '企业刻章', personal: '个人印章', electronic: '电子印章' }
+const routeTypeTags: Record<string, TagType> = { enterprise: 'primary', personal: 'success', electronic: 'warning' }
+
+const moduleLabel = (module: string | null | undefined) => moduleLabels[module ?? ''] || module || '-'
+const moduleType = (module: string | null | undefined): TagType => moduleTypes[module ?? ''] || 'info'
+const statusTag = (status: string | null | undefined): TagType => orderStatusTags[status ?? ''] || 'info'
 const fulfillmentTag = (s: string) => fulfillmentStatusTag(s)
-const routeTypeLabel = (t: string) => ({ enterprise: '企业刻章', personal: '个人印章', electronic: '电子印章' } as any)[t] || t || '-'
-const routeTypeTag = (t: string) => ({ enterprise: 'primary', personal: 'success', electronic: 'warning' } as any)[t] || 'info'
+const routeTypeLabel = (routeType: string | null | undefined) => routeTypeLabels[routeType ?? ''] || routeType || '-'
+const routeTypeTag = (routeType: string | null | undefined): TagType => routeTypeTags[routeType ?? ''] || 'info'
 // 后端时间为「本地时间 + Z 后缀」格式（非真实 UTC），直接截取字符串避免 new Date 解析产生 +8h 偏移
 const formatDate = (d?: string) => (d ? d.slice(0, 16).replace('T', ' ') : '-')
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback
+}
 
 /** 筛选/查询入口：重置到第 1 页，避免在高页码下改筛选导致空列表 */
 function search() {
@@ -180,8 +225,8 @@ function search() {
 
 const latest = useLatest()
 
-function currentFilterParams() {
-  const params: any = {}
+function currentFilterParams(): SupplyOrderQuery {
+  const params: SupplyOrderQuery = {}
   if (filters.module) params.module = filters.module
   if (filters.module === 'seal' && filters.routeType) params.routeType = filters.routeType
   if (filters.orderStatus) params.orderStatus = filters.orderStatus
@@ -194,14 +239,14 @@ async function load() {
   loading.value = true
   const my = latest.next()
   try {
-    const params: any = { ...currentFilterParams(), page: page.value, pageSize: pageSize.value }
-    const res: any = await v2GetOrders(params)
+    const params: SupplyOrderQuery = { ...currentFilterParams(), page: page.value, pageSize: pageSize.value }
+    const res: unknown = await v2GetOrders(params)
     if (!latest.isCurrent(my)) return // 旧请求后到，直接丢弃
-    const { list: rows, total: n } = toPaged(res)
+    const { list: rows, total: n } = toPaged<SupplyOrderRow>(res)
     list.value = rows
     total.value = n
-  } catch (e: any) {
-    ElMessage.error(e?.message || '加载失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '加载失败'))
   } finally {
     loading.value = false
   }
@@ -240,8 +285,8 @@ async function exportCurrentFilters() {
     link.remove()
     URL.revokeObjectURL(url)
     ElMessage.success('订单报表已导出')
-  } catch (e: any) {
-    ElMessage.error(e?.message || '导出失败')
+  } catch (error: unknown) {
+    ElMessage.error(errorMessage(error, '导出失败'))
   } finally {
     exporting.value = false
   }
@@ -249,8 +294,8 @@ async function exportCurrentFilters() {
 
 async function loadUnassignedCount() {
   try {
-    const res: any = await v2GetUnassigned({ pageSize: 1 })
-    unassignedCount.value = toPaged(res).total
+    const res: unknown = await v2GetUnassigned({ pageSize: 1 })
+    unassignedCount.value = toPaged<SupplyOrderRow>(res).total
   } catch { /* 忽略 */ }
 }
 
@@ -260,7 +305,7 @@ function goDetail(orderNo: string) {
 function goUnassigned() {
   router.push('/v2/orders/unassigned')
 }
-function openAssign(row: any) {
+function openAssign(row: SupplyOrderRow) {
   router.push({ path: '/v2/orders/detail', query: { orderNo: row.orderNo, assign: '1' } })
 }
 

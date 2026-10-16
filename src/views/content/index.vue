@@ -104,7 +104,7 @@
             <el-table-column label="展示渠道" width="130">
               <template #default="{ row }">
                 <el-tag size="small" :type="row.audience === 'outlet' ? 'warning' : row.audience === 'user' ? '' : 'success'">
-                  {{ ({ all: '全部', outlet: '仅网点', user: '仅用户' } as any)[row.audience] || '全部' }}
+                  {{ announcementAudienceText(row.audience) }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -428,6 +428,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, shallowRef, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { UploadFile, UploadInstance, UploadRequestOptions, UploadUserFile } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import request from '@/api'
@@ -444,12 +445,17 @@ type ContentRow = {
   link?: string
   subtitle?: string
   content?: string
+  audience?: AnnouncementAudience
+  publishedAt?: string | null
+  expiredAt?: string | null
+  createdAt?: string
+  type?: string
   sort: number
   status: number
-  [key: string]: any
 }
 type ContentListResponse = ContentRow[] | { list?: ContentRow[] }
 type UploadResponse = { data?: { url?: string }; url?: string }
+type AnnouncementAudience = 'all' | 'outlet' | 'user'
 
 function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -466,6 +472,18 @@ function listFromResponse(response: unknown): ContentRow[] {
 
 function uploadUrlFromResponse(response: UploadResponse) {
   return response?.data?.url ?? response?.url ?? ''
+}
+
+function uploadResponseFrom(value: unknown): UploadResponse | null {
+  if (!value || typeof value !== 'object') return null
+  const response = value as Record<string, unknown>
+  const data = response.data && typeof response.data === 'object'
+    ? response.data as Record<string, unknown>
+    : null
+  return {
+    url: typeof response.url === 'string' ? response.url : undefined,
+    data: data ? { url: typeof data.url === 'string' ? data.url : undefined } : undefined,
+  }
 }
 
 function normalizeDateTime(value: unknown) {
@@ -622,8 +640,17 @@ const annForm = reactive<{
   publishedAt: string | null
   expiredAt: string | null
   status: number
-  audience: string
+  audience: AnnouncementAudience
 }>({ id: null, title: '', content: '', publishedAt: null, expiredAt: null, status: 1, audience: 'all' })
+
+function normalizeAnnouncementAudience(value: unknown): AnnouncementAudience {
+  return value === 'outlet' || value === 'user' ? value : 'all'
+}
+
+function announcementAudienceText(value: unknown) {
+  const labels: Record<AnnouncementAudience, string> = { all: '全部', outlet: '仅网点', user: '仅用户' }
+  return labels[normalizeAnnouncementAudience(value)]
+}
 
 async function loadAnnouncements() {
   annLoading.value = true
@@ -656,7 +683,7 @@ function openAnnDialog(row?: ContentRow) {
   if (row) Object.assign(annForm, {
     id: row.id, title: row.title || '', content: row.content || '',
     publishedAt: normalizeDateTime(row.publishedAt), expiredAt: normalizeDateTime(row.expiredAt),
-    status: row.status ?? 1, audience: row.audience || 'all'
+    status: row.status ?? 1, audience: normalizeAnnouncementAudience(row.audience)
   })
   else Object.assign(annForm, { id: null, title: '', content: '', publishedAt: null, expiredAt: null, status: 1, audience: 'all' })
   annVisible.value = true
@@ -733,8 +760,8 @@ const introForm = reactive<{
   status: number
 }>({ id: null, title: '', subtitle: '', image: '', images: [], type: 'all', sort: 0, status: 1 })
 
-const introUploadRef = ref<any>(null)
-const introFileList = ref<any[]>([])
+const introUploadRef = ref<UploadInstance | null>(null)
+const introFileList = ref<UploadUserFile[]>([])
 
 function normalizeIntroType(value: unknown): IntroType {
   return value === 'company' || value === 'personal' || value === 'electronic' || value === 'bookkeeping' ? value : 'all'
@@ -773,11 +800,11 @@ function introImagesFromRow(row?: ContentRow): string[] {
   if (row?.image) return [row.image]
   return []
 }
-function introFileListFromImages(images: string[]): any[] {
-  return images.map((url, i) => ({ uid: 'pre-' + i, name: '图片' + (i + 1), url, status: 'success' }))
+function introFileListFromImages(images: string[]): UploadUserFile[] {
+  return images.map((url, i) => ({ uid: -(i + 1), name: '图片' + (i + 1), url, status: 'success' }))
 }
-async function introHttpUpload(option: any) {
-  const file = option.file as File
+async function introHttpUpload(option: UploadRequestOptions) {
+  const file = option.file
   const token = localStorage.getItem('admin_token')
   const form = new FormData()
   form.append('file', file)
@@ -785,19 +812,23 @@ async function introHttpUpload(option: any) {
     const response = await fetch('/api/upload/image', {
       method: 'POST', headers: token ? { Authorization: 'Bearer ' + token } : {}, body: form
     })
-    const result = await response.json().catch(() => null) as UploadResponse | null
+    const result = uploadResponseFrom(await response.json().catch(() => null))
     const url = result ? uploadUrlFromResponse(result) : ''
     if (!response.ok || !url) throw new Error('upload failed')
     introForm.images.push(url)
-    option.file.url = url
-    option.onSuccess(result, option.file)
+    option.onSuccess(result)
   } catch {
     ElMessage.error('图片上传失败，请重试')
-    option.onError(new Error('upload failed'))
+    option.onError(Object.assign(new Error('upload failed'), {
+      status: 0,
+      method: 'POST',
+      url: '/api/upload/image',
+    }))
   }
 }
-function introUploadRemove(file: any) {
-  const url = file?.url || ''
+function introUploadRemove(file: UploadFile) {
+  const response = uploadResponseFrom(file.response)
+  const url = file.url || (response ? uploadUrlFromResponse(response) : '')
   introForm.images = introForm.images.filter((u) => u !== url)
 }
 function introUploadExceed() {

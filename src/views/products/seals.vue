@@ -420,14 +420,7 @@
               :auto-upload="false"
               accept=".jpg,.jpeg,.png,.gif,.webp"
               class="seal-image-uploader"
-              :on-change="(file: any) => {
-                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-                if (!allowedTypes.includes(file.raw?.type)) {
-                  ElMessage.error('仅支持 jpg/png/gif/webp 格式')
-                  return
-                }
-                uploadPkg(file.raw)
-              }"
+              :on-change="onPkgImageChange"
             >
               <el-button type="primary" plain>+ 添加图片</el-button>
             </el-upload>
@@ -512,9 +505,123 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { UploadFile, UploadRawFile, UploadRequestOptions } from 'element-plus'
+import axios from 'axios'
 import { provinceToCities, cityToDistricts, regionCodeByPath, regionPathByCode, regionPathByLegacyName } from '@/utils/regions'
 import { Box, Postcard } from '@element-plus/icons-vue'
 import { getSealCategories, getSealSceneProducts, createSeal, updateSeal, deleteSeal, uploadImage, updatePackage, deletePackage, batchSetRegionPrice, getAdminScenes, getSeals, getSealPackages, createPackage, createScene, updateScene, deleteScene } from '@/api'
+import { toArray, unwrapData, unwrapUploadUrl, unwrapV1 } from '@/api/unwrap'
+
+type SceneType = 'enterprise' | 'personal' | 'electronic' | 'record'
+
+interface SealCategoryOption {
+  id: string
+  name: string
+}
+
+interface SceneItem {
+  id: string
+  name: string
+  description?: string
+  sceneType: SceneType
+  sort?: number
+  status: number
+}
+
+interface SealItem {
+  id: string
+  name: string
+  price: number
+  displayPrice?: number
+  description?: string
+  sort?: number
+  image?: string
+  sceneId?: string
+  sealCategories?: SealCategoryOption
+  regionPrices?: Record<string, unknown>
+  region_prices?: Record<string, unknown>
+  categoryName?: string
+  _sceneName?: string
+  _sceneId?: string
+}
+
+interface SealPackageItem {
+  id: string
+  name: string
+  price: number
+  displayPrice?: number
+  description?: string
+  sort?: number
+  images?: string[]
+  sceneId?: string
+  scene_id?: string
+  sealIds?: string[]
+  seal_ids?: string[]
+  regionPrices?: Record<string, unknown>
+  region_prices?: Record<string, unknown>
+  categoryName?: string
+  _sceneName?: string
+  _sceneId?: string
+}
+
+interface SceneProductsResponse {
+  seals?: SealItem[]
+  packages?: SealPackageItem[]
+}
+
+interface SealForm {
+  id: string
+  name: string
+  electronicType: string
+  sceneId: string
+  sealCategoryId: string
+  price: number
+  region_prices: Record<string, unknown>
+  regionPrices?: Record<string, unknown>
+  description: string
+  sort: number
+  image: string
+}
+
+interface PackageForm {
+  id: string
+  sceneId: string
+  name: string
+  price: number
+  description: string
+  sort: number
+  images: string[]
+  region_prices: Record<string, unknown>
+  regionPrices?: Record<string, unknown>
+  sealIds: string[]
+}
+
+interface SceneForm {
+  id: string
+  name: string
+  description: string
+  sceneType: SceneType
+  sort: number
+  status: number
+}
+
+interface BatchRegionPriceResult {
+  ok?: number
+  failed?: string[]
+}
+
+function getApiErrorMessage(error: unknown): string | undefined {
+  if (axios.isAxiosError<{ message?: unknown }>(error)) {
+    const message = error.response?.data?.message
+    if (message) return Array.isArray(message) ? message.join('；') : String(message)
+  }
+  return error instanceof Error ? error.message : undefined
+}
+
+function getApiErrorStatus(error: unknown): number | undefined {
+  return axios.isAxiosError(error) ? error.response?.status : undefined
+}
+
 const route = useRoute()
 
 // 路由逻辑分类 key（不依赖数据，初始化即可确定）
@@ -542,16 +649,16 @@ const defaultCategory = computed(() => {
 })
 
 // seal_categories 全量，用于查找个人 / 电子等真实分类 id
-const sealCategories = ref<any[]>([])
+const sealCategories = ref<SealCategoryOption[]>([])
 
 // 个人印章子分类：只使用接口返回的真实 seal_categories id
 const personalCategories = computed(() => {
-  const pc = sealCategories.value.find((c: any) => c.name === '个人印章')
-  const prc = sealCategories.value.find((c: any) => c.name === '个人职业章')
-  return [
-    pc && { id: pc.id, name: '个人印章' },
-    prc && { id: prc.id, name: '个人职业印章' },
-  ].filter(Boolean)
+  const options: SealCategoryOption[] = []
+  const pc = sealCategories.value.find((c) => c.name === '个人印章')
+  const prc = sealCategories.value.find((c) => c.name === '个人职业章')
+  if (pc) options.push({ id: pc.id, name: '个人印章' })
+  if (prc) options.push({ id: prc.id, name: '个人职业印章' })
+  return options
 })
 
 // 对话框「分类」下拉候选：企业=全部动态业务场景；电子=单一电子场景（禁用）；个人走子分类（不展示本下拉）
@@ -584,7 +691,7 @@ function getElectronicCategory(type: string) {
   // 电子子类型 → 实体分类：'电子公章' → '公章'（DB 无「电子*」分类，电子印章挂在通用分类下）
   const names = type.startsWith('电子') ? [type.slice(2), type] : [type]
   for (const n of names) {
-    const c = sealCategories.value.find((category: any) => category.name === n)
+    const c = sealCategories.value.find((category) => category.name === n)
     if (c) return c
   }
   return undefined
@@ -618,9 +725,9 @@ const defaultCategoryName = computed(() => {
 
 // 企业业务场景来自接口的 sceneType，不写死名称或 ID。
 
-const categories = ref<any[]>([])
-const seals = ref<any[]>([])
-const packages = ref<any[]>([])
+const categories = ref<SceneItem[]>([])
+const seals = ref<SealItem[]>([])
+const packages = ref<SealPackageItem[]>([])
 const loading = ref(false)
 let initialized = false
 let suppressSceneWatcher = false
@@ -634,7 +741,7 @@ const activeSingleSubTab = ref('电子公章')    // single 路由 + 电子场�
 const dialogVisible = ref(false)
 const saving = ref(false)
 const isEdit = ref(false)
-const form = reactive<any>({ name: '', electronicType: '', sceneId: '', sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
+const form = reactive<SealForm>({ id: '', name: '', electronicType: '', sceneId: '', sealCategoryId: '', price: 0, region_prices: {}, description: '', sort: 0, image: '' })
 // 全国地级以上城市级联数据（用于城市差异化定价选择器）
 // 全国三级行政区划（省 → 市 → 区），由新高德区划生成，并与小程序共用同一口径。
 const PROVINCE_CITY_OPTIONS = Object.keys(provinceToCities).map((prov) => ({
@@ -778,13 +885,12 @@ async function batchApplyRegionPrice() {
   batchApplying.value = true
   try {
     // 选中 id 按印章/套餐分流，一次请求一个事务，后端合并指定 regionCode 后回写 JSONB + 明细表
-    const sealIds = batchSelectedIds.value.filter((id) => seals.value.some((s: any) => s.id === id))
-    const packageIds = batchSelectedIds.value.filter((id) => !seals.value.some((s: any) => s.id === id))
-    const res: any = await batchSetRegionPrice({
+    const sealIds = batchSelectedIds.value.filter((id) => seals.value.some((seal) => seal.id === id))
+    const packageIds = batchSelectedIds.value.filter((id) => !seals.value.some((seal) => seal.id === id))
+    const data = unwrapData<BatchRegionPriceResult>(await batchSetRegionPrice({
       sealIds, packageIds, regionCode: code,
       province: path[0] || '', city: path[1] || '', district: path[2] || '', price,
-    })
-    const data = res?.data ?? res ?? {}
+    }))
     const okCount = Number(data.ok ?? 0)
     const failed: string[] = Array.isArray(data.failed) ? data.failed : []
     if (okCount) ElMessage.success(`已批量改价 ${okCount} 项`)
@@ -796,8 +902,8 @@ async function batchApplyRegionPrice() {
     } else {
       await fetchSealsByCategory(defaultCategory.value)
     }
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '批量改价请求失败：请确认后端 8080 已启动后重试')
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '批量改价请求失败：请确认后端 8080 已启动后重试')
   } finally {
     batchApplying.value = false
   }
@@ -807,16 +913,16 @@ async function batchApplyRegionPrice() {
 const pkgDialogVisible = ref(false)
 const pkgSaving = ref(false)
 const pkgIsEdit = ref(false)
-const pkgForm = reactive<any>({ id: '', sceneId: '', name: '', price: 0, description: '', sort: 0, images: [], region_prices: {}, sealIds: [] })
+const pkgForm = reactive<PackageForm>({ id: '', sceneId: '', name: '', price: 0, description: '', sort: 0, images: [], region_prices: {}, sealIds: [] })
 
 // 场景管理弹窗状态
 const sceneDialogVisible = ref(false)
 const sceneEditVisible = ref(false)
 const sceneSaving = ref(false)
-const sceneEditForm = reactive<any>({ id: '', name: '', description: '', sceneType: 'enterprise', sort: 0, status: 1 })
+const sceneEditForm = reactive<SceneForm>({ id: '', name: '', description: '', sceneType: 'enterprise', sort: 0, status: 1 })
 
 // 场景管理列表：展示三类真实场景。
-const sceneManageList = computed(() => categories.value.filter((c: any) =>
+const sceneManageList = computed(() => categories.value.filter((c) =>
   ['enterprise', 'personal', 'electronic', 'record'].includes(c.sceneType)
 ))
 
@@ -830,7 +936,7 @@ async function openSceneDialog() {
   sceneDialogVisible.value = true
 }
 
-function showSceneEditDialog(row?: any) {
+function showSceneEditDialog(row?: SceneItem) {
   if (row) {
     Object.assign(sceneEditForm, { ...row })
   } else {
@@ -851,16 +957,16 @@ async function saveScene() {
       sort: sceneEditForm.sort,
       status: sceneEditForm.status,
     }
-    let savedScene: any
+    let savedScene: SceneItem | undefined
     if (sceneEditForm.id) {
       await updateScene(sceneEditForm.id, payload)
     } else {
-      savedScene = await createScene(payload)
+      savedScene = unwrapData<SceneItem>(await createScene(payload))
     }
     ElMessage.success(sceneEditForm.id ? '保存成功' : '创建成功')
     sceneEditVisible.value = false
     await fetchAllCategories()
-    const savedSceneId = savedScene?.id || savedScene?.data?.id
+    const savedSceneId = savedScene?.id
     if (savedSceneId && payload.sceneType === 'personal' && isPersonal.value) {
       activePersonalSceneId.value = savedSceneId
       await fetchSealsByCategory(personalScene.value?.id || savedSceneId)
@@ -873,7 +979,7 @@ async function saveScene() {
   }
 }
 
-async function toggleSceneStatus(row: any, val: number) {
+async function toggleSceneStatus(row: SceneItem, val: number) {
   try {
     await updateScene(row.id, { status: val })
     ElMessage.success('状态已更新')
@@ -882,7 +988,7 @@ async function toggleSceneStatus(row: any, val: number) {
   }
 }
 
-async function handleSceneDelete(row: any) {
+async function handleSceneDelete(row: SceneItem) {
   await ElMessageBox.confirm(`确定删除场景「${row.name}」？`, '提示', { type: 'warning' })
   await deleteScene(row.id)
   ElMessage.success('删除成功')
@@ -890,19 +996,18 @@ async function handleSceneDelete(row: any) {
 }
 
 // 套餐弹窗：可选印章列表（按所选场景加载，非企业路由回退全量）
-const pkgSealOptions = ref<any[]>([])
+const pkgSealOptions = ref<SealItem[]>([])
 async function loadPkgSealOptions(sceneId?: string) {
   try {
     if (routeType.value === 'enterprise' && sceneId) {
-      const res: any = await getSealSceneProducts(sceneId)
+      const res = unwrapV1<SceneProductsResponse>(await getSealSceneProducts(sceneId))
       pkgSealOptions.value = Array.isArray(res?.seals) ? res.seals : []
     } else {
       // 非企业路由（个人 / 电子）：getSeals() 返回对象无 _sceneName 字段，
       // 需按 sealCategories.name（个人）或 name 前缀（电子）筛选，不能用不存在的 _sceneName
-      const all: any = await getSeals()
-      const list = Array.isArray(all) ? all : (all?.items || [])
+      const list = toArray<SealItem>(await getSeals())
       if (isPersonal.value) {
-        pkgSealOptions.value = list.filter((s: any) => {
+        pkgSealOptions.value = list.filter((s) => {
           const n = s.sealCategories?.name
           return (n === '个人印章' || n === '个人签名章' || n === '个人职业章') && !(s.name || '').startsWith('电子')
         })
@@ -912,7 +1017,7 @@ async function loadPkgSealOptions(sceneId?: string) {
             .map((type) => getElectronicCategory(type.label)?.name)
             .filter(Boolean)
         )
-        pkgSealOptions.value = list.filter((s: any) =>
+        pkgSealOptions.value = list.filter((s) =>
           electronicCategoryNames.has(s.sealCategories?.name) ||
           (!s.sealCategories?.id && s.name && s.name.startsWith('电子'))
         )
@@ -978,24 +1083,20 @@ function electronicSceneItemCount(sceneId: string): number {
 
 // seal_categories 中 name='个人印章'/'电子印章' 的项 → 补充 personalScene/electronicScene
 async function fetchAllCategories() {
-  let catRes: any, sceneRes: any
+  let cats: SealCategoryOption[] = []
+  let scenes: SceneItem[] = []
   try {
-    catRes = await getSealCategories()
-  } catch (e: any) {
-    console.error('[getSealCategories] failed:', e?.response?.status, e?.message)
-    catRes = []
+    cats = toArray<SealCategoryOption>(await getSealCategories())
+  } catch (error: unknown) {
+    console.error('[getSealCategories] failed:', getApiErrorStatus(error), getApiErrorMessage(error))
   }
   try {
-    sceneRes = await getAdminScenes()
-  } catch (e: any) {
-    console.error('[getAdminScenes] failed:', e?.response?.status, e?.message)
-    sceneRes = []
+    scenes = toArray<SceneItem>(await getAdminScenes())
+  } catch (error: unknown) {
+    console.error('[getAdminScenes] failed:', getApiErrorStatus(error), getApiErrorMessage(error))
   }
-  const cats = Array.isArray(catRes) ? catRes : (catRes?.data || [])
-  const scenes = Array.isArray(sceneRes) ? sceneRes : (sceneRes?.data || [])
   sealCategories.value = cats
-  const merged: any[] = [...scenes]
-  categories.value = merged
+  categories.value = scenes
 }
 
 async function fetchSealsByCategory(catId: string) {
@@ -1007,10 +1108,10 @@ async function fetchSealsByCategory(catId: string) {
       const pkgResults = await Promise.all(businessCategories.value.map((c) => fetchCategoryPackages(c.id, c.name)))
       packages.value = pkgResults.flat()
       // 默认选中第一个有数据的业务场景（按 sort 升序），避免选中空测试场景
-      const sorted = [...businessCategories.value].sort((a: any, b: any) => (a.sort || 0) - (b.sort || 0))
-      const withData = sorted.find((c: any) =>
-        seals.value.some((s: any) => s._sceneName === c.name) ||
-        packages.value.some((p: any) => p._sceneName === c.name)
+      const sorted = [...businessCategories.value].sort((a, b) => (a.sort || 0) - (b.sort || 0))
+      const withData = sorted.find((scene) =>
+        seals.value.some((seal) => seal._sceneName === scene.name) ||
+        packages.value.some((pkg) => pkg._sceneName === scene.name)
       )
       const nextSceneId = (withData || sorted[0] || businessCategories.value[0])?.id
       // 聚合数据已全部加载，跳过 activeSceneId watcher 的重复拉取（避免覆盖与角标归零）
@@ -1042,32 +1143,32 @@ async function fetchSealsByCategory(catId: string) {
   }
 }
 
-async function fetchSceneProducts(scene: any) {
-  const res: any = await getSealSceneProducts(scene.id)
+async function fetchSceneProducts(scene: SceneItem): Promise<{ seals: SealItem[]; packages: SealPackageItem[] }> {
+  const res = unwrapV1<SceneProductsResponse>(await getSealSceneProducts(scene.id))
   return {
-    seals: (res?.seals || []).map((s: any) => ({ ...s, categoryName: s.sealCategories?.name || '—', _sceneName: scene.name, _sceneId: scene.id })),
-    packages: (res?.packages || []).map((p: any) => ({ ...p, categoryName: scene.name, _sceneName: scene.name, _sceneId: scene.id })),
+    seals: (res.seals || []).map((seal) => ({ ...seal, categoryName: seal.sealCategories?.name || '—', _sceneName: scene.name, _sceneId: scene.id })),
+    packages: (res.packages || []).map((pkg) => ({ ...pkg, categoryName: scene.name, _sceneName: scene.name, _sceneId: scene.id })),
   }
 }
 
-async function fetchCategoryProducts(catId: string, catName: string): Promise<any[]> {
+async function fetchCategoryProducts(catId: string, catName: string): Promise<SealItem[]> {
   try {
     // enterprise 路由使用场景 API
     if (routeType.value === 'enterprise') {
-      const res: any = await getSealSceneProducts(catId)
+      const res = unwrapV1<SceneProductsResponse>(await getSealSceneProducts(catId))
       if (!res?.seals) return []
-      return res.seals.map((s: any) => ({
-        ...s,
-        categoryName: s.sealCategories?.name || '—',
+      return res.seals.map((seal) => ({
+        ...seal,
+        categoryName: seal.sealCategories?.name || '—',
         _sceneName: catName,
       }))
     }
     // 其他路由使用分类 API
-    const res: any = await getSealCategories(catId)
+    const res = unwrapV1<SceneProductsResponse>(await getSealCategories(catId))
     if (!res?.seals) return []
-    return res.seals.map((s: any) => ({
-      ...s,
-      categoryName: s.sealCategories?.name || '—',
+    return res.seals.map((seal) => ({
+      ...seal,
+      categoryName: seal.sealCategories?.name || '—',
       _sceneName: catName,
     }))
   } catch {
@@ -1075,17 +1176,17 @@ async function fetchCategoryProducts(catId: string, catName: string): Promise<an
   }
 }
 
-async function fetchCategoryPackages(catId: string, catName: string): Promise<any[]> {
+async function fetchCategoryPackages(catId: string, catName: string): Promise<SealPackageItem[]> {
   try {
     // enterprise 路由使用场景 API
     if (routeType.value === 'enterprise') {
-      const res: any = await getSealSceneProducts(catId)
+      const res = unwrapV1<SceneProductsResponse>(await getSealSceneProducts(catId))
       if (!res?.packages) return []
-      return res.packages.map((p: any) => ({ ...p, categoryName: catName, _sceneName: catName, _sceneId: p.sceneId || p.scene_id }))
+      return res.packages.map((pkg) => ({ ...pkg, categoryName: catName, _sceneName: catName, _sceneId: pkg.sceneId || pkg.scene_id }))
     }
     // 其他路由：套餐独立接口，全量返回
-    const res: any = await getSealPackages()
-    return Array.isArray(res) ? res.map((p: any) => ({ ...p, categoryName: catName, _sceneName: catName })) : []
+    return toArray<SealPackageItem>(await getSealPackages())
+      .map((pkg) => ({ ...pkg, categoryName: catName, _sceneName: catName }))
   } catch {
     return []
   }
@@ -1097,7 +1198,7 @@ function handleAddCommand(cmd: 'seal' | 'package' | 'scene') {
   else openSceneDialog()
 }
 
-function showDialog(type: string, row?: any) {
+function showDialog(type: string, row?: SealItem) {
   isEdit.value = type === 'edit'
   if (row) {
     // 编辑：回显当前所属场景 + 个人子分类，允许改所属场景
@@ -1211,7 +1312,7 @@ async function saveSeal() {
   }
 }
 
-async function handleDelete(row: any) {
+async function handleDelete(row: SealItem) {
   await ElMessageBox.confirm('确认删除该印章？', '提示')
   await deleteSeal(row.id)
   ElMessage.success('删除成功')
@@ -1223,7 +1324,7 @@ async function handleDelete(row: any) {
 }
 
 // 套餐相关
-function showPkgDialog(row: any) {
+function showPkgDialog(row: SealPackageItem) {
   pkgIsEdit.value = true
   pkgForm.id = row.id
   pkgForm.sceneId = row.sceneId || row._sceneId || ''
@@ -1335,8 +1436,7 @@ async function savePkg() {
 
 async function uploadPkg(file: File) {
   try {
-    const res: any = await (uploadImage as any)(file)
-    const url = res?.url || ''
+    const url = unwrapUploadUrl(await uploadImage(file))
     if (!url) { ElMessage.error('上传失败：未获取到文件地址'); return }
     if (!pkgForm.images) pkgForm.images = []
     pkgForm.images.push(url)
@@ -1346,11 +1446,22 @@ async function uploadPkg(file: File) {
   }
 }
 
+function onPkgImageChange(file: UploadFile) {
+  const rawFile = file.raw
+  if (!rawFile) return
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  if (!allowedTypes.includes(rawFile.type)) {
+    ElMessage.error('仅支持 jpg/png/gif/webp 格式')
+    return
+  }
+  void uploadPkg(rawFile)
+}
+
 function removePkgImage(idx: number) {
   pkgForm.images.splice(idx, 1)
 }
 
-async function handlePkgDelete(row: any) {
+async function handlePkgDelete(row: SealPackageItem) {
   await ElMessageBox.confirm('确认删除该套餐？', '提示')
   await deletePackage(row.id)
   ElMessage.success('删除成功')
@@ -1361,7 +1472,7 @@ async function handlePkgDelete(row: any) {
   }
 }
 
-async function beforeUpload(file: File) {
+async function beforeUpload(file: UploadRawFile) {
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
   const isAllowed = allowedTypes.includes(file.type)
   if (!isAllowed) {
@@ -1376,10 +1487,14 @@ async function beforeUpload(file: File) {
   return true
 }
 
-async function uploadSeal(options: any) {
+async function uploadSeal(options: UploadRequestOptions) {
   try {
-    const res: any = await (uploadImage as any)(options.file)
-    form.image = res.url
+    const url = unwrapUploadUrl(await uploadImage(options.file))
+    if (!url) {
+      ElMessage.error('上传失败：未获取到文件地址')
+      return
+    }
+    form.image = url
     ElMessage.success('上传成功')
   } catch {
     // 接口错误由全局响应拦截器统一提示

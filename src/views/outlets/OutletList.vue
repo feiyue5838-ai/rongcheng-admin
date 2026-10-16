@@ -280,12 +280,12 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio :label="1">营业中</el-radio>
-            <el-radio :label="0">已歇业</el-radio>
-            <el-radio :label="2">合作中</el-radio>
-            <el-radio :label="3">审核中</el-radio>
-            <el-radio :label="4">已暂停</el-radio>
-            <el-radio :label="5">已终止</el-radio>
+            <el-radio :value="1">营业中</el-radio>
+            <el-radio :value="0">已歇业</el-radio>
+            <el-radio :value="2">合作中</el-radio>
+            <el-radio :value="3">审核中</el-radio>
+            <el-radio :value="4">已暂停</el-radio>
+            <el-radio :value="5">已终止</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="结算周期" prop="settlementCycle">
@@ -387,7 +387,7 @@
         <el-checkbox
           v-for="bt in businessTypeList"
           :key="bt.id"
-          :label="bt.id"
+          :value="bt.id"
           style="display:block;margin-bottom:12px"
         >
           <span style="font-weight:600">{{ bt.name }}</span>
@@ -433,8 +433,141 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { FormInstance, UploadRawFile, UploadRequestOptions, UploadUserFile } from 'element-plus'
+import axios from 'axios'
 import { getOutletsAPI, createOutletAPI, updateOutletAPI, deleteOutletAPI, resetOutletPasswordAPI, uploadImage, setOutletBusinessTypesAPI, getOutletShippingPreferencesAPI, getBusinessTypesAPI } from '@/api'
+import { toArray, unwrapData, unwrapUploadUrl } from '@/api/unwrap'
 import { formatDate } from '@/utils/format'
+
+interface BusinessTypeItem {
+  id: string
+  name: string
+  code: string
+}
+
+interface ServiceAreaItem {
+  province: string
+  city: string
+}
+
+type SettlementCycle = 'daily' | 'weekly' | 'monthly' | null | ''
+type TaxpayerType = 'individual' | 'small' | 'general' | ''
+
+interface OutletRow {
+  id: string
+  name: string
+  contact: string
+  phone: string
+  province?: string
+  city?: string
+  district?: string
+  address?: string
+  serviceArea?: unknown
+  businessLicense?: string
+  specialPermits?: unknown
+  idCardFront?: string
+  idCardBack?: string
+  status: number
+  totalOrders: number
+  businessTypes?: BusinessTypeItem[]
+  settlementCycle?: SettlementCycle
+  settlementWeeklyStartDay?: number
+  invoiceQualified?: number
+  invoiceTaxpayerType?: TaxpayerType
+  createdAt: string
+}
+
+interface ShippingPreference {
+  defaultCourier?: string
+  shippingRemark?: string
+  preferredCouriers?: string[]
+}
+
+interface OutletSummary {
+  totalOutlets?: number
+  activeOutlets?: number
+  inactiveOutlets?: number
+  totalOrders?: number
+}
+
+interface OutletListResult {
+  list?: OutletRow[]
+  pagination?: { total?: number }
+  summary?: OutletSummary
+}
+
+interface OutletForm {
+  name: string
+  contact: string
+  phone: string
+  province: string
+  city: string
+  district: string
+  address: string
+  serviceArea: ServiceAreaItem[]
+  businessLicense: string
+  status: number
+  businessTypeCodes: string[]
+  settlementCycle: SettlementCycle
+  settlementWeeklyStartDay: number
+  invoiceQualified: number
+  invoiceTaxpayerType: TaxpayerType
+  idCardFront: string
+  idCardBack: string
+}
+
+interface OutletPayload {
+  name: string
+  contact: string
+  phone: string
+  province: string
+  city: string
+  district: string
+  address: string
+  status: number
+  business_license: string
+  special_permits: string[]
+  idCardFront: string | null
+  idCardBack: string | null
+  serviceArea: ServiceAreaItem[]
+  settlementCycle?: SettlementCycle
+  settlementWeeklyStartDay?: number
+  invoice_qualified?: number
+  invoice_taxpayer_type?: TaxpayerType
+  businessTypeIds?: string[]
+}
+
+interface BusinessTypeUpdateResult {
+  businessTypes?: BusinessTypeItem[]
+}
+
+interface CreatedOutletResult {
+  initPassword?: string
+}
+
+interface ResetPasswordResult {
+  password?: string
+}
+
+function getApiErrorMessage(error: unknown): string | undefined {
+  if (axios.isAxiosError<{ message?: unknown }>(error)) {
+    const message = error.response?.data?.message
+    if (message) return Array.isArray(message) ? message.join('；') : String(message)
+  }
+  return error instanceof Error ? error.message : undefined
+}
+
+function isDialogCancellation(error: unknown): boolean {
+  return error === 'cancel' || error === 'close'
+}
+
+function reportUploadError(options: UploadRequestOptions, error: unknown) {
+  const uploadError = Object.assign(
+    new Error(error instanceof Error ? error.message : '上传失败'),
+    { status: 0, method: options.method, url: options.action },
+  )
+  options.onError(uploadError)
+}
 
 // ============ 行政区划数据（与报纸仓库对齐）============
 const PROVINCES = [
@@ -734,31 +867,24 @@ function resetFilters() {
 
 // 统计摘要：后端按「当前筛选条件的全部结果」聚合（2026-09-07），
 // 此前用当前页 tableData 统计，与「总数(total)」口径不一致、翻页还会跳变。
-const summary = ref<{
-  totalOutlets?: number
-  activeOutlets?: number
-  inactiveOutlets?: number
-  totalOrders?: number
-}>({})
+const summary = ref<OutletSummary>({})
 
 const loading = ref(false)
-const tableData = ref<any[]>([])
+const tableData = ref<OutletRow[]>([])
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(100)
 const keyword = ref('')
-const status = ref('')
+const status = ref<number | ''>('')
 const region = ref('')
 const province = ref('')
 const city = ref('')
 const businessType = ref('')
 // 业务类型字典（后端 GET /business-types；此前前端硬编码 3 个 UUID，换库/新增类型即失效）
-const businessTypeList = ref<Array<{ id: string; name: string; code: string }>>([])
+const businessTypeList = ref<BusinessTypeItem[]>([])
 async function loadBusinessTypes() {
   try {
-    const res: any = await getBusinessTypesAPI()
-    const list = Array.isArray(res) ? res : ((res as any)?.data ?? (res as any)?.list ?? [])
-    businessTypeList.value = Array.isArray(list) ? list : []
+    businessTypeList.value = toArray<BusinessTypeItem>(await getBusinessTypesAPI())
   } catch {
     businessTypeList.value = []
   }
@@ -778,18 +904,18 @@ const getStatusText = (status: number) => statusOptions.find(s => s.value === st
 const getStatusType = (status: number) => statusOptions.find(s => s.value === status)?.type ?? 'info'
 
 const previewVisible = ref(false)
-const previewList = ref<any[]>([])
+const previewList = ref<string[]>([])
 
 // 业务授权弹窗
 const authDialogVisible = ref(false)
-const authOutlet = ref<any>(null)
+const authOutlet = ref<OutletRow | null>(null)
 const authSubmitting = ref(false)
 // 发货偏好查看弹窗（只读）
 const shippingPrefVisible = ref(false)
-const shippingPrefOutlet = ref<any>(null)
+const shippingPrefOutlet = ref<OutletRow | null>(null)
 const shippingPrefLoading = ref(false)
-const shippingPrefData = ref<any>(null)
-function openShippingPrefDialog(row: any) {
+const shippingPrefData = ref<ShippingPreference | null>(null)
+function openShippingPrefDialog(row: OutletRow) {
   shippingPrefOutlet.value = row
   shippingPrefVisible.value = true
   shippingPrefData.value = null
@@ -798,10 +924,9 @@ function openShippingPrefDialog(row: any) {
 async function loadShippingPref(id: string) {
   shippingPrefLoading.value = true
   try {
-    const res: any = await getOutletShippingPreferencesAPI(id)
-    shippingPrefData.value = res
-  } catch (err: any) {
-    ElMessage.error(err?.response?.data?.message || '获取发货偏好失败')
+    shippingPrefData.value = unwrapData<ShippingPreference>(await getOutletShippingPreferencesAPI(id))
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '获取发货偏好失败')
   } finally {
     shippingPrefLoading.value = false
   }
@@ -809,32 +934,35 @@ async function loadShippingPref(id: string) {
 const authForm = reactive({
   checkedTypes: [] as string[],
 })
-function openAuthDialog(row: any) {
+function openAuthDialog(row: OutletRow) {
   authOutlet.value = row
-  authForm.checkedTypes = (row.businessTypes || []).map((bt: any) => bt.id)
+  authForm.checkedTypes = (row.businessTypes || []).map((business) => business.id)
   authDialogVisible.value = true
 }
 async function onAuthSubmit() {
-  if (authSubmitting.value) return
+  if (authSubmitting.value || !authOutlet.value) return
+  const outlet = authOutlet.value
   authSubmitting.value = true
   try {
-    const res: any = await setOutletBusinessTypesAPI(authOutlet.value.id, authForm.checkedTypes)
+    const result = unwrapData<BusinessTypeUpdateResult>(
+      await setOutletBusinessTypesAPI(outlet.id, authForm.checkedTypes),
+    )
     // 更新表格行数据
-    const idx = tableData.value.findIndex(r => r.id === authOutlet.value.id)
+    const idx = tableData.value.findIndex(r => r.id === outlet.id)
     if (idx >= 0) {
-      tableData.value[idx] = { ...tableData.value[idx], businessTypes: res.businessTypes }
+      tableData.value[idx] = { ...tableData.value[idx], businessTypes: result.businessTypes || [] }
     }
     ElMessage.success('授权成功')
     authDialogVisible.value = false
-  } catch (err: any) {
-    ElMessage.error(err?.response?.data?.message || '授权失败')
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '授权失败')
   } finally {
     authSubmitting.value = false
   }
 }
-function previewDocs(row: any, type: string) {
+function previewDocs(row: OutletRow, type: 'idcard' | 'biz' | 'permits') {
   if (type === 'idcard') {
-    previewList.value = [row.idCardFront, row.idCardBack].filter(Boolean)
+    previewList.value = [row.idCardFront, row.idCardBack].filter((url): url is string => Boolean(url))
   } else {
     previewList.value = type === 'biz'
       ? (row.businessLicense ? [row.businessLicense] : [])
@@ -852,10 +980,10 @@ const passwordDialogMode = ref<'create' | 'reset'>('reset')
 const maskedPwd = computed(() => '•'.repeat((passwordResult.value || '').length || 8))
 const isEdit = ref(false)
 const submitting = ref(false)
-const currentOutlet = ref<any>(null)
-const formRef = ref<any>(null)
+const currentOutlet = ref<OutletRow | null>(null)
+const formRef = ref<FormInstance>()
 
-const form = reactive({
+const form = reactive<OutletForm>({
   name: '',
   contact: '',
   phone: '',
@@ -864,52 +992,83 @@ const form = reactive({
   district: '',
   address: '',
   // 服务区域：派单地域匹配用，[{province, city?}]；留空按注册地服务
-  serviceArea: [] as { province: string; city: string }[],
+  serviceArea: [],
   businessLicense: '',
   status: 1,
   // 承接业务：提交 code 列表（后端 create/update 按 code 关联；授权弹窗用的是 id 列表）
-  businessTypeCodes: [] as string[],
-  settlementCycle: null as string | null,
+  businessTypeCodes: [],
+  settlementCycle: null,
   settlementWeeklyStartDay: 1,
   invoiceQualified: 0,
   invoiceTaxpayerType: '',
   idCardFront: '',
   idCardBack: '',
 })
-const permitFiles = ref<any[]>([])
-function parsePermits(str: any) {
-  try { const a = JSON.parse(str); return Array.isArray(a) ? a : [] } catch { return [] }
-}
-function parseServiceArea(str: any) {
-  if (!str) return []
+const permitFiles = ref<UploadUserFile[]>([])
+function parsePermits(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string')
+  if (typeof value !== 'string' || !value) return []
   try {
-    const a = JSON.parse(str)
-    if (Array.isArray(a)) return a.map((s: any) => ({ province: (s.province || '').toString(), city: (s.city || '').toString() }))
-  } catch { return [] }
+    const parsed: unknown = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
+  } catch {
+    return []
+  }
+}
+function parseServiceArea(value: unknown): ServiceAreaItem[] {
+  if (!value) return []
+  try {
+    const parsed: unknown = typeof value === 'string' ? JSON.parse(value) : value
+    if (Array.isArray(parsed)) {
+      return parsed.flatMap((item) => {
+        if (!item || typeof item !== 'object') return []
+        const province = 'province' in item ? String(item.province || '') : ''
+        const city = 'city' in item ? String(item.city || '') : ''
+        return [{ province, city }]
+      })
+    }
+  } catch {
+    return []
+  }
   return []
 }
-function taxpayerTypeText(t: any) {
-  return ({ individual: '个体工商户', small: '小规模', general: '一般纳税人' } as any)[t] || ''
+function taxpayerTypeText(type: unknown) {
+  const labels: Record<string, string> = { individual: '个体工商户', small: '小规模', general: '一般纳税人' }
+  return typeof type === 'string' ? (labels[type] || '') : ''
 }
-function beforeUpload(file: any) {
+function beforeUpload(file: UploadRawFile) {
   const ok = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
   if (!ok) { ElMessage.error('只能上传图片（JPG/PNG/GIF/WebP）'); return false }
   return true
 }
-async function uploadBiz(option: any) {
-  try { const res: any = await uploadImage(option.file); form.businessLicense = res.data?.url ?? res.url; option.onSuccess(res, option.file) }
-  catch (e: any) { option.onError(e) }
-}
-async function uploadPermit(option: any) {
+async function uploadBiz(option: UploadRequestOptions) {
   try {
-    const res: any = await uploadImage(option.file)
-    const url: string = res.data?.url ?? res.url
+    const response = await uploadImage(option.file)
+    const url = unwrapUploadUrl(response)
+    if (!url) throw new Error('上传响应缺少文件地址')
+    form.businessLicense = url
+    option.onSuccess(response)
+  } catch (error: unknown) {
+    reportUploadError(option, error)
+  }
+}
+async function uploadPermit(option: UploadRequestOptions) {
+  try {
+    const response = await uploadImage(option.file)
+    const url = unwrapUploadUrl(response)
+    if (!url) throw new Error('上传响应缺少文件地址')
     // 关键：真实 URL 写回列表项（handleSuccess 只设 response 不更新 url，否则保存提取到 blob:URL）
-    const item = permitFiles.value.find((f: any) => f.uid === option.file.uid)
+    const item = permitFiles.value.find((file) => file.uid === option.file.uid)
     if (item) item.url = url
-    option.file.url = url // 兜底
-    option.onSuccess(res, option.file)
-  } catch (e: any) { option.onError(e) }
+    option.onSuccess(response)
+  } catch (error: unknown) {
+    reportUploadError(option, error)
+  }
+}
+
+function getPermitFileUrl(file: UploadUserFile): string {
+  const directUrl = typeof file.url === 'string' && !file.url.startsWith('blob:') ? file.url : ''
+  return directUrl || unwrapUploadUrl(file.response)
 }
 
 const rules = {
@@ -934,7 +1093,7 @@ function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text)
 }
 
-function openEditDialog(row: any) {
+function openEditDialog(row: OutletRow) {
   isEdit.value = true
   Object.assign(form, {
     name: row.name,
@@ -954,8 +1113,8 @@ function openEditDialog(row: any) {
     invoiceQualified: row.invoiceQualified ?? 0,
     invoiceTaxpayerType: row.invoiceTaxpayerType || '',
   })
-  form.businessTypeCodes = (row.businessTypes || []).map((bt: any) => bt.code).filter(Boolean)
-  permitFiles.value = parsePermits(row.specialPermits).map(url => ({ url, name: url.split('/').pop() || '证件' }))
+  form.businessTypeCodes = (row.businessTypes || []).map((business) => business.code).filter(Boolean)
+  permitFiles.value = parsePermits(row.specialPermits).map((url) => ({ url, name: url.split('/').pop() || '证件' }))
   currentOutlet.value = row
   dialogVisible.value = true
 }
@@ -966,7 +1125,7 @@ async function onSubmit() {
 
   submitting.value = true
   try {
-    const payload: any = {
+    const payload: OutletPayload = {
       name: form.name,
       contact: form.contact,
       phone: form.phone,
@@ -977,12 +1136,8 @@ async function onSubmit() {
       status: form.status,
       business_license: form.businessLicense,
       special_permits: permitFiles.value
-        .filter(f => f.url || f.response?.url)
-        .map(f => {
-          const u: string = f.url || f.response?.url || ''
-          return u.startsWith('blob:') ? (f.response?.url || '') : u // 剔除 blob 兜底，只存真实 URL
-        })
-        .filter(u => !!u),
+        .map(getPermitFileUrl)
+        .filter(Boolean),
       idCardFront: form.idCardFront || null,
       idCardBack: form.idCardBack || null,
       serviceArea: form.serviceArea.filter(s => (s.province || '').trim()).map(s => ({ province: s.province.trim(), city: (s.city || '').trim() })),
@@ -1006,19 +1161,20 @@ async function onSubmit() {
     payload.businessTypeIds = form.businessTypeCodes
 
     if (isEdit.value) {
+      if (!currentOutlet.value) throw new Error('当前供应商不存在，请刷新后重试')
       await updateOutletAPI(currentOutlet.value.id, payload)
       ElMessage.success('编辑成功')
       dialogVisible.value = false
       // 编辑后停留在当前页（不再强制跳回第 1 页）
       loadData(currentPage.value)
     } else {
-      const created: any = await createOutletAPI(payload)
+      const created = unwrapData<CreatedOutletResult>(await createOutletAPI(payload))
       ElMessage.success('新增成功')
       dialogVisible.value = false
       // 新增回第 1 页便于看到新记录
       loadData(1)
       // 后端 create 返回 initPassword；不展示则新账号无法登录（只能再走一次重置密码）
-      const initPwd = created?.data?.initPassword ?? created?.initPassword
+      const initPwd = created.initPassword
       if (initPwd) {
         passwordDialogMode.value = 'create'
         passwordResult.value = initPwd
@@ -1026,40 +1182,41 @@ async function onSubmit() {
         passwordDialogVisible.value = true
       }
     }
-  } catch (err: any) {
-    ElMessage.error(err?.response?.data?.message || '操作失败')
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '操作失败')
   } finally {
     submitting.value = false
   }
 }
 
-async function onResetPassword(row: any) {
+async function onResetPassword(row: OutletRow) {
   currentOutlet.value = row
   passwordDialogVisible.value = true
 }
 
 async function onConfirmReset() {
+  if (!currentOutlet.value) return
   submitting.value = true
   try {
-    const res: any = await resetOutletPasswordAPI(currentOutlet.value.id)
-    passwordResult.value = res.data?.password ?? res.password
-  } catch (err) {
-    ElMessage.error((err as any)?.response?.data?.message || '重置失败')
+    const result = unwrapData<ResetPasswordResult>(await resetOutletPasswordAPI(currentOutlet.value.id))
+    passwordResult.value = result.password || ''
+  } catch (error: unknown) {
+    ElMessage.error(getApiErrorMessage(error) || '重置失败')
     passwordDialogVisible.value = false
   } finally {
     submitting.value = false
   }
 }
 
-async function onDelete(row: any) {
+async function onDelete(row: OutletRow) {
   try {
     await ElMessageBox.confirm(`确定要删除供应商「${row.name}」吗？`, '删除确认', { type: 'warning' })
     await deleteOutletAPI(row.id)
     ElMessage.success('删除成功')
     // 删除后停留在当前页（不再强制跳回第 1 页）
     loadData(currentPage.value)
-  } catch (err: any) {
-    if (err !== 'cancel' && err !== 'close') ElMessage.error(err?.response?.data?.message || '删除失败')
+  } catch (error: unknown) {
+    if (!isDialogCancellation(error)) ElMessage.error(getApiErrorMessage(error) || '删除失败')
   }
 }
 
@@ -1079,8 +1236,8 @@ async function loadData(page?: number) {
       currentPage.value -= 1
       await fetchPage()
     }
-  } catch (err: any) {
-    console.error('Load error:', err)
+  } catch (error: unknown) {
+    console.error('Load error:', error)
     ElMessage.error('加载失败')
   } finally {
     loading.value = false
@@ -1088,7 +1245,7 @@ async function loadData(page?: number) {
 }
 
 async function fetchPage() {
-  const res = await getOutletsAPI({
+  const result = unwrapData<OutletListResult>(await getOutletsAPI({
     page: currentPage.value,
     pageSize: pageSize.value,
     keyword: keyword.value,
@@ -1100,10 +1257,10 @@ async function fetchPage() {
     city: isMunicipality(province.value) ? (province.value || undefined) : (city.value === '' ? undefined : city.value),
     district: isMunicipality(province.value) ? (city.value === '' ? undefined : city.value) : undefined,
     businessType: businessType.value === '' ? undefined : businessType.value,
-  })
-  tableData.value = (res as any).data?.list ?? (res as any).list ?? []
-  total.value = (res as any).data?.pagination?.total ?? (res as any).pagination?.total ?? 0
-  summary.value = (res as any).data?.summary ?? (res as any).summary ?? {}
+  }))
+  tableData.value = Array.isArray(result.list) ? result.list : []
+  total.value = Number(result.pagination?.total ?? 0)
+  summary.value = result.summary ?? {}
 }
 
 onMounted(() => {

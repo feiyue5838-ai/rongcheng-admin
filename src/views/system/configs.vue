@@ -133,16 +133,16 @@
               </template>
               <el-form-item label="必传材料">
                 <el-checkbox-group v-model="sealConfig.electronicRequired" class="seal-material-grid">
-                  <el-checkbox label="license" :disabled="hasSpecificElectronicLicense">营业执照</el-checkbox>
-                  <el-checkbox label="licenseOriginal" :disabled="hasGenericElectronicLicense">营业执照正本</el-checkbox>
-                  <el-checkbox label="licenseCopy" :disabled="hasGenericElectronicLicense">营业执照副本</el-checkbox>
-                  <el-checkbox label="idCardFront">身份证正面</el-checkbox>
-                  <el-checkbox label="idCardBack">身份证反面</el-checkbox>
-                  <el-checkbox label="legalPhoto">法人白底自拍照</el-checkbox>
-                  <el-checkbox label="handheldIdPhoto">法人手持身份证</el-checkbox>
-                  <el-checkbox label="professionalCert">执业证书</el-checkbox>
-                  <el-checkbox label="signature">个人签名</el-checkbox>
-                  <el-checkbox label="additional">补充材料</el-checkbox>
+                  <el-checkbox value="license" :disabled="hasSpecificElectronicLicense">营业执照</el-checkbox>
+                  <el-checkbox value="licenseOriginal" :disabled="hasGenericElectronicLicense">营业执照正本</el-checkbox>
+                  <el-checkbox value="licenseCopy" :disabled="hasGenericElectronicLicense">营业执照副本</el-checkbox>
+                  <el-checkbox value="idCardFront">身份证正面</el-checkbox>
+                  <el-checkbox value="idCardBack">身份证反面</el-checkbox>
+                  <el-checkbox value="legalPhoto">法人白底自拍照</el-checkbox>
+                  <el-checkbox value="handheldIdPhoto">法人手持身份证</el-checkbox>
+                  <el-checkbox value="professionalCert">执业证书</el-checkbox>
+                  <el-checkbox value="signature">个人签名</el-checkbox>
+                  <el-checkbox value="additional">补充材料</el-checkbox>
                 </el-checkbox-group>
                 <div class="seal-field-help">默认全不勾选表示不收任何材料。普通营业执照与正本/副本要求互斥；保存后小程序和 V2 下单接口按同一规则校验。</div>
               </el-form-item>
@@ -244,7 +244,13 @@
 
 <script setup lang="ts">
 import { computed, ref, reactive, onMounted } from 'vue'
-import request from '@/api'
+import request, {
+  getConfigRuntimeStatus,
+  getContentAbout,
+  getSystemConfig,
+  getSystemConfigs,
+} from '@/api'
+import type { ConfigRuntimeStatus } from '@/api/types'
 import { ElMessage } from 'element-plus'
 import RegionMultiPicker from '@/components/RegionMultiPicker.vue'
 
@@ -258,10 +264,10 @@ const paymentSaving = ref(false)
 const wechatSaving = ref(false)
 const wechatConfig = reactive({ appId: '', appSecret: '', subscribeTemplateId: '' })
 const paymentConfig = reactive({ mchId: '', apiV3Key: '', serialNo: '', privateKey: '', certificate: '', notifyUrl: '', refundNotifyUrl: '' })
-const runtimeStatus = reactive<any>({
+const runtimeStatus = reactive<ConfigRuntimeStatus>({
   source: 'environment',
   wechat: { configured: false, appId: '', appSecretConfigured: false, subscribeTemplateConfigured: false },
-  payment: { configured: false, mchId: '', apiV3KeyConfigured: false, serialNo: '', privateKeyConfigured: false, certificateConfigured: false, notifyUrlConfigured: false, refundNotifyUrlConfigured: false },
+  payment: { enabled: false, mode: 'disabled', configured: false, mchId: '', apiV3KeyConfigured: false, serialNo: '', privateKeyConfigured: false, certificateConfigured: false, notifyUrlConfigured: false, refundNotifyUrlConfigured: false },
 })
 const sealSaving = ref(false)
 const newspaperSaving = ref(false)
@@ -350,9 +356,9 @@ async function fetchConfigs() {
   const groups = { business: businessConfig, wechat: wechatConfig, payment: paymentConfig, seal: sealConfig, newspaper: newspaperConfig }
   for (const [key, cfg] of Object.entries(groups)) {
     try {
-      const res = await request.get('/config/all', { params: { group: key } })
+      const res = await getSystemConfigs(key)
       if (Array.isArray(res)) {
-        res.forEach((item: any) => {
+        res.forEach((item) => {
           if (key === 'seal') {
             if (item.key === 'handheldIdCities') {
               sealConfig.handheldIdCities = asStringArray(item.value)
@@ -394,7 +400,7 @@ async function fetchConfigs() {
     }
   }
   try {
-    const status: any = await request.get('/config/runtime-status')
+    const status = await getConfigRuntimeStatus()
     Object.assign(runtimeStatus, status)
   } catch {
     ElMessage.error('运行时配置状态加载失败')
@@ -446,7 +452,7 @@ async function saveWechatConfig() {
 async function fetchBasicConfig() {
   basicLoading.value = true
   try {
-    const about: any = await request.get('/content/about')
+    const about = await getContentAbout()
     basicConfig.companyName = typeof about?.companyName === 'string' ? about.companyName : ''
     basicConfig.phone = typeof about?.phone === 'string' ? about.phone : ''
     basicConfig.serviceTime = typeof about?.serviceTime === 'string' ? about.serviceTime : ''
@@ -510,7 +516,7 @@ async function saveSealConfig() {
 
 async function fetchServiceConfig() {
   try {
-    const res: any = await request.get('/config', { params: { key: 'bookkeepingServiceDetail' } })
+    const res = await getSystemConfig('bookkeepingServiceDetail')
     if (res && typeof res.value === 'string') {
       serviceDetail.value = res.value
     } else {
@@ -538,7 +544,7 @@ async function saveServiceConfig() {
 
 async function fetchHotKeywords() {
   try {
-    const res: any = await request.get('/config', { params: { key: 'searchHotKeywords' } })
+    const res = await getSystemConfig('searchHotKeywords')
     hotKeywordsText.value = asStringArray(res?.value).join('\n')
   } catch {
     ElMessage.error('搜索热词加载失败')
@@ -564,11 +570,11 @@ async function saveHotKeywords() {
 
 async function fetchCustomerServiceConfig() {
   try {
-    const res: any = await request.get('/config/all', { params: { group: 'customer-service' } })
+    const res = await getSystemConfigs('customer-service')
     const items = Array.isArray(res) ? res : []
     customerServiceConfig.alipayTntInstId = ''
     customerServiceConfig.alipayScene = ''
-    items.forEach((item: any) => {
+    items.forEach((item) => {
       if (item.key === 'alipayTntInstId') customerServiceConfig.alipayTntInstId = String(item.value ?? '')
       else if (item.key === 'alipayScene') customerServiceConfig.alipayScene = String(item.value ?? '')
     })
