@@ -6,7 +6,8 @@ $ErrorActionPreference = 'Stop'
 $Java = 'C:\Users\85428\.workbuddy\tmp\java-env\jdk-21.0.12+8\bin\java.exe'
 $Jar = 'E:\代码\java\seal-backend\target\seal-backend-1.0.0.jar'
 $WorkDir = 'E:\代码\java\seal-backend'
-$EnvFile = 'D:\rongcheng-admin\server\.env'
+# 凭据唯一来源：本机加固后的运行账号配置（旧 seal@localhost 已锁定，不可再用）
+$EnvFile = 'E:\代码\java\runtime\mysql-local\app.env'
 $LogDir = 'E:\代码\admin\logs'
 
 if (-not (Test-Path $Java)) { throw "java not found: $Java" }
@@ -23,14 +24,18 @@ foreach ($line in (Get-Content $EnvFile -Encoding UTF8)) {
 }
 
 [Environment]::SetEnvironmentVariable('SPRING_PROFILES_ACTIVE', 'mysql', 'Process')
-[Environment]::SetEnvironmentVariable('DB_USERNAME', 'seal', 'Process')
+[Environment]::SetEnvironmentVariable('DB_USERNAME', $env:MYSQL_USERNAME, 'Process')
+[Environment]::SetEnvironmentVariable('DB_PASSWORD', $env:MYSQL_PASSWORD, 'Process')
 [Environment]::SetEnvironmentVariable('SERVER_PORT', '8080', 'Process')
-if (-not $env:JWT_SECRET_USER -and $env:JWT_SECRET) {
-  [Environment]::SetEnvironmentVariable('JWT_SECRET_USER', $env:JWT_SECRET, 'Process')
+
+$missing = @()
+foreach ($k in @('DB_USERNAME','DB_PASSWORD','JWT_SECRET_ADMIN','JWT_SECRET_USER','JWT_SECRET_OUTLET')) {
+  if (-not [Environment]::GetEnvironmentVariable($k, 'Process')) { $missing += $k }
 }
+if ($missing.Count -gt 0) { throw ("凭据缺失，无法启动: " + ($missing -join ',')) }
 
 $procs = Get-CimInstance Win32_Process -Filter "Name='java.exe'" |
-  Where-Object { $_.CommandLine -like '*seal-backend*' }
+  Where-Object { $_.CommandLine -like ("*" + $Jar + "*") }
 if ($procs) { Write-Output ("backend already running PID=" + ($procs.ProcessId -join ',')); exit 0 }
 
 Start-Process -FilePath $Java -ArgumentList '-jar', $Jar `
