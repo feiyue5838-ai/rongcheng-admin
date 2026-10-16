@@ -16,6 +16,7 @@
     "menu:check": "node scripts/check-menu-roles.mjs",
     "regions:sync": "node scripts/sync-regions.cjs",
     "regions:check": "node scripts/check-region-alignment.cjs",
+    "regions:check:cross-project": "node scripts/check-region-alignment.cjs --cross-project",
     "seals:check": "node scripts/check-seal-management.mjs",
     "quality": "npm run typecheck && npm run lint && npm run test:coverage && npm run menu:check && npm run regions:check && npm run build"
   },
