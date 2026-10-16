@@ -294,14 +294,6 @@ export const getBusinessTypesAPI = () => request.get('/business-types')
 
 // ==================== 订单分配 API（V1 退役 2026-08-29：派单走 v2AssignOrder / v2 待派单池） ====================
 
-// ==================== 代理记账套餐 API ====================
-export const getBookkeepingPackages = (params?: object) => request.get('/bookkeeping/packages', { params })
-export const getAdminBookkeepingPackages = (params?: object) => request.get('/bookkeeping/packages/admin/list', { params })
-export const getBookkeepingPackage = (id: string) => request.get(`/bookkeeping/packages/${id}`)
-export const createBookkeepingPackage = (data: object) => request.post('/bookkeeping/packages', data)
-export const updateBookkeepingPackage = (id: string, data: object) => request.put(`/bookkeeping/packages/${id}`, data)
-export const deleteBookkeepingPackage = (id: string) => request.delete(`/bookkeeping/packages/${id}`)
-
 // ==================== 售后管理 API ====================
 export const getAfterSalesOrders = (params?: object) => request.get('/after-sales/orders', { params })
 export const confirmAfterSalesRefund = (id: string, amount?: number) =>
